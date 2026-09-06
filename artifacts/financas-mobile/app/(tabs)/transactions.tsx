@@ -77,7 +77,7 @@ export default function TransactionsScreen() {
               selectedTransactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)
             )}
             {selectedTransactions.length > 0 ? (
-              <View style={styles.monthSummary}>
+              <View style={[styles.monthSummary, { borderTopColor: colors.border }]}>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>No mês selecionado</Text>
                 <Text style={[styles.summaryValue, { color: colors.foreground }]}>{formatCurrency(monthlyTotals.income - monthlyTotals.expense)}</Text>
               </View>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 },
   sectionTitle: { fontSize: 19, fontFamily: 'Inter_700Bold' },
   count: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  monthSummary: { borderTopWidth: 1, borderTopColor: '#DDE5DE', marginTop: 9, paddingTop: 17, flexDirection: 'row', justifyContent: 'space-between' },
+  monthSummary: { borderTopWidth: 1, marginTop: 9, paddingTop: 17, flexDirection: 'row', justifyContent: 'space-between' },
   summaryLabel: { fontSize: 13, fontFamily: 'Inter_500Medium' },
   summaryValue: { fontSize: 15, fontFamily: 'Inter_700Bold' },
 });

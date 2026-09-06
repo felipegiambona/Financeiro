@@ -22,7 +22,7 @@ export function ScreenHeader({ eyebrow, title, actionLabel, onAction, showBack =
             accessibilityLabel="Voltar"
             hitSlop={12}
             onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.backButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
           >
             <Feather name="arrow-left" size={20} color={colors.foreground} />
           </Pressable>
@@ -49,7 +49,7 @@ export function ScreenHeader({ eyebrow, title, actionLabel, onAction, showBack =
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 },
   titleGroup: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E9EEE9' },
+  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   eyebrow: { fontSize: 12, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 7 },
   title: { fontSize: 28, lineHeight: 33, fontFamily: 'Inter_700Bold', letterSpacing: -0.7 },
   action: { minHeight: 42, borderRadius: 21, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 5 },
