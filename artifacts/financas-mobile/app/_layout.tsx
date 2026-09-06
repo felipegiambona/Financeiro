@@ -22,7 +22,7 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerBackTitle: 'Voltar', contentStyle: { backgroundColor: '#0B1522' } }}>
+    <Stack screenOptions={{ headerBackTitle: 'Voltar', contentStyle: { backgroundColor: '#090909' } }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="transaction/new" options={{ headerShown: false, presentation: 'card' }} />
     </Stack>

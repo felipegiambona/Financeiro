@@ -38,15 +38,15 @@ export function TransactionRow({ transaction }: { transaction: Transaction }) {
 }
 
 const styles = StyleSheet.create({
-  row: { minHeight: 74, borderRadius: 18, borderWidth: 1, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 9 },
-  typeIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  details: { flex: 1, minWidth: 0, gap: 7 },
-  description: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  date: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  recurrence: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, flexDirection: 'row', alignItems: 'center', gap: 3 },
-  recurrenceText: { fontSize: 10, fontFamily: 'Inter_500Medium' },
-  status: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3 },
-  statusText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
-  amount: { fontSize: 13, fontFamily: 'Inter_700Bold', textAlign: 'right' },
+  row: { minHeight: 60, borderRadius: 14, borderWidth: 1, paddingHorizontal: 11, paddingVertical: 9, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
+  typeIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  details: { flex: 1, minWidth: 0, gap: 4 },
+  description: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  date: { fontSize: 11, fontFamily: 'Inter_400Regular' },
+  recurrence: { borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2, flexDirection: 'row', alignItems: 'center', gap: 3 },
+  recurrenceText: { fontSize: 9, fontFamily: 'Inter_500Medium' },
+  status: { borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 },
+  statusText: { fontSize: 9, fontFamily: 'Inter_600SemiBold' },
+  amount: { fontSize: 12, fontFamily: 'Inter_700Bold', textAlign: 'right' },
 });
