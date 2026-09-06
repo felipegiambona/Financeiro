@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
-import { TransactionType } from '@/types/transaction';
+import { PaymentStatus, TransactionType } from '@/types/transaction';
 import { formatAmountInput, parseAmountInput } from '@/utils/currency';
 
 export default function NewTransactionScreen() {
@@ -18,6 +18,7 @@ export default function NewTransactionScreen() {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [recurrence, setRecurrence] = useState<'none' | 'recurring'>('none');
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('paid');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +36,7 @@ export default function NewTransactionScreen() {
     try {
       setSaving(true);
       setError('');
-      await createTransaction({ type, amount: numericAmount, description, recurrence });
+      await createTransaction({ type, amount: numericAmount, description, recurrence, paymentStatus });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
@@ -115,6 +116,19 @@ export default function NewTransactionScreen() {
               <Pressable key={option} onPress={() => setRecurrence(option)} style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}>
                 <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
                 <Text style={[styles.recurrenceText, { color: colors.foreground }]}>{option === 'none' ? 'Não recorrente' : 'Recorrente'}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text style={[styles.label, { color: colors.foreground }]}>Status do pagamento</Text>
+        <View style={styles.recurrenceOptions}>
+          {(['paid', 'unpaid'] as PaymentStatus[]).map((option) => {
+            const active = paymentStatus === option;
+            return (
+              <Pressable key={option} testID={`${option}-status-option`} onPress={() => setPaymentStatus(option)} style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}>
+                <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
+                <Text style={[styles.recurrenceText, { color: colors.foreground }]}>{option === 'paid' ? 'Pago' : 'Não pago'}</Text>
               </Pressable>
             );
           })}

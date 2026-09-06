@@ -11,7 +11,7 @@ export function calculateCurrentBalance(
   now = new Date(),
 ): number {
   return transactions.reduce((total, transaction) => {
-    if (isFutureDate(transaction.date, now)) return total;
+    if (isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid') return total;
     return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
   }, 0);
 }
@@ -37,7 +37,7 @@ export function calculateForecast(
   now = new Date(),
 ): number {
   return transactions.reduce((total, transaction) => {
-    if (!isFutureDate(transaction.date, now)) return total;
+    if (!isFutureDate(transaction.date, now) && transaction.paymentStatus !== 'unpaid') return total;
     return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
   }, calculateCurrentBalance(transactions, now));
 }

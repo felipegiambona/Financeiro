@@ -11,6 +11,7 @@ export function TransactionRow({ transaction }: { transaction: Transaction }) {
   const isIncome = transaction.type === 'income';
   const tone = isIncome ? colors.income : colors.expense;
   const softTone = isIncome ? colors.incomeSoft : colors.expenseSoft;
+  const isPaid = transaction.paymentStatus === 'paid';
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.typeIcon, { backgroundColor: softTone }]}>
@@ -20,6 +21,9 @@ export function TransactionRow({ transaction }: { transaction: Transaction }) {
         <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
         <View style={styles.meta}>
           <Text style={[styles.date, { color: colors.mutedForeground }]}>{formatDate(transaction.date)}</Text>
+          <View style={[styles.status, { backgroundColor: isPaid ? colors.paidSoft : colors.pendingSoft }]}>
+            <Text style={[styles.statusText, { color: isPaid ? colors.paid : colors.pending }]}>{isPaid ? 'Pago' : 'Não pago'}</Text>
+          </View>
           {transaction.recurrence.kind === 'recurring' ? (
             <View style={[styles.recurrence, { backgroundColor: colors.secondary }]}>
               <Feather name="repeat" size={10} color={colors.secondaryForeground} />
@@ -42,5 +46,7 @@ const styles = StyleSheet.create({
   date: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   recurrence: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, flexDirection: 'row', alignItems: 'center', gap: 3 },
   recurrenceText: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  status: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3 },
+  statusText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   amount: { fontSize: 13, fontFamily: 'Inter_700Bold', textAlign: 'right' },
 });

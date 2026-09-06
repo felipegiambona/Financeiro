@@ -12,6 +12,15 @@ function sortByDate(transactions: Transaction[]): Transaction[] {
   );
 }
 
+function normalizeTransaction(value: unknown): Transaction {
+  const item = value as Partial<Transaction>;
+  return {
+    ...(item as Transaction),
+    recurrence: item.recurrence ?? { kind: 'none' },
+    paymentStatus: item.paymentStatus === 'unpaid' ? 'unpaid' : 'paid',
+  };
+}
+
 export async function getTransactions(): Promise<Transaction[]> {
   const stored = await AsyncStorage.getItem(TRANSACTIONS_STORAGE_KEY);
   if (!stored) return [];
@@ -21,7 +30,7 @@ export async function getTransactions(): Promise<Transaction[]> {
     throw new Error('Os lançamentos armazenados estão inválidos.');
   }
 
-  return sortByDate(parsed as Transaction[]);
+  return sortByDate(parsed.map(normalizeTransaction));
 }
 
 export async function getTransactionsByMonth(
@@ -44,6 +53,7 @@ export async function createTransaction(
     description: input.description.trim(),
     date: input.date ?? createLocalIsoDate(now),
     recurrence: { kind: input.recurrence },
+    paymentStatus: input.paymentStatus,
     createdAt: now.toISOString(),
   };
 
