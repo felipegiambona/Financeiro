@@ -1,0 +1,1 @@
+export const TRANSACTIONS_STORAGE_KEY = '@financas-mobile/transactions-v1';

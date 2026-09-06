@@ -1,6 +1,6 @@
-# [Project name]
+# Finanças Mobile
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Aplicativo mobile de controle financeiro pessoal com lançamentos locais, saldo, previsão e gráficos mensais.
 
 ## Run & Operate
 
@@ -30,7 +30,11 @@ _Populate as you build — non-obvious choices a reader couldn't infer from the 
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Dashboard com saldo atual e acesso rápido a novos lançamentos.
+- Transações com navegação por mês, saldo acumulado, previsão e estados de carregamento/erro/vazio.
+- Formulário de receita/despesa com valor em R$, descrição e indicação de recorrência.
+- Gráfico de barras de receitas e despesas dos últimos seis meses, alimentado pelos lançamentos reais.
+- Persistência local via AsyncStorage, sem autenticação ou backend no MVP.
 
 ## User preferences
 
@@ -38,7 +42,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- O Expo precisa ser executado pelo workflow `artifacts/financas-mobile: expo`.
+- O app usa Expo SDK 54 e mantém o `metro-runtime` como dependência direta para o Metro funcionar corretamente neste workspace pnpm.
 
 ## Pointers
 
