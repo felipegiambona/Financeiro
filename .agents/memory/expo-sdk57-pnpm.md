@@ -14,3 +14,9 @@ The optional React Native DevTools desktop shell may report missing Linux deskto
 **Why:** Installing one missing shared library exposed another desktop-shell dependency; this error belongs to the optional debugger executable, not the app bundle.
 
 **How to apply:** Treat it as non-blocking only when Metro stays running, the SDK manifest is served, exports pass, and the app preview loads. Do not confuse it with a runtime or bundling failure.
+
+Expo SDK 57 uses edge-to-edge system bars. Configure icon contrast declaratively with `StatusBar` and `NavigationBar`, and let the app's root background extend behind both bars; older navigation-bar background APIs and app-config fields are no longer supported.
+
+**Why:** The SDK 57 type definitions removed the imperative navigation-bar color/button methods and the Expo config schema rejects the old Android navigation-bar and edge-to-edge fields.
+
+**How to apply:** Use a full-screen root with the app background color, `StatusBar` with light icons for a dark theme, and `NavigationBar` with the dark-bar style. Use the navigation-bar config plugin only for supported native options such as contrast enforcement.
