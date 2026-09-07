@@ -6,6 +6,30 @@ export interface MonthlyTotals {
   expense: number;
 }
 
+export interface MonthlyForecast {
+  key: string;
+  date: Date;
+  forecast: number;
+}
+
+function transactionValue(transaction: Transaction): number {
+  return transaction.type === 'income' ? transaction.amount : -transaction.amount;
+}
+
+function isOnOrBefore(transaction: Transaction, endDate: Date): boolean {
+  return new Date(transaction.date).getTime() <= endDate.getTime();
+}
+
+function calculateBalanceAtDate(
+  transactions: Transaction[],
+  endDate: Date,
+): number {
+  return transactions.reduce((total, transaction) => {
+    if (!isOnOrBefore(transaction, endDate) || transaction.paymentStatus === 'unpaid') return total;
+    return total + transactionValue(transaction);
+  }, 0);
+}
+
 export function calculateCurrentBalance(
   transactions: Transaction[],
   now = new Date(),
@@ -40,6 +64,35 @@ export function calculateForecast(
     if (!isFutureDate(transaction.date, now) && transaction.paymentStatus !== 'unpaid') return total;
     return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
   }, calculateCurrentBalance(transactions, now));
+}
+
+export function calculateForecastByMonth(
+  transactions: Transaction[],
+  year: number,
+  now = new Date(),
+): MonthlyForecast[] {
+  const currentBalance = calculateCurrentBalance(transactions, now);
+
+  return Array.from({ length: 12 }, (_, monthIndex) => {
+    const date = new Date(year, monthIndex, 1, 12);
+    const monthEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59);
+
+    if (monthEnd.getTime() < now.getTime()) {
+      return {
+        key: getDateKey(date),
+        date,
+        forecast: calculateBalanceAtDate(transactions, monthEnd),
+      };
+    }
+
+    const forecast = transactions.reduce((total, transaction) => {
+      const isProjected = isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid';
+      if (!isProjected || !isOnOrBefore(transaction, monthEnd)) return total;
+      return total + transactionValue(transaction);
+    }, currentBalance);
+
+    return { key: getDateKey(date), date, forecast };
+  });
 }
 
 export function calculateTotalsByMonth(

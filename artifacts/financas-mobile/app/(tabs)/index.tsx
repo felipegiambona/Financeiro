@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ForecastTable } from '@/components/ForecastTable';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
@@ -45,6 +46,7 @@ export default function DashboardScreen() {
               <Text style={[styles.newButtonText, { color: colors.accentForeground }]}>Novo lançamento</Text>
               <Feather name="arrow-up-right" size={18} color={colors.accentForeground} />
             </Pressable>
+            <ForecastTable transactions={transactions} />
           </>
         )}
       </ScrollView>
