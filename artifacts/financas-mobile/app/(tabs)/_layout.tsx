@@ -5,7 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
 
 // IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
@@ -16,22 +16,22 @@ function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon
+        <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
         />
-        <Label>Dashboard</Label>
+        <NativeTabs.Trigger.Label>Dashboard</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="transactions">
-        <Icon
+        <NativeTabs.Trigger.Icon
           sf={{ default: 'list.bullet', selected: 'list.bullet' }}
         />
-        <Label>Transações</Label>
+        <NativeTabs.Trigger.Label>Transações</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="charts">
-        <Icon
+        <NativeTabs.Trigger.Icon
           sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }}
         />
-        <Label>Gráficos</Label>
+        <NativeTabs.Trigger.Label>Gráficos</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
