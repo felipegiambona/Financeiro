@@ -71,7 +71,7 @@ const colors = {
     pendingSoft: '#2B271D',
     navySoft: '#252525',
   },
-  radius: 18,
+  radius: 8,
 };
 
 export default colors;

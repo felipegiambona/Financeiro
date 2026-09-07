@@ -47,12 +47,12 @@ export function ScreenHeader({ eyebrow, title, actionLabel, onAction, showBack =
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 },
-  titleGroup: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  eyebrow: { fontSize: 12, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 7 },
-  title: { fontSize: 28, lineHeight: 33, fontFamily: 'Inter_700Bold', letterSpacing: -0.7 },
-  action: { minHeight: 42, borderRadius: 21, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 5 },
-  actionText: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  titleGroup: { flexDirection: 'row', alignItems: 'center', gap: 9, flex: 1 },
+  backButton: { width: 34, height: 34, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  eyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 5 },
+  title: { fontSize: 24, lineHeight: 29, fontFamily: 'Inter_700Bold', letterSpacing: -0.5 },
+  action: { minHeight: 36, borderRadius: 7, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  actionText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
   pressed: { opacity: 0.72 },
 });

@@ -42,12 +42,12 @@ export function EmptyState({ message }: { message: string }) {
 }
 
 const styles = StyleSheet.create({
-  center: { minHeight: 210, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 24 },
-  empty: { minHeight: 156, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 13, padding: 24 },
-  iconCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  stateTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
-  stateText: { fontSize: 14, lineHeight: 20, fontFamily: 'Inter_400Regular', textAlign: 'center' },
-  retry: { borderRadius: 18, paddingHorizontal: 18, paddingVertical: 10, marginTop: 4 },
-  retryText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  center: { minHeight: 170, alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 20 },
+  empty: { minHeight: 126, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 9, padding: 16 },
+  iconCircle: { width: 36, height: 36, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  stateTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
+  stateText: { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_400Regular', textAlign: 'center' },
+  retry: { borderRadius: 6, paddingHorizontal: 14, paddingVertical: 8, marginTop: 3 },
+  retryText: { color: '#FFFFFF', fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   pressed: { opacity: 0.72 },
 });
