@@ -1,1 +1,1 @@
-- [Expo SDK 54 with pnpm](expo-sdk54-pnpm.md) — keep Metro runtime directly available to avoid Expo CLI resolution failures.
+- [Expo SDK 57 with pnpm](expo-sdk57-pnpm.md) — keep app-local React peers aligned and distinguish optional DevTools shell failures from Metro failures.
