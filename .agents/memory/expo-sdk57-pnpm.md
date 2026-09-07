@@ -20,3 +20,9 @@ Expo SDK 57 uses edge-to-edge system bars. Configure icon contrast declaratively
 **Why:** The SDK 57 type definitions removed the imperative navigation-bar color/button methods and the Expo config schema rejects the old Android navigation-bar and edge-to-edge fields.
 
 **How to apply:** Use a full-screen root with the app background color, `StatusBar` with light icons for a dark theme, and `NavigationBar` with `style="light"` for light system icons. Mirror that style plus disabled contrast enforcement in the plugin so Expo Go receives it through the manifest.
+
+Changes to system-bar settings delivered through the Expo Go manifest require closing the project and reopening it; Fast Refresh alone can preserve the previous colors.
+
+**Why:** The corrected dark system bars were confirmed on a physical Android device only after reopening the project in Expo Go.
+
+**How to apply:** After changing app configuration or navigation-bar plugin options, restart the Expo workflow and retest from a fresh project open in Expo Go.
