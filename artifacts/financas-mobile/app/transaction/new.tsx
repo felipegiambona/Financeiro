@@ -1,24 +1,54 @@
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+import { LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
-import { PaymentStatus, TransactionType } from '@/types/transaction';
+import { PaymentStatus, Transaction, TransactionType } from '@/types/transaction';
 import { formatAmountInput, parseAmountInput } from '@/utils/currency';
 
 export default function NewTransactionScreen() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { transactions, loading } = useFinance();
+  const transaction = id ? transactions.find((item) => item.id === id) : undefined;
+  const colors = useColors();
+
+  if (id && loading) {
+    return (
+      <View style={[styles.screen, styles.centered, { backgroundColor: colors.background }]}>
+        <LoadingState />
+      </View>
+    );
+  }
+
+  if (id && !transaction) {
+    return (
+      <View style={[styles.screen, styles.notFound, { backgroundColor: colors.background }]}>
+        <Text style={[styles.notFoundTitle, { color: colors.foreground }]}>Lançamento não encontrado</Text>
+        <Pressable onPress={() => router.back()} style={[styles.notFoundButton, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.notFoundButtonText, { color: colors.primaryForeground }]}>Voltar</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return <TransactionForm transaction={transaction} />;
+}
+
+function TransactionForm({ transaction }: { transaction?: Transaction }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { createTransaction } = useFinance();
-  const [type, setType] = useState<TransactionType>('expense');
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
-  const [recurrence, setRecurrence] = useState<'none' | 'recurring'>('none');
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('paid');
+  const { createTransaction, updateTransaction } = useFinance();
+  const isEditing = Boolean(transaction);
+  const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
+  const [amount, setAmount] = useState(transaction ? transaction.amount.toFixed(2).replace('.', ',') : '');
+  const [description, setDescription] = useState(transaction?.description ?? '');
+  const [recurrence, setRecurrence] = useState<'none' | 'recurring'>(transaction?.recurrence.kind ?? 'none');
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -36,7 +66,17 @@ export default function NewTransactionScreen() {
     try {
       setSaving(true);
       setError('');
-      await createTransaction({ type, amount: numericAmount, description, recurrence, paymentStatus });
+      if (transaction) {
+        await updateTransaction(transaction.id, {
+          type,
+          amount: numericAmount,
+          description: description.trim(),
+          recurrence: { kind: recurrence },
+          paymentStatus,
+        });
+      } else {
+        await createTransaction({ type, amount: numericAmount, description, recurrence, paymentStatus });
+      }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
@@ -57,10 +97,12 @@ export default function NewTransactionScreen() {
           <Pressable accessibilityLabel="Cancelar" onPress={() => router.back()} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
             <Feather name="x" size={20} color={colors.foreground} />
           </Pressable>
-          <Text style={[styles.topTitle, { color: colors.foreground }]}>Novo lançamento</Text>
+          <Text style={[styles.topTitle, { color: colors.foreground }]}>{isEditing ? 'Editar lançamento' : 'Novo lançamento'}</Text>
           <View style={styles.topSpacer} />
         </View>
-        <Text style={[styles.intro, { color: colors.mutedForeground }]}>Registre uma movimentação para manter seu saldo sempre atualizado.</Text>
+        <Text style={[styles.intro, { color: colors.mutedForeground }]}>
+          {isEditing ? 'Atualize os dados e o status deste lançamento.' : 'Registre uma movimentação para manter seu saldo sempre atualizado.'}
+        </Text>
 
         <Text style={[styles.label, { color: colors.foreground }]}>Tipo</Text>
         <View style={[styles.segmented, { backgroundColor: colors.secondary }]}>
@@ -141,7 +183,7 @@ export default function NewTransactionScreen() {
           onPress={() => void handleSave()}
           style={({ pressed }) => [styles.saveButton, { backgroundColor: colors.primary }, saving && styles.disabled, pressed && styles.pressed]}
         >
-          <Text style={styles.saveText}>{saving ? 'Salvando...' : 'Salvar lançamento'}</Text>
+          <Text style={styles.saveText}>{saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar lançamento'}</Text>
           {!saving ? <Feather name="check" size={18} color="#FFFFFF" /> : null}
         </Pressable>
         <Pressable disabled={saving} onPress={() => router.back()} style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}>
@@ -154,6 +196,11 @@ export default function NewTransactionScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  centered: { alignItems: 'center', justifyContent: 'center' },
+  notFound: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, gap: 16 },
+  notFoundTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+  notFoundButton: { minHeight: 42, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  notFoundButtonText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   content: { paddingHorizontal: 16 },
   topBar: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   closeButton: { width: 32, height: 32, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },

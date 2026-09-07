@@ -1,19 +1,34 @@
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { Transaction } from '@/types/transaction';
 import { formatDate } from '@/utils/date';
 import { formatCurrency } from '@/utils/currency';
 
-export function TransactionRow({ transaction }: { transaction: Transaction }) {
+interface TransactionRowProps {
+  transaction: Transaction;
+  onPress?: () => void;
+}
+
+export function TransactionRow({ transaction, onPress }: TransactionRowProps) {
   const colors = useColors();
   const isIncome = transaction.type === 'income';
   const tone = isIncome ? colors.income : colors.expense;
   const softTone = isIncome ? colors.incomeSoft : colors.expenseSoft;
   const isPaid = transaction.paymentStatus === 'paid';
   return (
-    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <Pressable
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? `Editar ${transaction.description}` : undefined}
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.row,
+        { backgroundColor: colors.card, borderColor: colors.border },
+        pressed && styles.pressed,
+      ]}
+    >
       <View style={[styles.typeIcon, { backgroundColor: softTone }]}>
         <Feather name={isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={18} color={tone} />
       </View>
@@ -32,8 +47,11 @@ export function TransactionRow({ transaction }: { transaction: Transaction }) {
           ) : null}
         </View>
       </View>
-      <Text style={[styles.amount, { color: tone }]}>{isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}</Text>
-    </View>
+      <View style={styles.trailing}>
+        <Text style={[styles.amount, { color: tone }]}>{isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}</Text>
+        {onPress ? <Feather name="edit-2" size={13} color={colors.mutedForeground} /> : null}
+      </View>
+    </Pressable>
   );
 }
 
@@ -49,4 +67,6 @@ const styles = StyleSheet.create({
   status: { borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
   statusText: { fontSize: 8, fontFamily: 'Inter_600SemiBold' },
   amount: { fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'right' },
+  trailing: { alignItems: 'flex-end', gap: 5 },
+  pressed: { opacity: 0.72 },
 });

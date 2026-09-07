@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -74,7 +75,13 @@ export default function TransactionsScreen() {
             {selectedTransactions.length === 0 ? (
               <EmptyState message="Não há lançamentos neste mês." />
             ) : (
-              selectedTransactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)
+              selectedTransactions.map((transaction) => (
+                <TransactionRow
+                  key={transaction.id}
+                  transaction={transaction}
+                  onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
+                />
+              ))
             )}
             {selectedTransactions.length > 0 ? (
               <View style={[styles.monthSummary, { borderTopColor: colors.border }]}>
