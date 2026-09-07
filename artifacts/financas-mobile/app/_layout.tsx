@@ -53,7 +53,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <NavigationBar style="dark" />
+      <NavigationBar style="light" />
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <FinanceProvider>
