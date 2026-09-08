@@ -143,6 +143,23 @@ export default function TransactionsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ScreenHeader eyebrow="Movimentações" title="Transações" />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Novo lançamento"
+          testID="new-transaction-list-button"
+          onPress={() => router.push('/transaction/new')}
+          style={({ pressed }) => [
+            styles.newTransactionButton,
+            { backgroundColor: colors.accent },
+            pressed && styles.pressed,
+          ]}
+        >
+          <View style={styles.newTransactionIcon}>
+            <Feather name="plus" size={17} color={colors.accentForeground} />
+          </View>
+          <Text style={[styles.newTransactionLabel, { color: colors.accentForeground }]}>Novo lançamento</Text>
+          <Feather name="arrow-up-right" size={16} color={colors.accentForeground} />
+        </Pressable>
         <View style={styles.monthHeader}>
           <Text style={[styles.monthTitle, { color: colors.foreground }]}>{formatMonthLabel(selectedMonth)}</Text>
           <View style={styles.monthArrows}>
@@ -301,6 +318,9 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: 16 },
+  newTransactionButton: { minHeight: 42, borderRadius: 8, marginBottom: 14, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  newTransactionIcon: { width: 25, height: 25, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center' },
+  newTransactionLabel: { flex: 1, fontSize: 12, fontFamily: 'Inter_700Bold' },
   monthHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   monthTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   monthArrows: { flexDirection: 'row', gap: 7 },

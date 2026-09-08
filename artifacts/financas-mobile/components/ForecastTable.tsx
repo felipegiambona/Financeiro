@@ -17,7 +17,7 @@ export function ForecastTable({ transactions }: { transactions: Transaction[] })
   return (
     <View style={[styles.wrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.titleRow}>
-        <View>
+        <View style={styles.titleCopy}>
           <Text style={[styles.title, { color: colors.foreground }]}>Previsão por mês</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Saldo acumulado projetado ao fim de cada mês</Text>
         </View>
@@ -66,12 +66,13 @@ export function ForecastTable({ transactions }: { transactions: Transaction[] })
 
 const styles = StyleSheet.create({
   wrapper: { borderWidth: 1, borderRadius: 8, marginTop: 14, paddingHorizontal: 12, paddingVertical: 13 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 14 },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 7, marginBottom: 14 },
+  titleCopy: { flex: 1, minWidth: 0 },
   title: { fontSize: 15, fontFamily: 'Inter_700Bold' },
-  subtitle: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
-  yearSelector: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  yearButton: { width: 27, height: 27, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  year: { minWidth: 38, fontSize: 12, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+  subtitle: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  yearSelector: { flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  yearButton: { width: 25, height: 25, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  year: { minWidth: 34, fontSize: 12, fontFamily: 'Inter_700Bold', textAlign: 'center' },
   tableHeader: { borderBottomWidth: 1, paddingBottom: 7, flexDirection: 'row', justifyContent: 'space-between' },
   headerText: { fontSize: 10, fontFamily: 'Inter_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.7 },
   row: { minHeight: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
