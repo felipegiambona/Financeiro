@@ -9,7 +9,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { TransactionRow } from '@/components/TransactionRow';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
-import { calculateCurrentBalance, calculateForecast, calculateMonthlyTotals } from '@/services/financialRules';
+import { calculateCurrentBalance, calculateForecast } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
 import { formatMonthLabel, getDateKey, getMonthStart, shiftMonth } from '@/utils/date';
@@ -21,6 +21,21 @@ interface DeleteConfirmation {
   confirmLabel: string;
   onConfirm: () => Promise<void>;
 }
+
+type TypeFilter = 'all' | 'income' | 'expense';
+type StatusFilter = 'all' | 'paid' | 'unpaid';
+
+const TYPE_FILTERS: Array<{ value: TypeFilter; label: string }> = [
+  { value: 'all', label: 'Todos' },
+  { value: 'income', label: 'Receitas' },
+  { value: 'expense', label: 'Despesas' },
+];
+
+const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
+  { value: 'all', label: 'Todos' },
+  { value: 'paid', label: 'Pago' },
+  { value: 'unpaid', label: 'Não pago' },
+];
 
 export default function TransactionsScreen() {
   const colors = useColors();
@@ -40,6 +55,8 @@ export default function TransactionsScreen() {
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
   const [deleting, setDeleting] = useState(false);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
@@ -47,9 +64,29 @@ export default function TransactionsScreen() {
     () => getTransactionOccurrencesForMonth(transactions, selectedMonth),
     [transactions, selectedMonth],
   );
+  const filteredTransactions = useMemo(
+    () => selectedTransactions.filter((transaction) => (
+      (typeFilter === 'all' || transaction.type === typeFilter)
+      && (statusFilter === 'all' || transaction.paymentStatus === statusFilter)
+    )),
+    [selectedTransactions, statusFilter, typeFilter],
+  );
+  const filteredSummary = useMemo(
+    () => filteredTransactions.reduce(
+      (summary, transaction) => {
+        if (transaction.type === 'income') {
+          summary.income += transaction.amount;
+        } else {
+          summary.expense += transaction.amount;
+        }
+        return summary;
+      },
+      { income: 0, expense: 0 },
+    ),
+    [filteredTransactions],
+  );
   const currentBalance = calculateCurrentBalance(transactions);
   const forecast = calculateForecast(transactions, selectedMonth);
-  const monthlyTotals = calculateMonthlyTotals(transactions, selectedMonth);
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const leaveSelectionMode = () => {
@@ -165,6 +202,64 @@ export default function TransactionsScreen() {
             );
           })}
         </ScrollView>
+        <View style={[styles.filtersPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Tipo</Text>
+            <View style={styles.filterOptions}>
+              {TYPE_FILTERS.map((option) => {
+                const active = typeFilter === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Filtrar por ${option.label.toLowerCase()}`}
+                    onPress={() => {
+                      setTypeFilter(option.value);
+                      leaveSelectionMode();
+                    }}
+                    style={[
+                      styles.filterChip,
+                      { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+                    ]}
+                  >
+                    <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          <View style={styles.filterGroup}>
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Status</Text>
+            <View style={styles.filterOptions}>
+              {STATUS_FILTERS.map((option) => {
+                const active = statusFilter === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Filtrar por ${option.label.toLowerCase()}`}
+                    onPress={() => {
+                      setStatusFilter(option.value);
+                      leaveSelectionMode();
+                    }}
+                    style={[
+                      styles.filterChip,
+                      { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+                    ]}
+                  >
+                    <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
         <View style={styles.metrics}>
           <View style={[styles.metric, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>Saldo atual</Text>
@@ -193,9 +288,9 @@ export default function TransactionsScreen() {
               </View>
               <View style={styles.listActions}>
                 <Text style={[styles.count, { color: colors.mutedForeground }]}>
-                  {selectionMode ? `${selectedIds.length} selecionados` : `${selectedTransactions.length} ${selectedTransactions.length === 1 ? 'item' : 'itens'}`}
+                  {selectionMode ? `${selectedIds.length} selecionados` : `${filteredTransactions.length} ${filteredTransactions.length === 1 ? 'item' : 'itens'}`}
                 </Text>
-                {selectedTransactions.length > 0 ? (
+                {filteredTransactions.length > 0 ? (
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => selectionMode ? leaveSelectionMode() : setSelectionMode(true)}
@@ -210,7 +305,7 @@ export default function TransactionsScreen() {
               <View style={styles.selectionActions}>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => setSelectedIds(Array.from(new Set(selectedTransactions.map((item) => item.sourceId))))}
+                  onPress={() => setSelectedIds(Array.from(new Set(filteredTransactions.map((item) => item.sourceId))))}
                   style={({ pressed }) => [styles.secondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}
                 >
                   <Text style={[styles.secondaryActionLabel, { color: colors.foreground }]}>Selecionar todos</Text>
@@ -240,10 +335,10 @@ export default function TransactionsScreen() {
                 <Text style={[styles.clearAllLabel, { color: colors.expense }]}>Apagar todos</Text>
               </Pressable>
             ) : null}
-            {selectedTransactions.length === 0 ? (
-              <EmptyState message="Não há lançamentos neste mês." />
+            {filteredTransactions.length === 0 ? (
+              <EmptyState message={selectedTransactions.length === 0 ? 'Não há lançamentos neste mês.' : 'Nenhum lançamento corresponde aos filtros.'} />
             ) : (
-              selectedTransactions.map((transaction) => (
+              filteredTransactions.map((transaction) => (
                 <TransactionRow
                   key={transaction.occurrenceKey}
                   transaction={transaction}
@@ -257,10 +352,10 @@ export default function TransactionsScreen() {
                 />
               ))
             )}
-            {selectedTransactions.length > 0 ? (
+            {filteredTransactions.length > 0 ? (
               <View style={[styles.monthSummary, { borderTopColor: colors.border }]}>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>No mês selecionado</Text>
-                <Text style={[styles.summaryValue, { color: colors.foreground }]}>{formatCurrency(monthlyTotals.income - monthlyTotals.expense)}</Text>
+                <Text style={[styles.summaryValue, { color: colors.foreground }]}>{formatCurrency(filteredSummary.income - filteredSummary.expense)}</Text>
               </View>
             ) : null}
           </>
@@ -321,6 +416,12 @@ const styles = StyleSheet.create({
   monthChip: { width: 65, minHeight: 52, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
   monthChipText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', textTransform: 'capitalize' },
   monthChipYear: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  filtersPanel: { borderRadius: 9, borderWidth: 1, padding: 8, marginBottom: 14, gap: 7 },
+  filterGroup: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  filterLabel: { width: 43, fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  filterOptions: { flex: 1, flexDirection: 'row', gap: 5 },
+  filterChip: { minHeight: 28, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   metrics: { flexDirection: 'row', gap: 7, marginBottom: 16 },
   metric: { flex: 1, minHeight: 64, borderRadius: 8, borderWidth: 1, padding: 10, justifyContent: 'space-between' },
   metricLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
