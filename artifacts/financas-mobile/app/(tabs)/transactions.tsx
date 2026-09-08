@@ -10,6 +10,7 @@ import { TransactionRow } from '@/components/TransactionRow';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateForecast, calculateMonthlyTotals } from '@/services/financialRules';
+import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
 import { formatMonthLabel, getDateKey, getMonthStart, shiftMonth } from '@/utils/date';
 import { Transaction } from '@/types/transaction';
@@ -22,7 +23,7 @@ export default function TransactionsScreen() {
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
   const selectedTransactions = useMemo(
-    () => transactions.filter((transaction) => getDateKey(new Date(transaction.date)) === getDateKey(selectedMonth)),
+    () => getTransactionOccurrencesForMonth(transactions, selectedMonth),
     [transactions, selectedMonth],
   );
   const currentBalance = calculateCurrentBalance(transactions);
@@ -94,7 +95,7 @@ export default function TransactionsScreen() {
             ) : (
               selectedTransactions.map((transaction) => (
                 <TransactionRow
-                  key={transaction.id}
+                  key={transaction.occurrenceKey}
                   transaction={transaction}
                   onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
                   onTogglePaymentStatus={() => void handleTogglePaymentStatus(transaction)}

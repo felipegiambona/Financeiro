@@ -1,11 +1,14 @@
 export type TransactionType = 'income' | 'expense';
 
 export type RecurrenceKind = 'none' | 'recurring';
+export type RecurrenceUnit = 'day' | 'week' | 'month' | 'year';
 
 export type PaymentStatus = 'paid' | 'unpaid';
 
 export interface Recurrence {
   kind: RecurrenceKind;
+  interval?: number;
+  unit?: RecurrenceUnit;
   frequency?: 'monthly' | 'weekly' | 'yearly';
   startDate?: string;
   endDate?: string;
@@ -28,6 +31,12 @@ export interface NewTransactionInput {
   amount: number;
   description: string;
   date?: string;
-  recurrence: RecurrenceKind;
+  recurrence: Recurrence;
   paymentStatus: PaymentStatus;
+}
+
+export interface TransactionOccurrence extends Transaction {
+  sourceId: string;
+  occurrenceKey: string;
+  isVirtual: boolean;
 }

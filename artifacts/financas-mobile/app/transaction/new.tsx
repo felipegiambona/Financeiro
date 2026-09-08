@@ -2,14 +2,26 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
-import { PaymentStatus, Transaction, TransactionType } from '@/types/transaction';
+import {
+  PaymentStatus,
+  RecurrenceUnit,
+  Transaction,
+  TransactionType,
+} from '@/types/transaction';
 import { formatAmountInput, parseAmountInput } from '@/utils/currency';
+
+const RECURRENCE_UNITS: Array<{ value: RecurrenceUnit; label: string; pluralLabel: string }> = [
+  { value: 'day', label: 'Dia', pluralLabel: 'dias' },
+  { value: 'week', label: 'Semana', pluralLabel: 'semanas' },
+  { value: 'month', label: 'Mês', pluralLabel: 'meses' },
+  { value: 'year', label: 'Ano', pluralLabel: 'anos' },
+];
 
 export default function NewTransactionScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -48,6 +60,9 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
   const [amount, setAmount] = useState(transaction ? transaction.amount.toFixed(2).replace('.', ',') : '');
   const [description, setDescription] = useState(transaction?.description ?? '');
   const [recurrence, setRecurrence] = useState<'none' | 'recurring'>(transaction?.recurrence.kind ?? 'none');
+  const [recurrenceInterval, setRecurrenceInterval] = useState(String(transaction?.recurrence.interval ?? 1));
+  const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>(transaction?.recurrence.unit ?? 'month');
+  const [unitPickerOpen, setUnitPickerOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -62,6 +77,15 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
       setError('Informe uma descrição para o lançamento.');
       return;
     }
+    const numericInterval = Number(recurrenceInterval);
+    if (recurrence === 'recurring' && (!Number.isInteger(numericInterval) || numericInterval <= 0)) {
+      setError('Informe um intervalo de recorrência válido.');
+      return;
+    }
+
+    const recurrenceValue = recurrence === 'recurring'
+      ? { kind: 'recurring' as const, interval: numericInterval, unit: recurrenceUnit }
+      : { kind: 'none' as const };
 
     try {
       setSaving(true);
@@ -71,11 +95,17 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           type,
           amount: numericAmount,
           description: description.trim(),
-          recurrence: { kind: recurrence },
+          recurrence: recurrenceValue,
           paymentStatus,
         });
       } else {
-        await createTransaction({ type, amount: numericAmount, description, recurrence, paymentStatus });
+        await createTransaction({
+          type,
+          amount: numericAmount,
+          description,
+          recurrence: recurrenceValue,
+          paymentStatus,
+        });
       }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
@@ -163,6 +193,47 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           })}
         </View>
 
+        {recurrence === 'recurring' ? (
+          <>
+            <Text style={[styles.label, { color: colors.foreground }]}>Intervalo da recorrência</Text>
+            <View style={styles.intervalRow}>
+              <View style={[styles.intervalInputShell, { backgroundColor: colors.card, borderColor: colors.input }]}>
+                <TextInput
+                  accessibilityLabel="Quantidade do intervalo"
+                  testID="recurrence-interval-input"
+                  keyboardType="number-pad"
+                  maxLength={3}
+                  value={recurrenceInterval}
+                  onChangeText={(value) => setRecurrenceInterval(value.replace(/\D/g, ''))}
+                  style={[styles.intervalInput, { color: colors.foreground }]}
+                />
+              </View>
+              <Pressable
+                accessibilityLabel="Selecionar unidade da recorrência"
+                testID="recurrence-unit-select"
+                onPress={() => setUnitPickerOpen(true)}
+                style={({ pressed }) => [
+                  styles.unitSelect,
+                  { backgroundColor: colors.card, borderColor: colors.input },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={[styles.unitSelectText, { color: colors.foreground }]}>
+                  {RECURRENCE_UNITS.find((option) => option.value === recurrenceUnit)?.label}
+                </Text>
+                <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
+              O lançamento será repetido a cada {recurrenceInterval || '—'} {
+                recurrenceInterval === '1'
+                  ? RECURRENCE_UNITS.find((option) => option.value === recurrenceUnit)?.label.toLowerCase()
+                  : RECURRENCE_UNITS.find((option) => option.value === recurrenceUnit)?.pluralLabel
+              }.
+            </Text>
+          </>
+        ) : null}
+
         <Text style={[styles.label, { color: colors.foreground }]}>Status do pagamento</Text>
         <View style={styles.recurrenceOptions}>
           {(['paid', 'unpaid'] as PaymentStatus[]).map((option) => {
@@ -190,6 +261,40 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           <Text style={[styles.cancelText, { color: colors.mutedForeground }]}>Cancelar</Text>
         </Pressable>
       </KeyboardAwareScrollViewCompat>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={unitPickerOpen}
+        onRequestClose={() => setUnitPickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable accessibilityLabel="Fechar seletor" onPress={() => setUnitPickerOpen(false)} style={StyleSheet.absoluteFill} />
+          <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Repetir por</Text>
+            {RECURRENCE_UNITS.map((option) => {
+              const active = recurrenceUnit === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  testID={`recurrence-unit-${option.value}`}
+                  onPress={() => {
+                    setRecurrenceUnit(option.value);
+                    setUnitPickerOpen(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.unitMenuOption,
+                    { borderColor: colors.border, backgroundColor: active ? colors.secondary : colors.card },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.unitMenuOptionText, { color: colors.foreground }]}>{option.label}</Text>
+                  {active ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -220,6 +325,17 @@ const styles = StyleSheet.create({
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   radioDot: { width: 7, height: 7, borderRadius: 4 },
   recurrenceText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+  intervalRow: { flexDirection: 'row', gap: 8 },
+  intervalInputShell: { width: 76, minHeight: 42, borderRadius: 7, borderWidth: 1, justifyContent: 'center' },
+  intervalInput: { paddingHorizontal: 12, paddingVertical: 0, fontSize: 14, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
+  unitSelect: { flex: 1, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  unitSelectText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  intervalHint: { marginTop: 6, fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular' },
+  modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.72)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
+  unitMenu: { width: '100%', maxWidth: 340, borderRadius: 10, borderWidth: 1, padding: 14, gap: 7 },
+  unitMenuTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', marginBottom: 3 },
+  unitMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  unitMenuOptionText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
   error: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 9 },
   saveButton: { minHeight: 48, borderRadius: 8, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   saveText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter_700Bold' },

@@ -2,12 +2,12 @@ import { Feather } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
-import { Transaction } from '@/types/transaction';
+import { TransactionOccurrence } from '@/types/transaction';
 import { formatDate } from '@/utils/date';
 import { formatCurrency } from '@/utils/currency';
 
 interface TransactionRowProps {
-  transaction: Transaction;
+  transaction: TransactionOccurrence;
   onPress?: () => void;
   onTogglePaymentStatus?: () => void;
   paymentStatusUpdating?: boolean;
@@ -54,7 +54,7 @@ export function TransactionRow({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Marcar ${transaction.description} como ${isPaid ? 'não pago' : 'pago'}`}
-          testID={`toggle-payment-status-${transaction.id}`}
+          testID={`toggle-payment-status-${transaction.occurrenceKey}`}
           disabled={!onTogglePaymentStatus || paymentStatusUpdating}
           onPress={onTogglePaymentStatus}
           style={({ pressed }) => [

@@ -5,6 +5,7 @@ import {
   Transaction,
 } from '@/types/transaction';
 import { createLocalIsoDate, getDateKey } from '@/utils/date';
+import { getTransactionOccurrencesForMonth, normalizeRecurrence } from '@/services/recurrence';
 
 function sortByDate(transactions: Transaction[]): Transaction[] {
   return [...transactions].sort(
@@ -16,7 +17,7 @@ function normalizeTransaction(value: unknown): Transaction {
   const item = value as Partial<Transaction>;
   return {
     ...(item as Transaction),
-    recurrence: item.recurrence ?? { kind: 'none' },
+    recurrence: normalizeRecurrence(item.recurrence),
     paymentStatus: item.paymentStatus === 'unpaid' ? 'unpaid' : 'paid',
   };
 }
@@ -38,7 +39,8 @@ export async function getTransactionsByMonth(
 ): Promise<Transaction[]> {
   const transactions = await getTransactions();
   const monthKey = getDateKey(month);
-  return transactions.filter((transaction) => getDateKey(new Date(transaction.date)) === monthKey);
+  return getTransactionOccurrencesForMonth(transactions, month)
+    .filter((transaction) => getDateKey(new Date(transaction.date)) === monthKey);
 }
 
 export async function createTransaction(
@@ -52,7 +54,7 @@ export async function createTransaction(
     amount: input.amount,
     description: input.description.trim(),
     date: input.date ?? createLocalIsoDate(now),
-    recurrence: { kind: input.recurrence },
+    recurrence: normalizeRecurrence(input.recurrence),
     paymentStatus: input.paymentStatus,
     createdAt: now.toISOString(),
   };
@@ -72,7 +74,7 @@ export async function updateTransaction(
   const current = transactions.find((transaction) => transaction.id === id);
   if (!current) throw new Error('Lançamento não encontrado.');
 
-  const updated = { ...current, ...updates };
+  const updated = normalizeTransaction({ ...current, ...updates });
   await AsyncStorage.setItem(
     TRANSACTIONS_STORAGE_KEY,
     JSON.stringify(sortByDate(transactions.map((item) => item.id === id ? updated : item))),

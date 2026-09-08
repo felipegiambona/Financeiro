@@ -1,5 +1,9 @@
 import { Transaction } from '@/types/transaction';
 import { getDateKey, isFutureDate } from '@/utils/date';
+import {
+  getTransactionOccurrencesForMonth,
+  getTransactionOccurrencesInRange,
+} from '@/services/recurrence';
 
 export interface MonthlyTotals {
   income: number;
@@ -20,11 +24,22 @@ function isOnOrBefore(transaction: Transaction, endDate: Date): boolean {
   return new Date(transaction.date).getTime() <= endDate.getTime();
 }
 
+function getRangeStart(transactions: Transaction[], fallback: Date): Date {
+  if (transactions.length === 0) return fallback;
+  const earliest = Math.min(...transactions.map((transaction) => new Date(transaction.date).getTime()));
+  return new Date(earliest);
+}
+
 function calculateBalanceAtDate(
   transactions: Transaction[],
   endDate: Date,
 ): number {
-  return transactions.reduce((total, transaction) => {
+  const occurrences = getTransactionOccurrencesInRange(
+    transactions,
+    getRangeStart(transactions, endDate),
+    endDate,
+  );
+  return occurrences.reduce((total, transaction) => {
     if (!isOnOrBefore(transaction, endDate) || transaction.paymentStatus === 'unpaid') return total;
     return total + transactionValue(transaction);
   }, 0);
@@ -34,7 +49,13 @@ export function calculateCurrentBalance(
   transactions: Transaction[],
   now = new Date(),
 ): number {
-  return transactions.reduce((total, transaction) => {
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const occurrences = getTransactionOccurrencesInRange(
+    transactions,
+    getRangeStart(transactions, now),
+    todayEnd,
+  );
+  return occurrences.reduce((total, transaction) => {
     if (isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid') return total;
     return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
   }, 0);
@@ -44,10 +65,9 @@ export function calculateMonthlyTotals(
   transactions: Transaction[],
   month: Date,
 ): MonthlyTotals {
-  const monthKey = getDateKey(month);
-  return transactions.reduce(
+  const occurrences = getTransactionOccurrencesForMonth(transactions, month);
+  return occurrences.reduce(
     (totals, transaction) => {
-      if (getDateKey(new Date(transaction.date)) !== monthKey) return totals;
       if (transaction.type === 'income') totals.income += transaction.amount;
       else totals.expense += transaction.amount;
       return totals;
@@ -60,7 +80,13 @@ export function calculateForecast(
   transactions: Transaction[],
   now = new Date(),
 ): number {
-  return transactions.reduce((total, transaction) => {
+  const forecastEnd = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate(), 23, 59, 59);
+  const occurrences = getTransactionOccurrencesInRange(
+    transactions,
+    getRangeStart(transactions, now),
+    forecastEnd,
+  );
+  return occurrences.reduce((total, transaction) => {
     if (!isFutureDate(transaction.date, now) && transaction.paymentStatus !== 'unpaid') return total;
     return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
   }, calculateCurrentBalance(transactions, now));
@@ -85,7 +111,12 @@ export function calculateForecastByMonth(
       };
     }
 
-    const forecast = transactions.reduce((total, transaction) => {
+    const occurrences = getTransactionOccurrencesInRange(
+      transactions,
+      getRangeStart(transactions, now),
+      monthEnd,
+    );
+    const forecast = occurrences.reduce((total, transaction) => {
       const isProjected = isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid';
       if (!isProjected || !isOnOrBefore(transaction, monthEnd)) return total;
       return total + transactionValue(transaction);
