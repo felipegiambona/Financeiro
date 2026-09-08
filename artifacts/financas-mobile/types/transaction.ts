@@ -21,6 +21,7 @@ export interface Transaction {
   amount: number;
   description: string;
   date: string;
+  dueDate: string;
   recurrence: Recurrence;
   paymentStatus: PaymentStatus;
   paymentStatusOverrides?: Record<string, PaymentStatus>;
@@ -32,6 +33,7 @@ export interface NewTransactionInput {
   amount: number;
   description: string;
   date?: string;
+  dueDate: string;
   recurrence: Recurrence;
   paymentStatus: PaymentStatus;
 }

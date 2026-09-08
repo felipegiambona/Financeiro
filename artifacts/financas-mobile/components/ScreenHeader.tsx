@@ -9,10 +9,11 @@ interface ScreenHeaderProps {
   title: string;
   actionLabel?: string;
   onAction?: () => void;
+  actionIcon?: React.ComponentProps<typeof Feather>['name'];
   showBack?: boolean;
 }
 
-export function ScreenHeader({ eyebrow, title, actionLabel, onAction, showBack = false }: ScreenHeaderProps) {
+export function ScreenHeader({ eyebrow, title, actionLabel, onAction, actionIcon = 'plus', showBack = false }: ScreenHeaderProps) {
   const colors = useColors();
   return (
     <View style={styles.header}>
@@ -38,7 +39,7 @@ export function ScreenHeader({ eyebrow, title, actionLabel, onAction, showBack =
           onPress={onAction}
           style={({ pressed }) => [styles.action, { backgroundColor: colors.accent }, pressed && styles.pressed]}
         >
-          <Feather name="plus" size={17} color={colors.accentForeground} />
+          <Feather name={actionIcon} size={17} color={colors.accentForeground} />
           <Text style={[styles.actionText, { color: colors.accentForeground }]}>{actionLabel}</Text>
         </Pressable>
       ) : null}

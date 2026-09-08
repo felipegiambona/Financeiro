@@ -58,16 +58,18 @@ export function getTransactionOccurrencesInRange(
 
   for (const transaction of transactions) {
     const recurrence = normalizeRecurrence(transaction.recurrence);
-    const seriesStart = new Date(transaction.date);
+    const seriesStart = new Date(transaction.dueDate ?? transaction.date);
 
     if (recurrence.kind === 'none') {
       const transactionTime = seriesStart.getTime();
       if (transactionTime >= startTime && transactionTime <= endTime) {
         occurrences.push({
           ...transaction,
+          date: transaction.dueDate ?? transaction.date,
+          dueDate: transaction.dueDate ?? transaction.date,
           recurrence,
           sourceId: transaction.id,
-          occurrenceKey: `${transaction.id}:${transaction.date}`,
+          occurrenceKey: `${transaction.id}:${transaction.dueDate ?? transaction.date}`,
           isVirtual: false,
         });
       }
@@ -87,6 +89,7 @@ export function getTransactionOccurrencesInRange(
       occurrences.push({
         ...transaction,
         date,
+        dueDate: date,
         paymentStatus: transaction.paymentStatusOverrides?.[date] ?? transaction.paymentStatus,
         recurrence,
         sourceId: transaction.id,

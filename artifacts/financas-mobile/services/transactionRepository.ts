@@ -39,6 +39,7 @@ function normalizeTransaction(value: unknown): Transaction {
 
   return {
     ...(item as Transaction),
+    dueDate: item.dueDate ?? item.date ?? createLocalIsoDate(),
     recurrence: normalizeRecurrence(item.recurrence),
     paymentStatus: item.paymentStatus === 'unpaid' ? 'unpaid' : 'paid',
     paymentStatusOverrides,
@@ -78,6 +79,7 @@ export async function createTransaction(
     amount: input.amount,
     description: input.description.trim(),
     date: input.date ?? createLocalIsoDate(now),
+    dueDate: input.dueDate,
     recurrence: normalizeRecurrence(input.recurrence),
     paymentStatus: input.paymentStatus,
     createdAt: now.toISOString(),

@@ -7,6 +7,7 @@ import { ForecastTable } from '@/components/ForecastTable';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
+import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance } from '@/services/financialRules';
 import { formatCurrency } from '@/utils/currency';
@@ -15,6 +16,7 @@ export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { transactions, loading, error, refresh } = useFinance();
+  const { signOut } = useAuth();
   const balance = calculateCurrentBalance(transactions);
 
   return (
@@ -23,7 +25,7 @@ export default function DashboardScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenHeader eyebrow="Visão geral" title="Seu dinheiro, no controle." />
+        <ScreenHeader eyebrow="Visão geral" title="Seu dinheiro, no controle." actionLabel="Sair" actionIcon="log-out" onAction={() => void signOut()} />
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
           <>
             <View style={[styles.balanceCard, { backgroundColor: colors.primary }]}>

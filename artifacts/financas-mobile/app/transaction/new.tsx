@@ -15,6 +15,7 @@ import {
   TransactionType,
 } from '@/types/transaction';
 import { formatAmountInput, parseAmountInput } from '@/utils/currency';
+import { createLocalIsoDate } from '@/utils/date';
 
 const RECURRENCE_UNITS: Array<{ value: RecurrenceUnit; label: string; pluralLabel: string }> = [
   { value: 'day', label: 'Dia', pluralLabel: 'dias' },
@@ -22,6 +23,29 @@ const RECURRENCE_UNITS: Array<{ value: RecurrenceUnit; label: string; pluralLabe
   { value: 'month', label: 'Mês', pluralLabel: 'meses' },
   { value: 'year', label: 'Ano', pluralLabel: 'anos' },
 ];
+
+function toDateInput(dateString?: string): string {
+  const date = dateString ? new Date(dateString) : new Date();
+  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+}
+
+function formatDateInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function parseDateInput(value: string): Date | null {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const date = new Date(year, month - 1, day, 12);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+}
 
 export default function NewTransactionScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -59,6 +83,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
   const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
   const [amount, setAmount] = useState(transaction ? transaction.amount.toFixed(2).replace('.', ',') : '');
   const [description, setDescription] = useState(transaction?.description ?? '');
+  const [dueDate, setDueDate] = useState(toDateInput(transaction?.dueDate ?? transaction?.date));
   const [recurrence, setRecurrence] = useState<'none' | 'recurring'>(transaction?.recurrence.kind ?? 'none');
   const [recurrenceInterval, setRecurrenceInterval] = useState(String(transaction?.recurrence.interval ?? 1));
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>(transaction?.recurrence.unit ?? 'month');
@@ -75,6 +100,11 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
     }
     if (!description.trim()) {
       setError('Informe uma descrição para o lançamento.');
+      return;
+    }
+    const parsedDueDate = parseDateInput(dueDate);
+    if (!parsedDueDate) {
+      setError('Informe uma data de vencimento válida no formato DD/MM/AAAA.');
       return;
     }
     const numericInterval = Number(recurrenceInterval);
@@ -95,6 +125,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           type,
           amount: numericAmount,
           description: description.trim(),
+          dueDate: createLocalIsoDate(parsedDueDate),
           recurrence: recurrenceValue,
           paymentStatus,
         });
@@ -103,6 +134,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           type,
           amount: numericAmount,
           description,
+          dueDate: createLocalIsoDate(parsedDueDate),
           recurrence: recurrenceValue,
           paymentStatus,
         });
@@ -179,6 +211,22 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           returnKeyType="done"
           style={[styles.textInput, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }]}
         />
+
+        <Text style={[styles.label, { color: colors.foreground }]}>Data de vencimento</Text>
+        <View style={[styles.dateInputShell, { backgroundColor: colors.card, borderColor: colors.input }]}>
+          <Feather name="calendar" size={16} color={colors.mutedForeground} />
+          <TextInput
+            accessibilityLabel="Data de vencimento"
+            testID="due-date-input"
+            keyboardType="number-pad"
+            maxLength={10}
+            placeholder="DD/MM/AAAA"
+            placeholderTextColor={colors.mutedForeground}
+            value={dueDate}
+            onChangeText={(value) => setDueDate(formatDateInput(value))}
+            style={[styles.dateInput, { color: colors.foreground }]}
+          />
+        </View>
 
         <Text style={[styles.label, { color: colors.foreground }]}>Recorrência</Text>
         <View style={styles.recurrenceOptions}>
@@ -320,6 +368,8 @@ const styles = StyleSheet.create({
   currencyPrefix: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginRight: 6 },
   amountInput: { flex: 1, fontSize: 21, fontFamily: 'Inter_700Bold', paddingVertical: 0 },
   textInput: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
+  dateInputShell: { minHeight: 46, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  dateInput: { flex: 1, paddingVertical: 0, fontSize: 13, fontFamily: 'Inter_500Medium' },
   recurrenceOptions: { flexDirection: 'row', gap: 8 },
   recurrenceOption: { flex: 1, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },

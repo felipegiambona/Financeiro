@@ -13,6 +13,7 @@ import {
   PaymentStatus,
   Transaction,
 } from '@/types/transaction';
+import { syncDueNotifications } from '@/services/dueNotifications';
 
 interface FinanceContextValue {
   transactions: Transaction[];
@@ -34,17 +35,24 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const reloadTransactions = useCallback(async () => {
+    const nextTransactions = await getTransactions();
+    setTransactions(nextTransactions);
+    void syncDueNotifications(nextTransactions).catch(() => undefined);
+    return nextTransactions;
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
       setError(null);
       setLoading(true);
-      setTransactions(await getTransactions());
+      await reloadTransactions();
     } catch {
       setError('Não foi possível carregar seus lançamentos.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [reloadTransactions]);
 
   useEffect(() => {
     void refresh();
@@ -53,42 +61,42 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
   const createTransaction = useCallback(async (input: NewTransactionInput) => {
     try {
       setError(null);
-      const created = await persistTransaction(input);
-      setTransactions((current) => [created, ...current]);
+      await persistTransaction(input);
+      await reloadTransactions();
     } catch {
       setError('Não foi possível salvar o lançamento.');
       throw new Error('Não foi possível salvar o lançamento.');
     }
-  }, []);
+  }, [reloadTransactions]);
 
   const updateTransaction = useCallback(async (id: string, updates: Partial<Omit<Transaction, 'id' | 'createdAt'>>) => {
-    const updated = await updatePersistedTransaction(id, updates);
-    setTransactions((current) => current.map((item) => item.id === id ? updated : item));
-  }, []);
+    await updatePersistedTransaction(id, updates);
+    await reloadTransactions();
+  }, [reloadTransactions]);
 
   const updateTransactionOccurrencePaymentStatus = useCallback(async (
     id: string,
     occurrenceDate: string,
     paymentStatus: PaymentStatus,
   ) => {
-    const updated = await updatePersistedOccurrencePaymentStatus(id, occurrenceDate, paymentStatus);
-    setTransactions((current) => current.map((item) => item.id === id ? updated : item));
-  }, []);
+    await updatePersistedOccurrencePaymentStatus(id, occurrenceDate, paymentStatus);
+    await reloadTransactions();
+  }, [reloadTransactions]);
 
   const deleteTransaction = useCallback(async (id: string) => {
     await removePersistedTransaction(id);
-    setTransactions((current) => current.filter((item) => item.id !== id));
-  }, []);
+    await reloadTransactions();
+  }, [reloadTransactions]);
 
   const deleteTransactions = useCallback(async (ids: string[]) => {
     await removePersistedTransactions(ids);
-    const idsToDelete = new Set(ids);
-    setTransactions((current) => current.filter((item) => !idsToDelete.has(item.id)));
-  }, []);
+    await reloadTransactions();
+  }, [reloadTransactions]);
 
   const clearTransactions = useCallback(async () => {
     await clearPersistedTransactions();
     setTransactions([]);
+    void syncDueNotifications([]).catch(() => undefined);
   }, []);
 
   const value = useMemo(
