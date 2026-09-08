@@ -33,6 +33,12 @@ function NativeTabLayout() {
         />
         <NativeTabs.Trigger.Label>Gráficos</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}
+        />
+        <NativeTabs.Trigger.Label>Perfil</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -108,6 +114,18 @@ function ClassicTabLayout() {
               <SymbolView name="chart.bar" tintColor={color} size={23} />
             ) : (
               <Feather name="bar-chart-2" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="person.crop.circle" tintColor={color} size={23} />
+            ) : (
+              <Feather name="user" size={22} color={color} />
             ),
         }}
       />

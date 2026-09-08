@@ -5,6 +5,7 @@ import { setAuthTokenGetter } from '@workspace/api-client-react';
 interface AuthSession {
   userId: string;
   email: string;
+  name: string;
 }
 
 interface AuthContextValue {
@@ -34,11 +35,15 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   }, [clerkSignOut]);
 
   const session = isSignedIn && userId
-    ? { userId, email: user?.primaryEmailAddress?.emailAddress ?? '' }
+    ? {
+        userId,
+        email: user?.primaryEmailAddress?.emailAddress ?? '',
+        name: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || '',
+      }
     : null;
   const value = useMemo(
     () => ({ session, loading: !isLoaded, signOut }),
-    [isLoaded, session?.email, session?.userId, signOut],
+    [isLoaded, session?.email, session?.name, session?.userId, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
