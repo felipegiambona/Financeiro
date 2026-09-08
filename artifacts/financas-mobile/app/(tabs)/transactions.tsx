@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
@@ -15,6 +15,13 @@ import { formatCurrency } from '@/utils/currency';
 import { formatMonthLabel, getDateKey, getMonthStart, shiftMonth } from '@/utils/date';
 import { TransactionOccurrence } from '@/types/transaction';
 
+interface DeleteConfirmation {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  onConfirm: () => Promise<void>;
+}
+
 export default function TransactionsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -25,9 +32,16 @@ export default function TransactionsScreen() {
     refresh,
     updateTransaction,
     updateTransactionOccurrencePaymentStatus,
+    deleteTransaction,
+    deleteTransactions,
+    clearTransactions,
   } = useFinance();
   const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
   const selectedTransactions = useMemo(
     () => getTransactionOccurrencesForMonth(transactions, selectedMonth),
@@ -36,6 +50,69 @@ export default function TransactionsScreen() {
   const currentBalance = calculateCurrentBalance(transactions);
   const forecast = calculateForecast(transactions);
   const monthlyTotals = calculateMonthlyTotals(transactions, selectedMonth);
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+  const leaveSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds([]);
+  };
+
+  const toggleSelection = (sourceId: string) => {
+    setSelectedIds((current) => current.includes(sourceId)
+      ? current.filter((id) => id !== sourceId)
+      : [...current, sourceId]);
+  };
+
+  const confirmDeleteOne = (transaction: TransactionOccurrence) => {
+    setDeleteConfirmation({
+      title: 'Excluir lançamento?',
+      message: transaction.recurrence.kind === 'recurring'
+        ? 'Esta ação excluirá a série recorrente e todas as suas ocorrências.'
+        : 'Esta ação não poderá ser desfeita.',
+      confirmLabel: 'Excluir',
+      onConfirm: () => deleteTransaction(transaction.sourceId),
+    });
+  };
+
+  const confirmDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    const ids = [...selectedIds];
+    setDeleteConfirmation({
+      title: `Excluir ${ids.length} ${ids.length === 1 ? 'lançamento' : 'lançamentos'}?`,
+      message: 'As séries recorrentes selecionadas também serão excluídas por completo. Esta ação não poderá ser desfeita.',
+      confirmLabel: 'Excluir selecionados',
+      onConfirm: async () => {
+        await deleteTransactions(ids);
+        leaveSelectionMode();
+      },
+    });
+  };
+
+  const confirmClearAll = () => {
+    setDeleteConfirmation({
+      title: 'Apagar todos os lançamentos?',
+      message: 'Todos os lançamentos e séries recorrentes serão excluídos permanentemente.',
+      confirmLabel: 'Apagar todos',
+      onConfirm: async () => {
+        await clearTransactions();
+        leaveSelectionMode();
+      },
+    });
+  };
+
+  const executeConfirmedDeletion = async () => {
+    if (!deleteConfirmation) return;
+    try {
+      setDeleting(true);
+      await deleteConfirmation.onConfirm();
+      setDeleteConfirmation(null);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert('Não foi possível excluir', 'Tente novamente.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleTogglePaymentStatus = async (transaction: TransactionOccurrence) => {
     try {
@@ -102,8 +179,55 @@ export default function TransactionsScreen() {
           <>
             <View style={styles.listHeader}>
               <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Lançamentos</Text>
-              <Text style={[styles.count, { color: colors.mutedForeground }]}>{selectedTransactions.length} {selectedTransactions.length === 1 ? 'item' : 'itens'}</Text>
+              <View style={styles.listActions}>
+                <Text style={[styles.count, { color: colors.mutedForeground }]}>
+                  {selectionMode ? `${selectedIds.length} selecionados` : `${selectedTransactions.length} ${selectedTransactions.length === 1 ? 'item' : 'itens'}`}
+                </Text>
+                {selectedTransactions.length > 0 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => selectionMode ? leaveSelectionMode() : setSelectionMode(true)}
+                    style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}
+                  >
+                    <Text style={[styles.textActionLabel, { color: colors.foreground }]}>{selectionMode ? 'Cancelar' : 'Selecionar'}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             </View>
+            {selectionMode ? (
+              <View style={styles.selectionActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setSelectedIds(Array.from(new Set(selectedTransactions.map((item) => item.sourceId))))}
+                  style={({ pressed }) => [styles.secondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.secondaryActionLabel, { color: colors.foreground }]}>Selecionar todos</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={selectedIds.length === 0}
+                  onPress={confirmDeleteSelected}
+                  style={({ pressed }) => [
+                    styles.deleteSelectedAction,
+                    { backgroundColor: colors.expense },
+                    selectedIds.length === 0 && styles.disabled,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Feather name="trash-2" size={14} color="#FFFFFF" />
+                  <Text style={styles.deleteSelectedLabel}>Excluir selecionados</Text>
+                </Pressable>
+              </View>
+            ) : transactions.length > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={confirmClearAll}
+                style={({ pressed }) => [styles.clearAllAction, pressed && styles.pressed]}
+              >
+                <Feather name="trash-2" size={13} color={colors.expense} />
+                <Text style={[styles.clearAllLabel, { color: colors.expense }]}>Apagar todos</Text>
+              </Pressable>
+            ) : null}
             {selectedTransactions.length === 0 ? (
               <EmptyState message="Não há lançamentos neste mês." />
             ) : (
@@ -114,6 +238,10 @@ export default function TransactionsScreen() {
                   onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
                   onTogglePaymentStatus={() => void handleTogglePaymentStatus(transaction)}
                   paymentStatusUpdating={updatingStatusId === transaction.occurrenceKey}
+                  onDelete={() => confirmDeleteOne(transaction)}
+                  selectionMode={selectionMode}
+                  selected={selectedIdSet.has(transaction.sourceId)}
+                  onToggleSelection={() => toggleSelection(transaction.sourceId)}
                 />
               ))
             )}
@@ -126,6 +254,46 @@ export default function TransactionsScreen() {
           </>
         )}
       </ScrollView>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={deleteConfirmation !== null}
+        onRequestClose={() => !deleting && setDeleteConfirmation(null)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Fechar confirmação"
+            disabled={deleting}
+            onPress={() => setDeleteConfirmation(null)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={[styles.confirmationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.confirmationIcon, { backgroundColor: colors.expenseSoft }]}>
+              <Feather name="trash-2" size={18} color={colors.expense} />
+            </View>
+            <Text style={[styles.confirmationTitle, { color: colors.foreground }]}>{deleteConfirmation?.title}</Text>
+            <Text style={[styles.confirmationMessage, { color: colors.mutedForeground }]}>{deleteConfirmation?.message}</Text>
+            <View style={styles.confirmationActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={deleting}
+                onPress={() => setDeleteConfirmation(null)}
+                style={({ pressed }) => [styles.confirmationCancel, { borderColor: colors.border }, pressed && styles.pressed]}
+              >
+                <Text style={[styles.confirmationCancelLabel, { color: colors.foreground }]}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={deleting}
+                onPress={() => void executeConfirmedDeletion()}
+                style={({ pressed }) => [styles.confirmationDelete, { backgroundColor: colors.expense }, deleting && styles.disabled, pressed && styles.pressed]}
+              >
+                <Text style={styles.confirmationDeleteLabel}>{deleting ? 'Excluindo...' : deleteConfirmation?.confirmLabel}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -146,8 +314,30 @@ const styles = StyleSheet.create({
   metricLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
   metricValue: { fontSize: 15, fontFamily: 'Inter_700Bold' },
   listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  listActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   count: { fontSize: 11, fontFamily: 'Inter_500Medium' },
+  textAction: { paddingVertical: 5 },
+  textActionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  selectionActions: { flexDirection: 'row', gap: 7, marginBottom: 9 },
+  secondaryAction: { minHeight: 34, borderRadius: 7, borderWidth: 1, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
+  secondaryActionLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  deleteSelectedAction: { flex: 1, minHeight: 34, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
+  deleteSelectedLabel: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
+  clearAllAction: { alignSelf: 'flex-end', marginTop: -3, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 4 },
+  clearAllLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  disabled: { opacity: 0.42 },
+  pressed: { opacity: 0.72 },
+  modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.76)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
+  confirmationCard: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 18, alignItems: 'center' },
+  confirmationIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  confirmationTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+  confirmationMessage: { marginTop: 7, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', textAlign: 'center' },
+  confirmationActions: { width: '100%', flexDirection: 'row', gap: 8, marginTop: 18 },
+  confirmationCancel: { flex: 1, minHeight: 40, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  confirmationCancelLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  confirmationDelete: { flex: 1.35, minHeight: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  confirmationDeleteLabel: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'center' },
   monthSummary: { borderTopWidth: 1, marginTop: 6, paddingTop: 14, flexDirection: 'row', justifyContent: 'space-between' },
   summaryLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   summaryValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },

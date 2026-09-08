@@ -1,7 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   createTransaction as persistTransaction,
+  clearTransactions as clearPersistedTransactions,
   deleteTransaction as removePersistedTransaction,
+  deleteTransactions as removePersistedTransactions,
   getTransactions,
   updateTransaction as updatePersistedTransaction,
   updateTransactionOccurrencePaymentStatus as updatePersistedOccurrencePaymentStatus,
@@ -21,6 +23,8 @@ interface FinanceContextValue {
   updateTransaction: (id: string, updates: Partial<Omit<Transaction, 'id' | 'createdAt'>>) => Promise<void>;
   updateTransactionOccurrencePaymentStatus: (id: string, occurrenceDate: string, paymentStatus: PaymentStatus) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  deleteTransactions: (ids: string[]) => Promise<void>;
+  clearTransactions: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextValue | null>(null);
@@ -76,6 +80,17 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
     setTransactions((current) => current.filter((item) => item.id !== id));
   }, []);
 
+  const deleteTransactions = useCallback(async (ids: string[]) => {
+    await removePersistedTransactions(ids);
+    const idsToDelete = new Set(ids);
+    setTransactions((current) => current.filter((item) => !idsToDelete.has(item.id)));
+  }, []);
+
+  const clearTransactions = useCallback(async () => {
+    await clearPersistedTransactions();
+    setTransactions([]);
+  }, []);
+
   const value = useMemo(
     () => ({
       transactions,
@@ -86,6 +101,8 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
       updateTransaction,
       updateTransactionOccurrencePaymentStatus,
       deleteTransaction,
+      deleteTransactions,
+      clearTransactions,
     }),
     [
       transactions,
@@ -96,6 +113,8 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
       updateTransaction,
       updateTransactionOccurrencePaymentStatus,
       deleteTransaction,
+      deleteTransactions,
+      clearTransactions,
     ],
   );
 

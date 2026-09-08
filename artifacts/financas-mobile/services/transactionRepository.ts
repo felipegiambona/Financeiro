@@ -8,6 +8,21 @@ import {
 import { createLocalIsoDate, getDateKey } from '@/utils/date';
 import { getTransactionOccurrencesForMonth, normalizeRecurrence } from '@/services/recurrence';
 
+const EXISTING_TRANSACTIONS_PURGE_KEY = '@financas:transactions-purged-2026-09-08';
+let existingTransactionsPurgePromise: Promise<void> | null = null;
+
+function purgeExistingTransactionsOnce(): Promise<void> {
+  if (!existingTransactionsPurgePromise) {
+    existingTransactionsPurgePromise = (async () => {
+      const alreadyPurged = await AsyncStorage.getItem(EXISTING_TRANSACTIONS_PURGE_KEY);
+      if (alreadyPurged) return;
+      await AsyncStorage.removeItem(TRANSACTIONS_STORAGE_KEY);
+      await AsyncStorage.setItem(EXISTING_TRANSACTIONS_PURGE_KEY, 'true');
+    })();
+  }
+  return existingTransactionsPurgePromise;
+}
+
 function sortByDate(transactions: Transaction[]): Transaction[] {
   return [...transactions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
@@ -31,6 +46,7 @@ function normalizeTransaction(value: unknown): Transaction {
 }
 
 export async function getTransactions(): Promise<Transaction[]> {
+  await purgeExistingTransactionsOnce();
   const stored = await AsyncStorage.getItem(TRANSACTIONS_STORAGE_KEY);
   if (!stored) return [];
 
@@ -119,4 +135,18 @@ export async function deleteTransaction(id: string): Promise<void> {
     TRANSACTIONS_STORAGE_KEY,
     JSON.stringify(transactions.filter((transaction) => transaction.id !== id)),
   );
+}
+
+export async function deleteTransactions(ids: string[]): Promise<void> {
+  const idsToDelete = new Set(ids);
+  const transactions = await getTransactions();
+  await AsyncStorage.setItem(
+    TRANSACTIONS_STORAGE_KEY,
+    JSON.stringify(transactions.filter((transaction) => !idsToDelete.has(transaction.id))),
+  );
+}
+
+export async function clearTransactions(): Promise<void> {
+  await purgeExistingTransactionsOnce();
+  await AsyncStorage.removeItem(TRANSACTIONS_STORAGE_KEY);
 }

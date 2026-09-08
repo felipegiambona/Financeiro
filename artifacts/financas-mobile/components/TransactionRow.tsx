@@ -10,6 +10,10 @@ interface TransactionRowProps {
   transaction: TransactionOccurrence;
   onPress?: () => void;
   onTogglePaymentStatus?: () => void;
+  onDelete?: () => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelection?: () => void;
   paymentStatusUpdating?: boolean;
 }
 
@@ -17,6 +21,10 @@ export function TransactionRow({
   transaction,
   onPress,
   onTogglePaymentStatus,
+  onDelete,
+  selectionMode = false,
+  selected = false,
+  onToggleSelection,
   paymentStatusUpdating = false,
 }: TransactionRowProps) {
   const colors = useColors();
@@ -26,11 +34,25 @@ export function TransactionRow({
   const isPaid = transaction.paymentStatus === 'paid';
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      {selectionMode ? (
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: selected }}
+          accessibilityLabel={`${selected ? 'Desmarcar' : 'Selecionar'} ${transaction.description}`}
+          onPress={onToggleSelection}
+          style={[
+            styles.checkbox,
+            { borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.primary : colors.card },
+          ]}
+        >
+          {selected ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
+        </Pressable>
+      ) : null}
       <Pressable
         accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={onPress ? `Editar ${transaction.description}` : undefined}
-        disabled={!onPress}
-        onPress={onPress}
+        accessibilityLabel={selectionMode ? `${selected ? 'Desmarcar' : 'Selecionar'} ${transaction.description}` : onPress ? `Editar ${transaction.description}` : undefined}
+        disabled={selectionMode ? !onToggleSelection : !onPress}
+        onPress={selectionMode ? onToggleSelection : onPress}
         style={({ pressed }) => [styles.editArea, pressed && styles.pressed]}
       >
         <View style={[styles.typeIcon, { backgroundColor: softTone }]}>
@@ -69,6 +91,17 @@ export function TransactionRow({
           </Text>
         </Pressable>
       </View>
+      {!selectionMode && onDelete ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Excluir ${transaction.description}`}
+          hitSlop={6}
+          onPress={onDelete}
+          style={({ pressed }) => [styles.deleteButton, { borderColor: colors.border }, pressed && styles.pressed]}
+        >
+          <Feather name="trash-2" size={14} color={colors.expense} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -89,4 +122,6 @@ const styles = StyleSheet.create({
   trailing: { alignItems: 'flex-end', gap: 5 },
   updating: { opacity: 0.55 },
   pressed: { opacity: 0.72 },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  deleteButton: { width: 28, height: 28, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
