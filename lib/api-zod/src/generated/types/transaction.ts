@@ -17,7 +17,7 @@ export interface Transaction {
   amount: number;
   description: string;
   date: Date;
-  dueDate: Date;
+  dueDate?: Date | null;
   recurrence: Recurrence;
   paymentStatus: TransactionPaymentStatus;
   paymentStatusOverrides: TransactionPaymentStatusOverrides;

@@ -9,7 +9,7 @@ export const transactionsTable = pgTable("finance_transactions", {
   amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
   description: text("description").notNull(),
   date: text("date").notNull(),
-  dueDate: text("due_date").notNull(),
+  dueDate: text("due_date"),
   recurrence: jsonb("recurrence").notNull(),
   paymentStatus: text("payment_status").notNull(),
   paymentStatusOverrides: jsonb("payment_status_overrides").notNull().default({}),

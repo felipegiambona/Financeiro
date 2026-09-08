@@ -29,7 +29,7 @@ export const ListTransactionsResponseItem = zod.object({
   "amount": zod.number().gt(listTransactionsResponseAmountExclusiveMin),
   "description": zod.string(),
   "date": zod.coerce.date(),
-  "dueDate": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
   "kind": zod.enum(['none', 'recurring']),
   "interval": zod.number().int().min(1).optional(),
@@ -58,7 +58,7 @@ export const CreateTransactionBody = zod.object({
   "amount": zod.number().gt(createTransactionBodyAmountExclusiveMin),
   "description": zod.string().min(1),
   "date": zod.coerce.date(),
-  "dueDate": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
   "kind": zod.enum(['none', 'recurring']),
   "interval": zod.number().int().min(1).optional(),
@@ -83,7 +83,7 @@ export const CreateTransactionResponse = zod.object({
   "amount": zod.number().gt(createTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
   "date": zod.coerce.date(),
-  "dueDate": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
   "kind": zod.enum(['none', 'recurring']),
   "interval": zod.number().int().min(1).optional(),
@@ -118,7 +118,7 @@ export const UpdateTransactionBody = zod.object({
   "amount": zod.number().gt(updateTransactionBodyAmountExclusiveMin).optional(),
   "description": zod.string().min(1).optional(),
   "date": zod.coerce.date().optional(),
-  "dueDate": zod.coerce.date().optional(),
+  "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
   "kind": zod.enum(['none', 'recurring']),
   "interval": zod.number().int().min(1).optional(),
@@ -144,7 +144,7 @@ export const UpdateTransactionResponse = zod.object({
   "amount": zod.number().gt(updateTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
   "date": zod.coerce.date(),
-  "dueDate": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
   "kind": zod.enum(['none', 'recurring']),
   "interval": zod.number().int().min(1).optional(),
@@ -188,7 +188,7 @@ export const UpdateTransactionOccurrencePaymentStatusResponse = zod.object({
   "amount": zod.number().gt(updateTransactionOccurrencePaymentStatusResponseAmountExclusiveMin),
   "description": zod.string(),
   "date": zod.coerce.date(),
-  "dueDate": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
   "kind": zod.enum(['none', 'recurring']),
   "interval": zod.number().int().min(1).optional(),

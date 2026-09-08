@@ -77,7 +77,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
   const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
   const [amount, setAmount] = useState(transaction ? transaction.amount.toFixed(2).replace('.', ',') : '');
   const [description, setDescription] = useState(transaction?.description ?? '');
-  const [dueDate, setDueDate] = useState(toDateInput(transaction?.dueDate ?? transaction?.date));
+  const [dueDate, setDueDate] = useState(transaction?.dueDate ? toDateInput(transaction.dueDate) : '');
   const [recurrence, setRecurrence] = useState<'none' | 'recurring'>(transaction?.recurrence.kind ?? 'none');
   const [recurrenceInterval, setRecurrenceInterval] = useState(String(transaction?.recurrence.interval ?? 1));
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>(transaction?.recurrence.unit ?? 'month');
@@ -97,8 +97,8 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
       setError('Informe uma descrição para o lançamento.');
       return;
     }
-    const parsedDueDate = parseDateInput(dueDate);
-    if (!parsedDueDate) {
+    const parsedDueDate = dueDate ? parseDateInput(dueDate) : null;
+    if (dueDate && !parsedDueDate) {
       setError('Informe uma data de vencimento válida no formato DD/MM/AAAA.');
       return;
     }
@@ -120,7 +120,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           type,
           amount: numericAmount,
           description: description.trim(),
-          dueDate: createLocalIsoDate(parsedDueDate),
+          dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
           recurrence: recurrenceValue,
           paymentStatus,
         });
@@ -129,7 +129,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           type,
           amount: numericAmount,
           description,
-          dueDate: createLocalIsoDate(parsedDueDate),
+          dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
           recurrence: recurrenceValue,
           paymentStatus,
         });
@@ -220,7 +220,9 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
             ]}
         >
           <Feather name="calendar" size={16} color={colors.mutedForeground} />
-          <Text style={[styles.dateInput, { color: colors.foreground }]}>{dueDate}</Text>
+          <Text style={[styles.dateInput, { color: dueDate ? colors.foreground : colors.mutedForeground }]}>
+            {dueDate || 'Selecionar data (opcional)'}
+          </Text>
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
 

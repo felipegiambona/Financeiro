@@ -101,7 +101,7 @@ export function DatePickerModal({ visible, value, onClose, onConfirm }: DatePick
                     styles.dayText,
                     { color: inMonth ? colors.foreground : colors.mutedForeground },
                     !inMonth && styles.outsideDay,
-                    selected && { color: colors.accentForeground, fontFamily: 'Inter_700Bold' },
+                    selected && { color: colors.accentForeground },
                   ]}>
                     {date.getDate()}
                   </Text>
@@ -134,8 +134,8 @@ const styles = StyleSheet.create({
   weekdays: { flexDirection: 'row', marginBottom: 5 },
   weekday: { flex: 1, textAlign: 'center', fontSize: 9, fontFamily: 'Inter_600SemiBold' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  day: { width: '14.2857%', aspectRatio: 1, maxHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
-  dayText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
+  day: { width: '14.2857%', height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  dayText: { includeFontPadding: false, lineHeight: 18, textAlign: 'center', textAlignVertical: 'center', fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   outsideDay: { opacity: 0.35 },
   footer: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, borderTopWidth: 1, marginTop: 14, paddingTop: 13 },
   footerButton: { minHeight: 38, paddingHorizontal: 13, alignItems: 'center', justifyContent: 'center' },

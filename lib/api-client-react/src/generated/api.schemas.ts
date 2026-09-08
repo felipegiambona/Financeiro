@@ -73,7 +73,7 @@ export interface Transaction {
   amount: number;
   description: string;
   date: string;
-  dueDate: string;
+  dueDate?: string | null;
   recurrence: Recurrence;
   paymentStatus: TransactionPaymentStatus;
   paymentStatusOverrides: TransactionPaymentStatusOverrides;
@@ -103,7 +103,7 @@ export interface TransactionInput {
   /** @minLength 1 */
   description: string;
   date: string;
-  dueDate: string;
+  dueDate?: string | null;
   recurrence: Recurrence;
   paymentStatus: TransactionInputPaymentStatus;
 }
@@ -133,7 +133,7 @@ export interface TransactionUpdate {
   /** @minLength 1 */
   description?: string;
   date?: string;
-  dueDate?: string;
+  dueDate?: string | null;
   recurrence?: Recurrence;
   paymentStatus?: TransactionUpdatePaymentStatus;
   paymentStatusOverrides?: TransactionUpdatePaymentStatusOverrides;

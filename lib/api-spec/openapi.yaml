@@ -176,14 +176,14 @@ components:
           minimum: 1
     Transaction:
       type: object
-      required: [id, type, amount, description, date, dueDate, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
+      required: [id, type, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
       properties:
         id: { type: string, format: uuid }
         type: { type: string, enum: [income, expense] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string }
         date: { type: string, format: date }
-        dueDate: { type: string, format: date }
+        dueDate: { type: string, format: date, nullable: true }
         recurrence:
           $ref: "#/components/schemas/Recurrence"
         paymentStatus: { type: string, enum: [paid, unpaid] }
@@ -195,13 +195,13 @@ components:
         createdAt: { type: string, format: date-time }
     TransactionInput:
       type: object
-      required: [type, amount, description, date, dueDate, recurrence, paymentStatus]
+      required: [type, amount, description, date, recurrence, paymentStatus]
       properties:
         type: { type: string, enum: [income, expense] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
         date: { type: string, format: date }
-        dueDate: { type: string, format: date }
+        dueDate: { type: string, format: date, nullable: true }
         recurrence:
           $ref: "#/components/schemas/Recurrence"
         paymentStatus: { type: string, enum: [paid, unpaid] }
@@ -212,7 +212,7 @@ components:
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
         date: { type: string, format: date }
-        dueDate: { type: string, format: date }
+        dueDate: { type: string, format: date, nullable: true }
         recurrence:
           $ref: "#/components/schemas/Recurrence"
         paymentStatus: { type: string, enum: [paid, unpaid] }
