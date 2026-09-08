@@ -1,5 +1,5 @@
 import { Transaction } from '@/types/transaction';
-import { getDateKey, isFutureDate } from '@/utils/date';
+import { getDateKey, isFutureDate, parseStoredDate } from '@/utils/date';
 import {
   getTransactionOccurrencesForMonth,
   getTransactionOccurrencesInRange,
@@ -21,12 +21,12 @@ function transactionValue(transaction: Transaction): number {
 }
 
 function isOnOrBefore(transaction: Transaction, endDate: Date): boolean {
-  return new Date(transaction.date).getTime() <= endDate.getTime();
+  return parseStoredDate(transaction.date).getTime() <= endDate.getTime();
 }
 
 function getRangeStart(transactions: Transaction[], fallback: Date): Date {
   if (transactions.length === 0) return fallback;
-  const earliest = Math.min(...transactions.map((transaction) => new Date(transaction.date).getTime()));
+  const earliest = Math.min(...transactions.map((transaction) => parseStoredDate(transaction.date).getTime()));
   return new Date(earliest);
 }
 

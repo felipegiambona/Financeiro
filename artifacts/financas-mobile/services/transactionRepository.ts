@@ -8,7 +8,7 @@ import {
   updateTransactionOccurrencePaymentStatus as updateOccurrenceRequest,
 } from '@workspace/api-client-react';
 import type { NewTransactionInput, PaymentStatus, Transaction } from '@/types/transaction';
-import { createLocalIsoDate, getDateKey } from '@/utils/date';
+import { createLocalIsoDate, getDateKey, parseStoredDate } from '@/utils/date';
 import { getTransactionOccurrencesForMonth, normalizeRecurrence } from '@/services/recurrence';
 
 function normalizeTransaction(value: Transaction): Transaction {
@@ -28,7 +28,7 @@ export async function getTransactionsByMonth(month: Date): Promise<Transaction[]
   const transactions = await getTransactions();
   const monthKey = getDateKey(month);
   return getTransactionOccurrencesForMonth(transactions, month)
-    .filter((transaction) => getDateKey(new Date(transaction.date)) === monthKey);
+    .filter((transaction) => getDateKey(parseStoredDate(transaction.date)) === monthKey);
 }
 
 export async function createTransaction(input: NewTransactionInput): Promise<Transaction> {

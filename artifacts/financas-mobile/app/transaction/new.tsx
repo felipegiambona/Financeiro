@@ -15,7 +15,8 @@ import {
   TransactionType,
 } from '@/types/transaction';
 import { formatAmountInput, parseAmountInput } from '@/utils/currency';
-import { createLocalIsoDate } from '@/utils/date';
+import { createLocalIsoDate, parseStoredDate } from '@/utils/date';
+import { DatePickerModal } from '@/components/DatePickerModal';
 
 const RECURRENCE_UNITS: Array<{ value: RecurrenceUnit; label: string; pluralLabel: string }> = [
   { value: 'day', label: 'Dia', pluralLabel: 'dias' },
@@ -25,15 +26,8 @@ const RECURRENCE_UNITS: Array<{ value: RecurrenceUnit; label: string; pluralLabe
 ];
 
 function toDateInput(dateString?: string): string {
-  const date = dateString ? new Date(dateString) : new Date();
+  const date = dateString ? parseStoredDate(dateString) : new Date();
   return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-}
-
-function formatDateInput(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
 function parseDateInput(value: string): Date | null {
@@ -88,6 +82,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
   const [recurrenceInterval, setRecurrenceInterval] = useState(String(transaction?.recurrence.interval ?? 1));
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>(transaction?.recurrence.unit ?? 'month');
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -213,20 +208,21 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
         />
 
         <Text style={[styles.label, { color: colors.foreground }]}>Data de vencimento</Text>
-        <View style={[styles.dateInputShell, { backgroundColor: colors.card, borderColor: colors.input }]}>
+        <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Selecionar data de vencimento"
+            testID="due-date-picker"
+            onPress={() => setDatePickerOpen(true)}
+            style={({ pressed }) => [
+              styles.dateInputShell,
+              { backgroundColor: colors.card, borderColor: colors.input },
+              pressed && styles.pressed,
+            ]}
+        >
           <Feather name="calendar" size={16} color={colors.mutedForeground} />
-          <TextInput
-            accessibilityLabel="Data de vencimento"
-            testID="due-date-input"
-            keyboardType="number-pad"
-            maxLength={10}
-            placeholder="DD/MM/AAAA"
-            placeholderTextColor={colors.mutedForeground}
-            value={dueDate}
-            onChangeText={(value) => setDueDate(formatDateInput(value))}
-            style={[styles.dateInput, { color: colors.foreground }]}
-          />
-        </View>
+          <Text style={[styles.dateInput, { color: colors.foreground }]}>{dueDate}</Text>
+          <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+        </Pressable>
 
         <Text style={[styles.label, { color: colors.foreground }]}>Recorrência</Text>
         <View style={styles.recurrenceOptions}>
@@ -309,6 +305,15 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           <Text style={[styles.cancelText, { color: colors.mutedForeground }]}>Cancelar</Text>
         </Pressable>
       </KeyboardAwareScrollViewCompat>
+      <DatePickerModal
+        visible={datePickerOpen}
+        value={parseDateInput(dueDate) ?? new Date()}
+        onClose={() => setDatePickerOpen(false)}
+        onConfirm={(date) => {
+          setDueDate(`${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`);
+          setDatePickerOpen(false);
+        }}
+      />
       <Modal
         animationType="fade"
         transparent

@@ -4,7 +4,7 @@ import {
   Transaction,
   TransactionOccurrence,
 } from '@/types/transaction';
-import { createLocalIsoDate } from '@/utils/date';
+import { createLocalIsoDate, parseStoredDate } from '@/utils/date';
 
 const LEGACY_FREQUENCY_UNITS: Record<string, RecurrenceUnit> = {
   weekly: 'week',
@@ -58,7 +58,7 @@ export function getTransactionOccurrencesInRange(
 
   for (const transaction of transactions) {
     const recurrence = normalizeRecurrence(transaction.recurrence);
-    const seriesStart = new Date(transaction.dueDate ?? transaction.date);
+    const seriesStart = parseStoredDate(transaction.dueDate ?? transaction.date);
 
     if (recurrence.kind === 'none') {
       const transactionTime = seriesStart.getTime();
@@ -99,7 +99,7 @@ export function getTransactionOccurrencesInRange(
     }
   }
 
-  return occurrences.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return occurrences.sort((a, b) => parseStoredDate(b.date).getTime() - parseStoredDate(a.date).getTime());
 }
 
 export function getTransactionOccurrencesForMonth(
