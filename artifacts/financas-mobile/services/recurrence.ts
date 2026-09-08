@@ -90,7 +90,8 @@ export function getTransactionOccurrencesInRange(
         ...transaction,
         date,
         dueDate: date,
-        paymentStatus: transaction.paymentStatusOverrides?.[date] ?? transaction.paymentStatus,
+        paymentStatus: transaction.paymentStatusOverrides?.[date]
+          ?? (occurrenceIndex === 0 ? transaction.paymentStatus : 'unpaid'),
         recurrence,
         sourceId: transaction.id,
         occurrenceKey: `${transaction.id}:${date}`,
