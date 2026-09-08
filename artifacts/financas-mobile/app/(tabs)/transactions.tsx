@@ -48,7 +48,7 @@ export default function TransactionsScreen() {
     [transactions, selectedMonth],
   );
   const currentBalance = calculateCurrentBalance(transactions);
-  const forecast = calculateForecast(transactions);
+  const forecast = calculateForecast(transactions, selectedMonth);
   const monthlyTotals = calculateMonthlyTotals(transactions, selectedMonth);
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
@@ -171,7 +171,7 @@ export default function TransactionsScreen() {
             <Text style={[styles.metricValue, { color: colors.foreground }]}>{formatCurrency(currentBalance)}</Text>
           </View>
           <View style={[styles.metric, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>Previsão</Text>
+            <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>Previsão no fim do mês</Text>
             <Text style={[styles.metricValue, { color: forecast >= 0 ? colors.income : colors.expense }]}>{formatCurrency(forecast)}</Text>
           </View>
         </View>

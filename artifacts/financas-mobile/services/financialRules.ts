@@ -78,9 +78,23 @@ export function calculateMonthlyTotals(
 
 export function calculateForecast(
   transactions: Transaction[],
+  targetMonth = new Date(),
   now = new Date(),
 ): number {
-  const forecastEnd = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate(), 23, 59, 59);
+  const forecastEnd = new Date(
+    targetMonth.getFullYear(),
+    targetMonth.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999,
+  );
+
+  if (forecastEnd.getTime() < now.getTime()) {
+    return calculateBalanceAtDate(transactions, forecastEnd);
+  }
+
   const occurrences = getTransactionOccurrencesInRange(
     transactions,
     getRangeStart(transactions, now),
