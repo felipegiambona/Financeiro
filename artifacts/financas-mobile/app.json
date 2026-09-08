@@ -29,7 +29,9 @@
           "enforceContrast": false,
           "style": "light"
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

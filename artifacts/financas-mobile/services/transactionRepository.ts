@@ -1,111 +1,51 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TRANSACTIONS_STORAGE_KEY } from '@/constants/storage';
 import {
-  NewTransactionInput,
-  PaymentStatus,
-  Transaction,
-} from '@/types/transaction';
+  clearTransactions as clearTransactionsRequest,
+  createTransaction as createTransactionRequest,
+  deleteTransaction as deleteTransactionRequest,
+  deleteTransactions as deleteTransactionsRequest,
+  listTransactions,
+  updateTransaction as updateTransactionRequest,
+  updateTransactionOccurrencePaymentStatus as updateOccurrenceRequest,
+} from '@workspace/api-client-react';
+import type { NewTransactionInput, PaymentStatus, Transaction } from '@/types/transaction';
 import { createLocalIsoDate, getDateKey } from '@/utils/date';
 import { getTransactionOccurrencesForMonth, normalizeRecurrence } from '@/services/recurrence';
 
-const EXISTING_TRANSACTIONS_PURGE_KEY = '@financas:transactions-purged-2026-09-08';
-let existingTransactionsPurgePromise: Promise<void> | null = null;
-
-function purgeExistingTransactionsOnce(): Promise<void> {
-  if (!existingTransactionsPurgePromise) {
-    existingTransactionsPurgePromise = (async () => {
-      const alreadyPurged = await AsyncStorage.getItem(EXISTING_TRANSACTIONS_PURGE_KEY);
-      if (alreadyPurged) return;
-      await AsyncStorage.removeItem(TRANSACTIONS_STORAGE_KEY);
-      await AsyncStorage.setItem(EXISTING_TRANSACTIONS_PURGE_KEY, 'true');
-    })();
-  }
-  return existingTransactionsPurgePromise;
-}
-
-function sortByDate(transactions: Transaction[]): Transaction[] {
-  return [...transactions].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
-}
-
-function normalizeTransaction(value: unknown): Transaction {
-  const item = value as Partial<Transaction>;
-  const paymentStatusOverrides = Object.fromEntries(
-    Object.entries(item.paymentStatusOverrides ?? {}).filter(
-      ([, status]) => status === 'paid' || status === 'unpaid',
-    ),
-  ) as Record<string, PaymentStatus>;
-
+function normalizeTransaction(value: Transaction): Transaction {
   return {
-    ...(item as Transaction),
-    dueDate: item.dueDate ?? item.date ?? createLocalIsoDate(),
-    recurrence: normalizeRecurrence(item.recurrence),
-    paymentStatus: item.paymentStatus === 'unpaid' ? 'unpaid' : 'paid',
-    paymentStatusOverrides,
+    ...value,
+    recurrence: normalizeRecurrence(value.recurrence),
+    paymentStatusOverrides: value.paymentStatusOverrides ?? {},
   };
 }
 
 export async function getTransactions(): Promise<Transaction[]> {
-  await purgeExistingTransactionsOnce();
-  const stored = await AsyncStorage.getItem(TRANSACTIONS_STORAGE_KEY);
-  if (!stored) return [];
-
-  const parsed: unknown = JSON.parse(stored);
-  if (!Array.isArray(parsed)) {
-    throw new Error('Os lançamentos armazenados estão inválidos.');
-  }
-
-  return sortByDate(parsed.map(normalizeTransaction));
+  const transactions = await listTransactions();
+  return transactions.map(normalizeTransaction) as Transaction[];
 }
 
-export async function getTransactionsByMonth(
-  month: Date,
-): Promise<Transaction[]> {
+export async function getTransactionsByMonth(month: Date): Promise<Transaction[]> {
   const transactions = await getTransactions();
   const monthKey = getDateKey(month);
   return getTransactionOccurrencesForMonth(transactions, month)
     .filter((transaction) => getDateKey(new Date(transaction.date)) === monthKey);
 }
 
-export async function createTransaction(
-  input: NewTransactionInput,
-): Promise<Transaction> {
-  const transactions = await getTransactions();
-  const now = new Date();
-  const transaction: Transaction = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-    type: input.type,
-    amount: input.amount,
+export async function createTransaction(input: NewTransactionInput): Promise<Transaction> {
+  const transaction = await createTransactionRequest({
+    ...input,
     description: input.description.trim(),
-    date: input.date ?? createLocalIsoDate(now),
-    dueDate: input.dueDate,
-    recurrence: normalizeRecurrence(input.recurrence),
-    paymentStatus: input.paymentStatus,
-    createdAt: now.toISOString(),
-  };
-
-  await AsyncStorage.setItem(
-    TRANSACTIONS_STORAGE_KEY,
-    JSON.stringify(sortByDate([transaction, ...transactions])),
-  );
-  return transaction;
+    date: input.date ?? createLocalIsoDate(),
+  });
+  return normalizeTransaction(transaction as Transaction);
 }
 
 export async function updateTransaction(
   id: string,
   updates: Partial<Omit<Transaction, 'id' | 'createdAt'>>,
 ): Promise<Transaction> {
-  const transactions = await getTransactions();
-  const current = transactions.find((transaction) => transaction.id === id);
-  if (!current) throw new Error('Lançamento não encontrado.');
-
-  const updated = normalizeTransaction({ ...current, ...updates });
-  await AsyncStorage.setItem(
-    TRANSACTIONS_STORAGE_KEY,
-    JSON.stringify(sortByDate(transactions.map((item) => item.id === id ? updated : item))),
-  );
-  return updated;
+  const transaction = await updateTransactionRequest(id, updates);
+  return normalizeTransaction(transaction as Transaction);
 }
 
 export async function updateTransactionOccurrencePaymentStatus(
@@ -113,42 +53,18 @@ export async function updateTransactionOccurrencePaymentStatus(
   occurrenceDate: string,
   paymentStatus: PaymentStatus,
 ): Promise<Transaction> {
-  const transactions = await getTransactions();
-  const current = transactions.find((transaction) => transaction.id === id);
-  if (!current) throw new Error('Lançamento não encontrado.');
-
-  const updated = normalizeTransaction({
-    ...current,
-    paymentStatusOverrides: {
-      ...current.paymentStatusOverrides,
-      [occurrenceDate]: paymentStatus,
-    },
-  });
-  await AsyncStorage.setItem(
-    TRANSACTIONS_STORAGE_KEY,
-    JSON.stringify(sortByDate(transactions.map((item) => item.id === id ? updated : item))),
-  );
-  return updated;
+  const transaction = await updateOccurrenceRequest(id, occurrenceDate, { paymentStatus });
+  return normalizeTransaction(transaction as Transaction);
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
-  const transactions = await getTransactions();
-  await AsyncStorage.setItem(
-    TRANSACTIONS_STORAGE_KEY,
-    JSON.stringify(transactions.filter((transaction) => transaction.id !== id)),
-  );
+  await deleteTransactionRequest(id);
 }
 
 export async function deleteTransactions(ids: string[]): Promise<void> {
-  const idsToDelete = new Set(ids);
-  const transactions = await getTransactions();
-  await AsyncStorage.setItem(
-    TRANSACTIONS_STORAGE_KEY,
-    JSON.stringify(transactions.filter((transaction) => !idsToDelete.has(transaction.id))),
-  );
+  await deleteTransactionsRequest({ ids });
 }
 
 export async function clearTransactions(): Promise<void> {
-  await purgeExistingTransactionsOnce();
-  await AsyncStorage.removeItem(TRANSACTIONS_STORAGE_KEY);
+  await clearTransactionsRequest();
 }

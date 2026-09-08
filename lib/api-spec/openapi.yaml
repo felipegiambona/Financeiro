@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: transactions
+    description: Authenticated financial transaction operations
 paths:
   /healthz:
     get:
@@ -24,7 +26,121 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /transactions:
+    get:
+      operationId: listTransactions
+      tags: [transactions]
+      responses:
+        "200":
+          description: User transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+    post:
+      operationId: createTransaction
+      tags: [transactions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "201":
+          description: Created transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+    delete:
+      operationId: clearTransactions
+      tags: [transactions]
+      responses:
+        "204":
+          description: Transactions removed
+  /transactions/{id}:
+    patch:
+      operationId: updateTransaction
+      tags: [transactions]
+      parameters:
+        - $ref: "#/components/parameters/TransactionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionUpdate"
+      responses:
+        "200":
+          description: Updated transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTransaction
+      tags: [transactions]
+      parameters:
+        - $ref: "#/components/parameters/TransactionId"
+      responses:
+        "204":
+          description: Transaction removed
+        "404":
+          description: Not found
+  /transactions/{id}/occurrences/{occurrenceDate}/payment-status:
+    patch:
+      operationId: updateTransactionOccurrencePaymentStatus
+      tags: [transactions]
+      parameters:
+        - $ref: "#/components/parameters/TransactionId"
+        - name: occurrenceDate
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentStatusUpdate"
+      responses:
+        "200":
+          description: Updated transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "404":
+          description: Not found
+  /transactions/batch-delete:
+    post:
+      operationId: deleteTransactions
+      tags: [transactions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionBatchDelete"
+      responses:
+        "204":
+          description: Transactions removed
 components:
+  parameters:
+    TransactionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +149,89 @@ components:
           type: string
       required:
         - status
+    Recurrence:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [none, recurring]
+        interval:
+          type: integer
+          minimum: 1
+        unit:
+          type: string
+          enum: [day, week, month, year]
+        frequency:
+          type: string
+          enum: [monthly, weekly, yearly]
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        occurrences:
+          type: integer
+          minimum: 1
+    Transaction:
+      type: object
+      required: [id, type, amount, description, date, dueDate, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [income, expense] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        description: { type: string }
+        date: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        recurrence:
+          $ref: "#/components/schemas/Recurrence"
+        paymentStatus: { type: string, enum: [paid, unpaid] }
+        paymentStatusOverrides:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [paid, unpaid]
+        createdAt: { type: string, format: date-time }
+    TransactionInput:
+      type: object
+      required: [type, amount, description, date, dueDate, recurrence, paymentStatus]
+      properties:
+        type: { type: string, enum: [income, expense] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        description: { type: string, minLength: 1 }
+        date: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        recurrence:
+          $ref: "#/components/schemas/Recurrence"
+        paymentStatus: { type: string, enum: [paid, unpaid] }
+    TransactionUpdate:
+      type: object
+      properties:
+        type: { type: string, enum: [income, expense] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        description: { type: string, minLength: 1 }
+        date: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        recurrence:
+          $ref: "#/components/schemas/Recurrence"
+        paymentStatus: { type: string, enum: [paid, unpaid] }
+        paymentStatusOverrides:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [paid, unpaid]
+    PaymentStatusUpdate:
+      type: object
+      required: [paymentStatus]
+      properties:
+        paymentStatus: { type: string, enum: [paid, unpaid] }
+    TransactionBatchDelete:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
 

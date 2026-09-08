@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface TransactionBatchDelete {
+  /** @minItems 1 */
+  ids: string[];
 }

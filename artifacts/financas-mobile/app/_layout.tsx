@@ -16,6 +16,9 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { ClerkLoaded, ClerkProvider } from '@clerk/expo';
+import { tokenCache } from '@clerk/expo/token-cache';
+import { setBaseUrl } from '@workspace/api-client-react';
 import colors from '@/constants/colors';
 import { FinanceProvider } from '@/context/FinanceContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -25,6 +28,11 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 const SYSTEM_BACKGROUND = colors.dark.background;
+const domain = process.env.EXPO_PUBLIC_DOMAIN;
+if (domain) setBaseUrl(`https://${domain}`);
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
+const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
+if (!publishableKey) throw new Error('A autenticação não foi configurada.');
 
 function RootLayoutNav() {
   const { session } = useAuth();
@@ -79,15 +87,19 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <NavigationBar style="light" />
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={styles.root}>
-            <KeyboardProvider>
-              <AuthProvider>
-                <AuthenticatedApp />
-              </AuthProvider>
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
+        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
+          <ClerkLoaded>
+            <QueryClientProvider client={queryClient}>
+              <GestureHandlerRootView style={styles.root}>
+                <KeyboardProvider>
+                  <AuthProvider>
+                    <AuthenticatedApp />
+                  </AuthProvider>
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </QueryClientProvider>
+          </ClerkLoaded>
+        </ClerkProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );
