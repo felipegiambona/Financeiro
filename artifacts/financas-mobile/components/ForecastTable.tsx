@@ -19,7 +19,7 @@ export function ForecastTable({ transactions }: { transactions: Transaction[] })
       <View style={styles.titleRow}>
         <View style={styles.titleCopy}>
           <Text style={[styles.title, { color: colors.foreground }]}>Previsão por mês</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Saldo acumulado projetado ao fim de cada mês</Text>
+            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Resultado previsto apenas dos lançamentos de cada mês</Text>
         </View>
         <View style={styles.yearSelector}>
           <Pressable

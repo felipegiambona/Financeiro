@@ -109,32 +109,12 @@ export function calculateForecast(
 export function calculateForecastByMonth(
   transactions: Transaction[],
   year: number,
-  now = new Date(),
+  _now = new Date(),
 ): MonthlyForecast[] {
-  const currentBalance = calculateCurrentBalance(transactions, now);
-
   return Array.from({ length: 12 }, (_, monthIndex) => {
     const date = new Date(year, monthIndex, 1, 12);
-    const monthEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59);
-
-    if (monthEnd.getTime() < now.getTime()) {
-      return {
-        key: getDateKey(date),
-        date,
-        forecast: calculateBalanceAtDate(transactions, monthEnd),
-      };
-    }
-
-    const occurrences = getTransactionOccurrencesInRange(
-      transactions,
-      getRangeStart(transactions, now),
-      monthEnd,
-    );
-    const forecast = occurrences.reduce((total, transaction) => {
-      const isProjected = isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid';
-      if (!isProjected || !isOnOrBefore(transaction, monthEnd)) return total;
-      return total + transactionValue(transaction);
-    }, currentBalance);
+    const occurrences = getTransactionOccurrencesForMonth(transactions, date);
+    const forecast = occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0);
 
     return { key: getDateKey(date), date, forecast };
   });
