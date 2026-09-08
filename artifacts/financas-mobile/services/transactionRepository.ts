@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TRANSACTIONS_STORAGE_KEY } from '@/constants/storage';
 import {
   NewTransactionInput,
+  PaymentStatus,
   Transaction,
 } from '@/types/transaction';
 import { createLocalIsoDate, getDateKey } from '@/utils/date';
@@ -15,10 +16,17 @@ function sortByDate(transactions: Transaction[]): Transaction[] {
 
 function normalizeTransaction(value: unknown): Transaction {
   const item = value as Partial<Transaction>;
+  const paymentStatusOverrides = Object.fromEntries(
+    Object.entries(item.paymentStatusOverrides ?? {}).filter(
+      ([, status]) => status === 'paid' || status === 'unpaid',
+    ),
+  ) as Record<string, PaymentStatus>;
+
   return {
     ...(item as Transaction),
     recurrence: normalizeRecurrence(item.recurrence),
     paymentStatus: item.paymentStatus === 'unpaid' ? 'unpaid' : 'paid',
+    paymentStatusOverrides,
   };
 }
 
@@ -75,6 +83,29 @@ export async function updateTransaction(
   if (!current) throw new Error('Lançamento não encontrado.');
 
   const updated = normalizeTransaction({ ...current, ...updates });
+  await AsyncStorage.setItem(
+    TRANSACTIONS_STORAGE_KEY,
+    JSON.stringify(sortByDate(transactions.map((item) => item.id === id ? updated : item))),
+  );
+  return updated;
+}
+
+export async function updateTransactionOccurrencePaymentStatus(
+  id: string,
+  occurrenceDate: string,
+  paymentStatus: PaymentStatus,
+): Promise<Transaction> {
+  const transactions = await getTransactions();
+  const current = transactions.find((transaction) => transaction.id === id);
+  if (!current) throw new Error('Lançamento não encontrado.');
+
+  const updated = normalizeTransaction({
+    ...current,
+    paymentStatusOverrides: {
+      ...current.paymentStatusOverrides,
+      [occurrenceDate]: paymentStatus,
+    },
+  });
   await AsyncStorage.setItem(
     TRANSACTIONS_STORAGE_KEY,
     JSON.stringify(sortByDate(transactions.map((item) => item.id === id ? updated : item))),

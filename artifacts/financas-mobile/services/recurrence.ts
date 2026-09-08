@@ -87,6 +87,7 @@ export function getTransactionOccurrencesInRange(
       occurrences.push({
         ...transaction,
         date,
+        paymentStatus: transaction.paymentStatusOverrides?.[date] ?? transaction.paymentStatus,
         recurrence,
         sourceId: transaction.id,
         occurrenceKey: `${transaction.id}:${date}`,

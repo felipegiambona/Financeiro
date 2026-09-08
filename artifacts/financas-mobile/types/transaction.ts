@@ -23,6 +23,7 @@ export interface Transaction {
   date: string;
   recurrence: Recurrence;
   paymentStatus: PaymentStatus;
+  paymentStatusOverrides?: Record<string, PaymentStatus>;
   createdAt: string;
 }
 

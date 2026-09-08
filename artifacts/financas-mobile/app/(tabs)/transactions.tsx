@@ -13,12 +13,19 @@ import { calculateCurrentBalance, calculateForecast, calculateMonthlyTotals } fr
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
 import { formatMonthLabel, getDateKey, getMonthStart, shiftMonth } from '@/utils/date';
-import { Transaction } from '@/types/transaction';
+import { TransactionOccurrence } from '@/types/transaction';
 
 export default function TransactionsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { transactions, loading, error, refresh, updateTransaction } = useFinance();
+  const {
+    transactions,
+    loading,
+    error,
+    refresh,
+    updateTransaction,
+    updateTransactionOccurrencePaymentStatus,
+  } = useFinance();
   const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
@@ -30,12 +37,19 @@ export default function TransactionsScreen() {
   const forecast = calculateForecast(transactions);
   const monthlyTotals = calculateMonthlyTotals(transactions, selectedMonth);
 
-  const handleTogglePaymentStatus = async (transaction: Transaction) => {
+  const handleTogglePaymentStatus = async (transaction: TransactionOccurrence) => {
     try {
-      setUpdatingStatusId(transaction.id);
-      await updateTransaction(transaction.id, {
-        paymentStatus: transaction.paymentStatus === 'paid' ? 'unpaid' : 'paid',
-      });
+      setUpdatingStatusId(transaction.occurrenceKey);
+      const nextStatus = transaction.paymentStatus === 'paid' ? 'unpaid' : 'paid';
+      if (transaction.recurrence.kind === 'recurring') {
+        await updateTransactionOccurrencePaymentStatus(
+          transaction.sourceId,
+          transaction.date,
+          nextStatus,
+        );
+      } else {
+        await updateTransaction(transaction.sourceId, { paymentStatus: nextStatus });
+      }
       await Haptics.selectionAsync();
     } catch {
       Alert.alert('Não foi possível atualizar', 'Tente alterar o status novamente.');
@@ -99,7 +113,7 @@ export default function TransactionsScreen() {
                   transaction={transaction}
                   onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
                   onTogglePaymentStatus={() => void handleTogglePaymentStatus(transaction)}
-                  paymentStatusUpdating={updatingStatusId === transaction.id}
+                  paymentStatusUpdating={updatingStatusId === transaction.occurrenceKey}
                 />
               ))
             )}
