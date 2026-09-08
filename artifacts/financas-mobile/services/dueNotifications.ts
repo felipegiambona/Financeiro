@@ -1,12 +1,16 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { getTransactionOccurrencesInRange } from '@/services/recurrence';
 import { Transaction } from '@/types/transaction';
 
 const CHANNEL_ID = 'due-dates';
 const MAX_SCHEDULED_DAYS = 60;
+const notificationsAvailable =
+  Platform.OS !== 'web' &&
+  Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 
-if (Platform.OS !== 'web') {
+if (notificationsAvailable) {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
@@ -22,7 +26,9 @@ function dayKey(date: Date): string {
 }
 
 export async function syncDueNotifications(transactions: Transaction[]): Promise<void> {
-  if (Platform.OS === 'web') return;
+  // Expo Go no longer includes Android notification support from SDK 53 onward.
+  // Keep the app usable there while enabling notifications in a development build.
+  if (!notificationsAvailable) return;
 
   const currentPermission = await Notifications.getPermissionsAsync();
   const permission = currentPermission.granted
