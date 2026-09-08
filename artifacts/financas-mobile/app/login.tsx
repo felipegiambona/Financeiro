@@ -7,6 +7,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { useColors } from '@/hooks/useColors';
 
 type Mode = 'signIn' | 'signUp' | 'verifyEmail' | 'verifyMfa' | 'forgot' | 'reset';
+type MfaStrategy = 'totp' | 'email_code';
 
 function errorMessage(error: unknown): string {
   const clerkError = error as { errors?: Array<{ longMessage?: string; message?: string }> };
@@ -24,11 +25,31 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
+  const [mfaStrategy, setMfaStrategy] = useState<MfaStrategy>('totp');
   const [error, setError] = useState('');
   const submitting = signInStatus === 'fetching' || signUpStatus === 'fetching';
 
   const finalizeSignIn = async () => {
-    await signIn.finalize({ navigate: () => undefined });
+    const result = await signIn.finalize({ navigate: () => undefined });
+    if (result.error) throw result.error;
+  };
+
+  const beginSecondFactor = async () => {
+    const factor = signIn.supportedSecondFactors.find((supportedFactor) => (
+      supportedFactor.strategy === 'totp' || supportedFactor.strategy === 'email_code'
+    ));
+    if (!factor) {
+      throw new Error('Sua conta exige uma etapa adicional que ainda não está disponível nesta tela.');
+    }
+
+    if (factor.strategy === 'email_code') {
+      const result = await signIn.mfa.sendEmailCode();
+      if (result.error) throw result.error;
+    }
+
+    setMfaStrategy(factor.strategy);
+    setCode('');
+    setMode('verifyMfa');
   };
 
   const handlePrimary = async () => {
@@ -38,13 +59,8 @@ export default function LoginScreen() {
         const result = await signIn.password({ emailAddress: email.trim().toLowerCase(), password });
         if (result.error) throw result.error;
         if (signIn.status === 'complete') await finalizeSignIn();
-        else if (signIn.status === 'needs_second_factor') {
-          const hasAuthenticatorFactor = signIn.supportedSecondFactors.some((factor) => factor.strategy === 'totp');
-          if (!hasAuthenticatorFactor) {
-            throw new Error('Sua conta exige uma etapa adicional que ainda não está disponível nesta tela.');
-          }
-          setCode('');
-          setMode('verifyMfa');
+        else if (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust') {
+          await beginSecondFactor();
         } else {
           throw new Error('Não foi possível concluir o login.');
         }
@@ -59,7 +75,9 @@ export default function LoginScreen() {
         if (signUp.status !== 'complete') throw new Error('O código ainda não concluiu a verificação.');
         await signUp.finalize({ navigate: () => undefined });
       } else if (mode === 'verifyMfa') {
-        const result = await signIn.mfa.verifyTOTP({ code });
+        const result = mfaStrategy === 'totp'
+          ? await signIn.mfa.verifyTOTP({ code })
+          : await signIn.mfa.verifyEmailCode({ code });
         if (result.error) throw result.error;
         if (signIn.status === 'complete') await finalizeSignIn();
         else throw new Error('O código não concluiu a verificação.');
@@ -138,10 +156,15 @@ export default function LoginScreen() {
         {mode === 'verifyMfa' ? (
           <>
             <Text style={[styles.mfaHint, { color: colors.mutedForeground }]}>
-              Abra seu aplicativo autenticador e informe o código atual de 6 dígitos.
+              {mfaStrategy === 'totp'
+                ? 'Abra seu aplicativo autenticador e informe o código atual de 6 dígitos.'
+                : 'Enviamos um código de verificação para o e-mail da sua conta.'}
             </Text>
-            <Text style={[styles.label, { color: colors.foreground }]}>Código do autenticador</Text>
-            <TextInput accessibilityLabel="Código do autenticador" testID="mfa-code" keyboardType="number-pad"
+            <Text style={[styles.label, { color: colors.foreground }]}>
+              {mfaStrategy === 'totp' ? 'Código do autenticador' : 'Código enviado por e-mail'}
+            </Text>
+            <TextInput accessibilityLabel={mfaStrategy === 'totp' ? 'Código do autenticador' : 'Código de verificação'}
+              testID="mfa-code" keyboardType="number-pad"
               maxLength={6} placeholder="000000" placeholderTextColor={colors.mutedForeground}
               value={code} onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))}
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]} />
@@ -176,7 +199,14 @@ export default function LoginScreen() {
               </Pressable>
             </>
           ) : (
-            <Pressable onPress={() => { signIn.reset(); signUp.reset(); setCode(''); setError(''); setMode('signIn'); }}>
+            <Pressable onPress={() => {
+              signIn.reset();
+              signUp.reset();
+              setCode('');
+              setMfaStrategy('totp');
+              setError('');
+              setMode('signIn');
+            }}>
               <Text style={[styles.link, { color: colors.foreground }]}>Voltar para entrar</Text>
             </Pressable>
           )}
