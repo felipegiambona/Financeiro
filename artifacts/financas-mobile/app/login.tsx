@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { useColors } from '@/hooks/useColors';
 
-type Mode = 'signIn' | 'signUp' | 'verifyEmail' | 'forgot' | 'reset';
+type Mode = 'signIn' | 'signUp' | 'verifyEmail' | 'verifyMfa' | 'forgot' | 'reset';
 
 function errorMessage(error: unknown): string {
   const clerkError = error as { errors?: Array<{ longMessage?: string; message?: string }> };
@@ -38,7 +38,16 @@ export default function LoginScreen() {
         const result = await signIn.password({ emailAddress: email.trim().toLowerCase(), password });
         if (result.error) throw result.error;
         if (signIn.status === 'complete') await finalizeSignIn();
-        else throw new Error('Sua conta exige uma etapa de segurança adicional.');
+        else if (signIn.status === 'needs_second_factor') {
+          const hasAuthenticatorFactor = signIn.supportedSecondFactors.some((factor) => factor.strategy === 'totp');
+          if (!hasAuthenticatorFactor) {
+            throw new Error('Sua conta exige uma etapa adicional que ainda não está disponível nesta tela.');
+          }
+          setCode('');
+          setMode('verifyMfa');
+        } else {
+          throw new Error('Não foi possível concluir o login.');
+        }
       } else if (mode === 'signUp') {
         const result = await signUp.password({ emailAddress: email.trim().toLowerCase(), password });
         if (result.error) throw result.error;
@@ -49,6 +58,11 @@ export default function LoginScreen() {
         if (result.error) throw result.error;
         if (signUp.status !== 'complete') throw new Error('O código ainda não concluiu a verificação.');
         await signUp.finalize({ navigate: () => undefined });
+      } else if (mode === 'verifyMfa') {
+        const result = await signIn.mfa.verifyTOTP({ code });
+        if (result.error) throw result.error;
+        if (signIn.status === 'complete') await finalizeSignIn();
+        else throw new Error('O código não concluiu a verificação.');
       } else if (mode === 'forgot') {
         const created = await signIn.create({ identifier: email.trim().toLowerCase() });
         if (created.error) throw created.error;
@@ -74,11 +88,13 @@ export default function LoginScreen() {
   const title = mode === 'signIn' ? 'Acesse seu controle financeiro.'
     : mode === 'signUp' ? 'Crie sua conta segura.'
       : mode === 'verifyEmail' ? 'Confirme seu e-mail.'
+        : mode === 'verifyMfa' ? 'Confirme sua identidade.'
         : mode === 'forgot' ? 'Recupere seu acesso.'
           : 'Defina uma nova senha.';
   const primaryLabel = mode === 'signIn' ? 'Entrar'
     : mode === 'signUp' ? 'Criar conta'
       : mode === 'verifyEmail' ? 'Confirmar código'
+        : mode === 'verifyMfa' ? 'Verificar código'
         : mode === 'forgot' ? 'Enviar código'
           : 'Trocar senha';
 
@@ -115,6 +131,19 @@ export default function LoginScreen() {
             <TextInput accessibilityLabel="Senha" testID="login-password" secureTextEntry
               placeholder="Digite sua senha" placeholderTextColor={colors.mutedForeground}
               value={password} onChangeText={setPassword}
+              style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]} />
+          </>
+        ) : null}
+
+        {mode === 'verifyMfa' ? (
+          <>
+            <Text style={[styles.mfaHint, { color: colors.mutedForeground }]}>
+              Abra seu aplicativo autenticador e informe o código atual de 6 dígitos.
+            </Text>
+            <Text style={[styles.label, { color: colors.foreground }]}>Código do autenticador</Text>
+            <TextInput accessibilityLabel="Código do autenticador" testID="mfa-code" keyboardType="number-pad"
+              maxLength={6} placeholder="000000" placeholderTextColor={colors.mutedForeground}
+              value={code} onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))}
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]} />
           </>
         ) : null}
@@ -165,6 +194,7 @@ const styles = StyleSheet.create({
   eyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.5 },
   title: { marginTop: 8, maxWidth: 330, fontSize: 29, lineHeight: 35, fontFamily: 'Inter_700Bold', letterSpacing: -0.8 },
   subtitle: { marginTop: 9, marginBottom: 23, maxWidth: 340, fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular' },
+  mfaHint: { marginTop: 12, marginBottom: -1, fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular' },
   label: { marginTop: 13, marginBottom: 6, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   input: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, fontSize: 14, fontFamily: 'Inter_400Regular' },
   error: { marginTop: 10, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_500Medium' },
