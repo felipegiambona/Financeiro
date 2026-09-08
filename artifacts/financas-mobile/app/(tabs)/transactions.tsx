@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
@@ -37,6 +37,12 @@ const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
   { value: 'unpaid', label: 'Não pago' },
 ];
 
+const normalizeSearchText = (value: string) => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLocaleLowerCase('pt-BR')
+  .trim();
+
 export default function TransactionsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -57,6 +63,7 @@ export default function TransactionsScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchText, setSearchText] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
   const [deleting, setDeleting] = useState(false);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
@@ -64,12 +71,15 @@ export default function TransactionsScreen() {
     () => getTransactionOccurrencesForMonth(transactions, selectedMonth),
     [transactions, selectedMonth],
   );
+  const searchQuery = useMemo(() => normalizeSearchText(searchText), [searchText]);
   const filteredTransactions = useMemo(
     () => selectedTransactions.filter((transaction) => (
+      (searchQuery.length === 0 || normalizeSearchText(transaction.description).includes(searchQuery))
+      &&
       (typeFilter === 'all' || transaction.type === typeFilter)
       && (statusFilter === 'all' || transaction.paymentStatus === statusFilter)
     )),
-    [selectedTransactions, statusFilter, typeFilter],
+    [searchQuery, selectedTransactions, statusFilter, typeFilter],
   );
   const filteredSummary = useMemo(
     () => filteredTransactions.reduce(
@@ -203,6 +213,35 @@ export default function TransactionsScreen() {
           })}
         </ScrollView>
         <View style={[styles.filtersPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+          <View style={[styles.searchField, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="search" size={14} color={colors.mutedForeground} />
+            <TextInput
+              accessibilityLabel="Buscar lançamento pelo nome"
+              autoCorrect={false}
+              onChangeText={(value) => {
+                setSearchText(value);
+                leaveSelectionMode();
+              }}
+              placeholder="Buscar por nome"
+              placeholderTextColor={colors.mutedForeground}
+              returnKeyType="search"
+              style={[styles.searchInput, { color: colors.foreground }]}
+              value={searchText}
+            />
+            {searchText.length > 0 ? (
+              <Pressable
+                accessibilityLabel="Limpar busca"
+                hitSlop={8}
+                onPress={() => {
+                  setSearchText('');
+                  leaveSelectionMode();
+                }}
+                style={styles.clearSearchButton}
+              >
+                <Feather name="x" size={14} color={colors.mutedForeground} />
+              </Pressable>
+            ) : null}
+          </View>
           <View style={styles.filterGroup}>
             <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Tipo</Text>
             <View style={styles.filterOptions}>
@@ -417,6 +456,9 @@ const styles = StyleSheet.create({
   monthChipText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', textTransform: 'capitalize' },
   monthChipYear: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   filtersPanel: { borderRadius: 9, borderWidth: 1, padding: 8, marginBottom: 14, gap: 7 },
+  searchField: { minHeight: 36, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  searchInput: { flex: 1, minWidth: 0, paddingVertical: 0, fontSize: 11, fontFamily: 'Inter_400Regular' },
+  clearSearchButton: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
   filterGroup: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   filterLabel: { width: 43, fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   filterOptions: { flex: 1, flexDirection: 'row', gap: 5 },
