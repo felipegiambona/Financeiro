@@ -1,7 +1,8 @@
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
@@ -11,12 +12,14 @@ import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateForecast, calculateMonthlyTotals } from '@/services/financialRules';
 import { formatCurrency } from '@/utils/currency';
 import { formatMonthLabel, getDateKey, getMonthStart, shiftMonth } from '@/utils/date';
+import { Transaction } from '@/types/transaction';
 
 export default function TransactionsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { transactions, loading, error, refresh } = useFinance();
+  const { transactions, loading, error, refresh, updateTransaction } = useFinance();
   const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
   const selectedTransactions = useMemo(
     () => transactions.filter((transaction) => getDateKey(new Date(transaction.date)) === getDateKey(selectedMonth)),
@@ -25,6 +28,20 @@ export default function TransactionsScreen() {
   const currentBalance = calculateCurrentBalance(transactions);
   const forecast = calculateForecast(transactions);
   const monthlyTotals = calculateMonthlyTotals(transactions, selectedMonth);
+
+  const handleTogglePaymentStatus = async (transaction: Transaction) => {
+    try {
+      setUpdatingStatusId(transaction.id);
+      await updateTransaction(transaction.id, {
+        paymentStatus: transaction.paymentStatus === 'paid' ? 'unpaid' : 'paid',
+      });
+      await Haptics.selectionAsync();
+    } catch {
+      Alert.alert('Não foi possível atualizar', 'Tente alterar o status novamente.');
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -80,6 +97,8 @@ export default function TransactionsScreen() {
                   key={transaction.id}
                   transaction={transaction}
                   onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
+                  onTogglePaymentStatus={() => void handleTogglePaymentStatus(transaction)}
+                  paymentStatusUpdating={updatingStatusId === transaction.id}
                 />
               ))
             )}
