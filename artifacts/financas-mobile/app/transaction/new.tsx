@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -86,6 +86,13 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const amountInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (isEditing) return;
+    const focusTimer = setTimeout(() => amountInputRef.current?.focus(), 350);
+    return () => clearTimeout(focusTimer);
+  }, [isEditing]);
 
   const handleSave = async () => {
     const numericAmount = parseAmountInput(amount);
@@ -186,6 +193,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           <TextInput
             accessibilityLabel="Valor"
             testID="amount-input"
+            ref={amountInputRef}
             keyboardType="decimal-pad"
             placeholder="0,00"
             placeholderTextColor={colors.mutedForeground}
