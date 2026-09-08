@@ -79,31 +79,10 @@ export function calculateMonthlyTotals(
 export function calculateForecast(
   transactions: Transaction[],
   targetMonth = new Date(),
-  now = new Date(),
+  _now = new Date(),
 ): number {
-  const forecastEnd = new Date(
-    targetMonth.getFullYear(),
-    targetMonth.getMonth() + 1,
-    0,
-    23,
-    59,
-    59,
-    999,
-  );
-
-  if (forecastEnd.getTime() < now.getTime()) {
-    return calculateBalanceAtDate(transactions, forecastEnd);
-  }
-
-  const occurrences = getTransactionOccurrencesInRange(
-    transactions,
-    getRangeStart(transactions, now),
-    forecastEnd,
-  );
-  return occurrences.reduce((total, transaction) => {
-    if (!isFutureDate(transaction.date, now) && transaction.paymentStatus !== 'unpaid') return total;
-    return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
-  }, calculateCurrentBalance(transactions, now));
+  const occurrences = getTransactionOccurrencesForMonth(transactions, targetMonth);
+  return occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0);
 }
 
 export function calculateForecastByMonth(
