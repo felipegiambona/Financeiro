@@ -1,3 +1,2 @@
 - [Expo SDK 57 with pnpm](expo-sdk57-pnpm.md) — keep app-local React peers aligned and distinguish optional DevTools shell failures from Metro failures.
-- [Expo Go notifications](expo-go-notifications.md) — expo-notifications Android support is unavailable in Expo Go from SDK 53; guard it and use a development build for alerts.
 - [Authenticated integration environment](authenticated-integration-environment.md) — keep Clerk test email locals short and provide artifact env vars for workspace builds.

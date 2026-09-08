@@ -22,7 +22,6 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications",
       [
         "expo-navigation-bar",
         {

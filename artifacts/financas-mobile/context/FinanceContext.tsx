@@ -13,7 +13,6 @@ import {
   PaymentStatus,
   Transaction,
 } from '@/types/transaction';
-import { syncDueNotifications } from '@/services/dueNotifications';
 
 interface FinanceContextValue {
   transactions: Transaction[];
@@ -38,7 +37,6 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
   const reloadTransactions = useCallback(async () => {
     const nextTransactions = await getTransactions();
     setTransactions(nextTransactions);
-    void syncDueNotifications(nextTransactions).catch(() => undefined);
     return nextTransactions;
   }, []);
 
@@ -96,7 +94,6 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
   const clearTransactions = useCallback(async () => {
     await clearPersistedTransactions();
     setTransactions([]);
-    void syncDueNotifications([]).catch(() => undefined);
   }, []);
 
   const value = useMemo(
