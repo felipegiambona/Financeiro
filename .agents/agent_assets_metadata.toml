@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "v-JZO10bNxGX7LyXimIWR"
+uri = "file://downloads/financas-mobile-project.zip"
+type = "unspecified"
+title = "Projeto Finanças Mobile"
+description = "ZIP completo do workspace, com o app Expo, código nativo Android do NotificationListenerService, plugin Expo, dependências compartilhadas e projeto Android gerado. Arquivos pesados, caches, node_modules e credenciais foram excluídos."
+logical_id = "67e60923-bb30-4fd9-b361-199b162f3c83"
+content_hash = "sha256:50d48ccc74c73bc502550b0b1c046ad56a0de4ee013c88f6ca65efa1435dfd6b"
+size = 11084692
+mtime_ms = 1788965663094
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:21b0ff03-f513-4dda-9c12-4a8f26728dff/67e60923-bb30-4fd9-b361-199b162f3c83/b1a48541-d0f6-4d2b-a7df-7b90bd2192b1"
+storage_version_token = "1788965668587148"
+content_type = "application/octet-stream"
