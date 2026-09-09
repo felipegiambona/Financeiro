@@ -1,10 +1,10 @@
 import React from 'react';
-import { Platform, StyleSheet, useColorScheme, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { Tabs } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
 
@@ -27,6 +27,12 @@ function NativeTabLayout() {
         />
         <NativeTabs.Trigger.Label>Transações</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="new">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'plus.circle', selected: 'plus.circle.fill' }}
+        />
+        <NativeTabs.Trigger.Label>Novo</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="charts">
         <NativeTabs.Trigger.Icon
           sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }}
@@ -40,6 +46,25 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Label>Perfil</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
+  );
+}
+
+function NewTransactionTabButton() {
+  const colors = useColors();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Novo lançamento"
+      testID="new-transaction-tab-button"
+      onPress={() => router.push('/transaction/new?fromTab=1')}
+      style={({ pressed }) => [styles.newTabButton, pressed && styles.newTabPressed]}
+    >
+      <View style={[styles.newTabIcon, { backgroundColor: colors.accent, borderColor: colors.background }]}>
+        <Feather name="plus" size={23} color={colors.accentForeground} />
+      </View>
+      <Text style={[styles.newTabLabel, { color: colors.mutedForeground }]}>Novo</Text>
+    </Pressable>
   );
 }
 
@@ -106,6 +131,13 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
+        name="new"
+        options={{
+          title: 'Novo',
+          tabBarButton: () => <NewTransactionTabButton />,
+        }}
+      />
+      <Tabs.Screen
         name="charts"
         options={{
           title: 'Gráficos',
@@ -139,3 +171,28 @@ export default function TabLayout() {
   }
   return <ClassicTabLayout />;
 }
+
+const styles = StyleSheet.create({
+  newTabButton: {
+    width: 72,
+    height: 58,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  newTabIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newTabLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  newTabPressed: {
+    opacity: 0.72,
+  },
+});

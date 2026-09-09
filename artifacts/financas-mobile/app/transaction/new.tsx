@@ -42,10 +42,12 @@ function parseDateInput(value: string): Date | null {
 }
 
 export default function NewTransactionScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, fromTab } = useLocalSearchParams<{ id?: string; fromTab?: string }>();
+  const returnToTabs = fromTab === '1';
   const { transactions, loading } = useFinance();
   const transaction = id ? transactions.find((item) => item.id === id) : undefined;
   const colors = useColors();
+  const handleExit = () => returnToTabs ? router.replace('/(tabs)') : router.back();
 
   if (id && loading) {
     return (
@@ -59,17 +61,17 @@ export default function NewTransactionScreen() {
     return (
       <View style={[styles.screen, styles.notFound, { backgroundColor: colors.background }]}>
         <Text style={[styles.notFoundTitle, { color: colors.foreground }]}>Lançamento não encontrado</Text>
-        <Pressable onPress={() => router.back()} style={[styles.notFoundButton, { backgroundColor: colors.primary }]}>
+        <Pressable onPress={handleExit} style={[styles.notFoundButton, { backgroundColor: colors.primary }]}>
           <Text style={[styles.notFoundButtonText, { color: colors.primaryForeground }]}>Voltar</Text>
         </Pressable>
       </View>
     );
   }
 
-  return <TransactionForm transaction={transaction} />;
+  return <TransactionForm transaction={transaction} onExit={handleExit} />;
 }
 
-function TransactionForm({ transaction }: { transaction?: Transaction }) {
+function TransactionForm({ transaction, onExit }: { transaction?: Transaction; onExit: () => void }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { createTransaction, updateTransaction } = useFinance();
@@ -142,7 +144,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
         });
       }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      onExit();
     } catch {
       setError('Não foi possível salvar. Tente novamente.');
     } finally {
@@ -158,7 +160,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topBar}>
-          <Pressable accessibilityLabel="Cancelar" onPress={() => router.back()} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
+          <Pressable accessibilityLabel="Cancelar" onPress={onExit} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
             <Feather name="x" size={20} color={colors.foreground} />
           </Pressable>
           <Text style={[styles.topTitle, { color: colors.foreground }]}>{isEditing ? 'Editar lançamento' : 'Novo lançamento'}</Text>
@@ -311,7 +313,7 @@ function TransactionForm({ transaction }: { transaction?: Transaction }) {
           <Text style={styles.saveText}>{saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar lançamento'}</Text>
           {!saving ? <Feather name="check" size={18} color="#FFFFFF" /> : null}
         </Pressable>
-        <Pressable disabled={saving} onPress={() => router.back()} style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}>
+        <Pressable disabled={saving} onPress={onExit} style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}>
           <Text style={[styles.cancelText, { color: colors.mutedForeground }]}>Cancelar</Text>
         </Pressable>
       </KeyboardAwareScrollViewCompat>

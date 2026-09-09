@@ -318,16 +318,6 @@ export default function TransactionsScreen() {
             <View style={styles.listHeader}>
               <View style={styles.listTitleRow}>
                 <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Lançamentos</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Novo lançamento"
-                  testID="new-transaction-list-button"
-                  onPress={() => router.push('/transaction/new')}
-                  hitSlop={8}
-                  style={({ pressed }) => [styles.inlineNewButton, { backgroundColor: colors.accent }, pressed && styles.pressed]}
-                >
-                  <Feather name="plus" size={15} color={colors.accentForeground} />
-                </Pressable>
               </View>
               <View style={styles.listActions}>
                 <Text style={[styles.count, { color: colors.mutedForeground }]}>
@@ -474,7 +464,6 @@ const styles = StyleSheet.create({
   metricValue: { fontSize: 15, fontFamily: 'Inter_700Bold' },
   listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   listTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  inlineNewButton: { width: 25, height: 25, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   listActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   count: { fontSize: 11, fontFamily: 'Inter_500Medium' },

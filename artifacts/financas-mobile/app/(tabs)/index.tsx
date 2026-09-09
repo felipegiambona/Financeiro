@@ -1,7 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, LoadingState } from '@/components/StateView';
@@ -69,17 +68,6 @@ export default function DashboardScreen() {
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.payable)}</Text>
               </View>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Novo lançamento"
-              testID="new-transaction-button"
-              onPress={() => router.push('/transaction/new')}
-              style={({ pressed }) => [styles.newButton, { backgroundColor: colors.accent }, pressed && styles.pressed]}
-            >
-              <View style={styles.buttonIcon}><Feather name="plus" size={19} color={colors.accentForeground} /></View>
-              <Text style={[styles.newButtonText, { color: colors.accentForeground }]}>Novo lançamento</Text>
-              <Feather name="arrow-up-right" size={18} color={colors.accentForeground} />
-            </Pressable>
           </>
         )}
       </ScrollView>
@@ -102,8 +90,4 @@ const styles = StyleSheet.create({
   metricIcon: { width: 29, height: 29, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   metricLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   metricValue: { fontSize: 16, fontFamily: 'Inter_700Bold', marginTop: 5 },
-  newButton: { minHeight: 48, borderRadius: 8, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 8 },
-  buttonIcon: { width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center' },
-  newButtonText: { flex: 1, fontSize: 13, fontFamily: 'Inter_700Bold' },
-  pressed: { opacity: 0.72 },
 });
