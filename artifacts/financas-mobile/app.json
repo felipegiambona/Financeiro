@@ -11,7 +11,9 @@
     "ios": {
       "supportsTablet": false
     },
-    "android": {},
+    "android": {
+      "package": "com.financas.mobile"
+    },
     "androidStatusBar": {
       "backgroundColor": "#090909",
       "barStyle": "light-content",
@@ -30,7 +32,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withNotificationListener"
     ],
     "experiments": {
       "typedRoutes": true,
