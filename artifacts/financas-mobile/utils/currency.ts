@@ -19,3 +19,7 @@ export function parseAmountInput(value: string): number {
   const normalized = value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
   return Number(normalized);
 }
+
+export function formatAmountValue(value: number): string {
+  return (Math.round((value + Number.EPSILON) * 100) / 100).toFixed(2).replace('.', ',');
+}

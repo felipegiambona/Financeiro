@@ -8,13 +8,14 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
+import { CalculatorModal } from '@/components/CalculatorModal';
 import {
   PaymentStatus,
   RecurrenceUnit,
   Transaction,
   TransactionType,
 } from '@/types/transaction';
-import { formatAmountInput, parseAmountInput } from '@/utils/currency';
+import { formatAmountInput, formatAmountValue, parseAmountInput } from '@/utils/currency';
 import { createLocalIsoDate, parseStoredDate } from '@/utils/date';
 import { DatePickerModal } from '@/components/DatePickerModal';
 
@@ -88,6 +89,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
   const amountInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -203,6 +205,18 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             onChangeText={(value) => setAmount(formatAmountInput(value))}
             style={[styles.amountInput, { color: colors.foreground }]}
           />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Abrir calculadora para o valor"
+            testID="open-calculator-button"
+            onPress={() => {
+              amountInputRef.current?.blur();
+              setCalculatorOpen(true);
+            }}
+            style={({ pressed }) => [styles.calculatorButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
+          >
+            <Feather name="calculator" size={17} color={colors.foreground} />
+          </Pressable>
         </View>
 
         <Text style={[styles.label, { color: colors.foreground }]}>Descrição</Text>
@@ -360,6 +374,16 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           </View>
         </View>
       </Modal>
+      {calculatorOpen ? (
+        <CalculatorModal
+          initialValue={amount}
+          onClose={() => setCalculatorOpen(false)}
+          onApply={(value) => {
+            setAmount(formatAmountValue(value));
+            setCalculatorOpen(false);
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -384,6 +408,7 @@ const styles = StyleSheet.create({
   inputShell: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
   currencyPrefix: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginRight: 6 },
   amountInput: { flex: 1, fontSize: 21, fontFamily: 'Inter_700Bold', paddingVertical: 0 },
+  calculatorButton: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   textInput: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   dateInputShell: { minHeight: 46, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 9 },
   dateInput: { flex: 1, paddingVertical: 0, fontSize: 13, fontFamily: 'Inter_500Medium' },

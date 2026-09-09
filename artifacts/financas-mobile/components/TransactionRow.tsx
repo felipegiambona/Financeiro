@@ -3,7 +3,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { TransactionOccurrence } from '@/types/transaction';
-import { formatDate } from '@/utils/date';
+import { formatDate, formatTime } from '@/utils/date';
 import { formatCurrency } from '@/utils/currency';
 
 interface TransactionRowProps {
@@ -61,7 +61,9 @@ export function TransactionRow({
         <View style={styles.details}>
           <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
           <View style={styles.meta}>
-            <Text style={[styles.date, { color: colors.mutedForeground }]}>{formatDate(transaction.date)}</Text>
+            <Text style={[styles.date, { color: colors.mutedForeground }]}>
+              {formatDate(transaction.date)} · lançado às {formatTime(transaction.createdAt)}
+            </Text>
             {transaction.recurrence.kind === 'recurring' ? (
               <View style={[styles.recurrence, { backgroundColor: colors.secondary }]}>
                 <Feather name="repeat" size={10} color={colors.secondaryForeground} />

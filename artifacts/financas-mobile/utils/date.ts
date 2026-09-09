@@ -40,6 +40,13 @@ export function formatDate(dateString: string): string {
   }).format(parseStoredDate(dateString));
 }
 
+export function formatTime(dateString: string): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(dateString));
+}
+
 export function createLocalIsoDate(date = new Date()): string {
   return new Date(
     date.getFullYear(),
