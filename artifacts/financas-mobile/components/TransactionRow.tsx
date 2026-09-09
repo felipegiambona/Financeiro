@@ -62,7 +62,7 @@ export function TransactionRow({
           <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
           <View style={styles.meta}>
             <Text style={[styles.date, { color: colors.mutedForeground }]}>
-              {formatDate(transaction.date)} · lançado às {formatTime(transaction.createdAt)}
+              {formatDate(transaction.date)} · {formatTime(transaction.createdAt)}
             </Text>
             {transaction.recurrence.kind === 'recurring' ? (
               <View style={[styles.recurrence, { backgroundColor: colors.secondary }]}>

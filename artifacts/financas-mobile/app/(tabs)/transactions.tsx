@@ -386,7 +386,7 @@ export default function TransactionsScreen() {
               ))
             )}
             {filteredTransactions.length > 0 ? (
-              <View style={[styles.monthSummary, { borderTopColor: colors.border }]}>
+              <View style={styles.monthSummary}>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>No mês selecionado</Text>
                 <Text style={[styles.summaryValue, { color: colors.foreground }]}>{formatCurrency(filteredSummary.income - filteredSummary.expense)}</Text>
               </View>
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   confirmationCancelLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   confirmationDelete: { flex: 1.35, minHeight: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   confirmationDeleteLabel: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'center' },
-  monthSummary: { borderTopWidth: 1, marginTop: 6, paddingTop: 14, flexDirection: 'row', justifyContent: 'space-between' },
+  monthSummary: { marginTop: 6, paddingTop: 14, flexDirection: 'row', justifyContent: 'space-between' },
   summaryLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   summaryValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },
 });
