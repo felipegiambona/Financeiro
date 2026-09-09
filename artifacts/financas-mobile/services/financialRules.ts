@@ -8,6 +8,8 @@ import {
 export interface MonthlyTotals {
   income: number;
   expense: number;
+  receivable: number;
+  payable: number;
 }
 
 export interface MonthlyForecast {
@@ -68,11 +70,16 @@ export function calculateMonthlyTotals(
   const occurrences = getTransactionOccurrencesForMonth(transactions, month);
   return occurrences.reduce(
     (totals, transaction) => {
-      if (transaction.type === 'income') totals.income += transaction.amount;
-      else totals.expense += transaction.amount;
+      if (transaction.type === 'income') {
+        totals.income += transaction.amount;
+        if (transaction.paymentStatus === 'unpaid') totals.receivable += transaction.amount;
+      } else {
+        totals.expense += transaction.amount;
+        if (transaction.paymentStatus === 'unpaid') totals.payable += transaction.amount;
+      }
       return totals;
     },
-    { income: 0, expense: 0 },
+    { income: 0, expense: 0, receivable: 0, payable: 0 },
   );
 }
 

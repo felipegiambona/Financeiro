@@ -53,6 +53,22 @@ export default function DashboardScreen() {
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.expense)}</Text>
               </View>
             </View>
+            <View style={styles.monthMetrics}>
+              <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.metricIcon, { backgroundColor: colors.incomeSoft }]}>
+                  <Feather name="clock" size={16} color={colors.income} />
+                </View>
+                <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>A Receber</Text>
+                <Text style={[styles.metricValue, { color: colors.income }]}>{formatCurrency(monthlyTotals.receivable)}</Text>
+              </View>
+              <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.metricIcon, { backgroundColor: colors.expenseSoft }]}>
+                  <Feather name="credit-card" size={16} color={colors.expense} />
+                </View>
+                <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>A Pagar</Text>
+                <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.payable)}</Text>
+              </View>
+            </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Novo lançamento"

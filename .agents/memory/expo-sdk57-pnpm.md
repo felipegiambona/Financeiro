@@ -26,3 +26,9 @@ Changes to system-bar settings delivered through the Expo Go manifest require cl
 **Why:** The corrected dark system bars were confirmed on a physical Android device only after reopening the project in Expo Go.
 
 **How to apply:** After changing app configuration or navigation-bar plugin options, restart the Expo workflow and retest from a fresh project open in Expo Go.
+
+The mobile static-export helper probes and starts Metro on `localhost:8081`, so it cannot run while the mockup-sandbox workflow owns that port.
+
+**Why:** The helper does not expose a port override and exits when Expo asks to move to another port.
+
+**How to apply:** Treat an export failure at the interactive port prompt as an environment conflict; free port 8081 before retrying rather than changing application code.
