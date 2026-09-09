@@ -1,15 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ForecastTable } from '@/components/ForecastTable';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/hooks/useColors';
-import { calculateCurrentBalance } from '@/services/financialRules';
+import { calculateCurrentBalance, calculateMonthlyTotals } from '@/services/financialRules';
 import { formatCurrency } from '@/utils/currency';
 
 export default function DashboardScreen() {
@@ -18,6 +17,7 @@ export default function DashboardScreen() {
   const { transactions, loading, error, refresh } = useFinance();
   const { signOut } = useAuth();
   const balance = calculateCurrentBalance(transactions);
+  const monthlyTotals = useMemo(() => calculateMonthlyTotals(transactions, new Date()), [transactions]);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -37,6 +37,22 @@ export default function DashboardScreen() {
               <Text style={styles.balanceHint}>Receitas menos despesas</Text>
               <View style={[styles.balanceAccent, { backgroundColor: colors.accent }]} />
             </View>
+            <View style={styles.monthMetrics}>
+              <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.metricIcon, { backgroundColor: colors.incomeSoft }]}>
+                  <Feather name="trending-up" size={16} color={colors.income} />
+                </View>
+                <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>Receitas do mês</Text>
+                <Text style={[styles.metricValue, { color: colors.income }]}>{formatCurrency(monthlyTotals.income)}</Text>
+              </View>
+              <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.metricIcon, { backgroundColor: colors.expenseSoft }]}>
+                  <Feather name="trending-down" size={16} color={colors.expense} />
+                </View>
+                <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>Despesas do mês</Text>
+                <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.expense)}</Text>
+              </View>
+            </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Novo lançamento"
@@ -48,7 +64,6 @@ export default function DashboardScreen() {
               <Text style={[styles.newButtonText, { color: colors.accentForeground }]}>Novo lançamento</Text>
               <Feather name="arrow-up-right" size={18} color={colors.accentForeground} />
             </Pressable>
-            <ForecastTable transactions={transactions} />
           </>
         )}
       </ScrollView>
@@ -66,6 +81,11 @@ const styles = StyleSheet.create({
   balanceValue: { color: '#FFFFFF', fontSize: 30, lineHeight: 36, fontFamily: 'Inter_700Bold', letterSpacing: -0.8, marginTop: 17 },
   balanceHint: { color: '#999999', fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 3 },
   balanceAccent: { position: 'absolute', width: 92, height: 92, borderRadius: 8, right: -38, bottom: -45, opacity: 0.22 },
+  monthMetrics: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  monthMetric: { flex: 1, minHeight: 112, borderRadius: 9, borderWidth: 1, padding: 12 },
+  metricIcon: { width: 29, height: 29, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  metricLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  metricValue: { fontSize: 16, fontFamily: 'Inter_700Bold', marginTop: 5 },
   newButton: { minHeight: 48, borderRadius: 8, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 8 },
   buttonIcon: { width: 28, height: 28, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center' },
   newButtonText: { flex: 1, fontSize: 13, fontFamily: 'Inter_700Bold' },

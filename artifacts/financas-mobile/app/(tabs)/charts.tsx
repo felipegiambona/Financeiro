@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ForecastTable } from '@/components/ForecastTable';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
@@ -19,45 +20,59 @@ export default function ChartsScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <View style={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 100 }]}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={false}
+      >
         <ScreenHeader eyebrow="Análise" title="Gráficos" />
-        {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : !hasData ? (
-          <EmptyState message="Não há dados suficientes para exibir o gráfico." />
-        ) : (
-          <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.chartTitle, { color: colors.foreground }]}>Receitas x despesas por mês</Text>
-            <Text style={[styles.chartDescription, { color: colors.mutedForeground }]}>Uma visão dos últimos seis meses</Text>
-            <View style={styles.legend}>
-              <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.income }]} /><Text style={[styles.legendText, { color: colors.mutedForeground }]}>Receitas</Text></View>
-              <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: colors.expense }]} /><Text style={[styles.legendText, { color: colors.mutedForeground }]}>Despesas</Text></View>
-            </View>
-            <View style={styles.chart}>
-              {totals.map((month) => (
-                <View key={month.key} style={styles.chartColumn}>
-                  <View style={styles.barArea}>
-                    <View style={styles.barGroup}>
-                      <View style={[styles.bar, { height: Math.max(month.income / maxValue * 144, month.income > 0 ? 5 : 0), backgroundColor: colors.income }]} />
-                      <View style={[styles.bar, { height: Math.max(month.expense / maxValue * 144, month.expense > 0 ? 5 : 0), backgroundColor: colors.expense }]} />
-                    </View>
+        {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
+          <>
+            {!hasData ? (
+              <EmptyState message="Não há dados suficientes para exibir o gráfico." />
+            ) : (
+              <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.chartTitle, { color: colors.foreground }]}>Receitas x despesas por mês</Text>
+                <Text style={[styles.chartDescription, { color: colors.mutedForeground }]}>Uma visão dos últimos seis meses</Text>
+                <View style={styles.legend}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: colors.income }]} />
+                    <Text style={[styles.legendText, { color: colors.mutedForeground }]}>Receitas</Text>
                   </View>
-                  <Text style={[styles.monthLabel, { color: colors.mutedForeground }]}>{formatShortMonthLabel(month.date)}</Text>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: colors.expense }]} />
+                    <Text style={[styles.legendText, { color: colors.mutedForeground }]}>Despesas</Text>
+                  </View>
                 </View>
-              ))}
-            </View>
-            <View style={[styles.chartFooter, { borderTopColor: colors.border }]}>
-              <Text style={[styles.footerLabel, { color: colors.mutedForeground }]}>Maior movimento</Text>
-              <Text style={[styles.footerValue, { color: colors.foreground }]}>{formatCurrency(maxValue)}</Text>
-            </View>
-          </View>
+                <View style={styles.chart}>
+                  {totals.map((month) => (
+                    <View key={month.key} style={styles.chartColumn}>
+                      <View style={styles.barArea}>
+                        <View style={styles.barGroup}>
+                          <View style={[styles.bar, { height: Math.max(month.income / maxValue * 144, month.income > 0 ? 5 : 0), backgroundColor: colors.income }]} />
+                          <View style={[styles.bar, { height: Math.max(month.expense / maxValue * 144, month.expense > 0 ? 5 : 0), backgroundColor: colors.expense }]} />
+                        </View>
+                      </View>
+                      <Text style={[styles.monthLabel, { color: colors.mutedForeground }]}>{formatShortMonthLabel(month.date)}</Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={[styles.chartFooter, { borderTopColor: colors.border }]}>
+                  <Text style={[styles.footerLabel, { color: colors.mutedForeground }]}>Maior movimento</Text>
+                  <Text style={[styles.footerValue, { color: colors.foreground }]}>{formatCurrency(maxValue)}</Text>
+                </View>
+              </View>
+            )}
+            <ForecastTable transactions={transactions} />
+          </>
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: 16 },
+  content: { flexGrow: 1, paddingHorizontal: 16 },
   chartCard: { borderRadius: 8, borderWidth: 1, padding: 16 },
   chartTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   chartDescription: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 4 },

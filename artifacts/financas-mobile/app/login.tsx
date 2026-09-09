@@ -24,6 +24,7 @@ export default function LoginScreen() {
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState('');
   const [mfaStrategy, setMfaStrategy] = useState<MfaStrategy>('totp');
   const [error, setError] = useState('');
@@ -146,10 +147,21 @@ export default function LoginScreen() {
             <Text style={[styles.label, { color: colors.foreground }]}>
               {mode === 'reset' ? 'Nova senha' : 'Senha'}
             </Text>
-            <TextInput accessibilityLabel="Senha" testID="login-password" secureTextEntry
-              placeholder="Digite sua senha" placeholderTextColor={colors.mutedForeground}
-              value={password} onChangeText={setPassword}
-              style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]} />
+            <View style={[styles.passwordField, { backgroundColor: colors.card, borderColor: colors.input }]}>
+              <TextInput accessibilityLabel="Senha" testID="login-password" secureTextEntry={!showPassword}
+                placeholder="Digite sua senha" placeholderTextColor={colors.mutedForeground}
+                value={password} onChangeText={setPassword}
+                style={[styles.passwordInput, { color: colors.foreground }]} />
+              <Pressable
+                accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={() => setShowPassword((visible) => !visible)}
+                style={styles.passwordToggle}
+              >
+                <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color={colors.mutedForeground} />
+              </Pressable>
+            </View>
           </>
         ) : null}
 
@@ -203,6 +215,7 @@ export default function LoginScreen() {
               signIn.reset();
               signUp.reset();
               setCode('');
+              setShowPassword(false);
               setMfaStrategy('totp');
               setError('');
               setMode('signIn');
@@ -227,6 +240,9 @@ const styles = StyleSheet.create({
   mfaHint: { marginTop: 12, marginBottom: -1, fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular' },
   label: { marginTop: 13, marginBottom: 6, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   input: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, fontSize: 14, fontFamily: 'Inter_400Regular' },
+  passwordField: { minHeight: 48, borderRadius: 8, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingLeft: 12 },
+  passwordInput: { flex: 1, minHeight: 46, paddingVertical: 0, paddingRight: 8, fontSize: 14, fontFamily: 'Inter_400Regular' },
+  passwordToggle: { width: 42, minHeight: 46, alignItems: 'center', justifyContent: 'center' },
   error: { marginTop: 10, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_500Medium' },
   button: { minHeight: 48, borderRadius: 8, marginTop: 18, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   buttonText: { fontSize: 13, fontFamily: 'Inter_700Bold' },

@@ -12,7 +12,7 @@ import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateForecast } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
-import { formatMonthLabel, getDateKey, getMonthStart, shiftMonth } from '@/utils/date';
+import { formatMonthLabel, getDateKey, getMonthStart, parseStoredDate, shiftMonth } from '@/utils/date';
 import { TransactionOccurrence } from '@/types/transaction';
 
 interface DeleteConfirmation {
@@ -68,7 +68,11 @@ export default function TransactionsScreen() {
   const [deleting, setDeleting] = useState(false);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
   const selectedTransactions = useMemo(
-    () => getTransactionOccurrencesForMonth(transactions, selectedMonth),
+    () => getTransactionOccurrencesForMonth(transactions, selectedMonth).sort((a, b) => {
+      const createdAtDifference = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (createdAtDifference !== 0) return createdAtDifference;
+      return parseStoredDate(b.date).getTime() - parseStoredDate(a.date).getTime();
+    }),
     [transactions, selectedMonth],
   );
   const searchQuery = useMemo(() => normalizeSearchText(searchText), [searchText]);
