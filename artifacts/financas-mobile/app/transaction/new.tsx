@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -215,7 +215,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             }}
             style={({ pressed }) => [styles.calculatorButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
           >
-            <Feather name="calculator" size={17} color={colors.foreground} />
+            <MaterialCommunityIcons name="calculator" size={18} color={colors.foreground} />
           </Pressable>
         </View>
 
