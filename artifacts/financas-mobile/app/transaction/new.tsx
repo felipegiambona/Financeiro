@@ -406,6 +406,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               <Pressable
                 key={option}
                 onPress={() => {
+                  if (option === 'recurring' && recurrence !== 'recurring') {
+                    setRecurrenceLimitMode('fixed');
+                    setRecurrenceCount('');
+                  }
                   setRecurrence(option);
                   if (option === 'installment' && recurrencePeriod === 'fixed') setRecurrencePeriod('monthly');
                 }}
