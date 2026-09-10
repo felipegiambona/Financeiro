@@ -224,7 +224,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           onPress={() => void handleSave()}
           style={({ pressed }) => [styles.topSaveButton, { backgroundColor: colors.primary }, saving && styles.disabled, pressed && styles.pressed]}
         >
-          <Text style={styles.topSaveText}>{saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar lançamento'}</Text>
+          <Text style={styles.topSaveText}>{saving ? 'Salvando...' : 'Salvar'}</Text>
           {!saving ? <Feather name="check" size={16} color="#FFFFFF" /> : null}
         </Pressable>
       </View>
