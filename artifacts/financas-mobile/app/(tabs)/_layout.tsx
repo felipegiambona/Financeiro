@@ -172,15 +172,16 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   newTabButton: {
-    width: 78,
-    height: 64,
+    width: 84,
+    height: 72,
     alignItems: 'center',
     justifyContent: 'center',
+    transform: [{ translateY: -8 }],
   },
   newTabIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
