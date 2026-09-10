@@ -37,7 +37,7 @@ export function WalletIconView({
 }) {
   const asset = LOGO_ASSETS[icon];
   if (!asset) {
-    return <MaterialCommunityIcons name={icon} size={size} color={color} />;
+    return <MaterialCommunityIcons name={icon === 'recargapay' ? 'wallet-outline' : icon} size={size} color={color} />;
   }
 
   if (isPngAsset(icon)) {
@@ -46,7 +46,7 @@ export function WalletIconView({
 
   const uri = Image.resolveAssetSource(asset)?.uri;
   if (!uri) {
-    return <MaterialCommunityIcons name={icon} size={size} color={color} />;
+    return <MaterialCommunityIcons name={icon === 'recargapay' ? 'wallet-outline' : icon} size={size} color={color} />;
   }
 
   const width = WIDE_LOGOS.has(icon) ? size * 1.8 : size;

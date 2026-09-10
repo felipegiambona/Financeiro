@@ -20,4 +20,5 @@ export const WalletInputIcon = {
   'bank-transfer': 'bank-transfer',
   finance: 'finance',
   'card-account-details-outline': 'card-account-details-outline',
+  recargapay: 'recargapay',
 } as const;
