@@ -386,7 +386,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           {(['none', 'recurring', 'installment'] as const).map((option) => {
             const active = recurrence === option;
             return (
-              <Pressable key={option} onPress={() => setRecurrence(option)} style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}>
+              <Pressable key={option} onPress={() => setRecurrence(option)} style={[styles.recurrenceTypeOption, option === 'none' && styles.recurrenceTypeOptionWide, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}>
                 <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
                 <Text style={[styles.recurrenceText, { color: colors.foreground }]}>
                   {option === 'none' ? 'Não recorrente' : option === 'recurring' ? 'Recorrente' : 'Parcelado'}
@@ -642,7 +642,8 @@ const styles = StyleSheet.create({
   recurrenceOptions: { flexDirection: 'row', gap: 8 },
   recurrenceOption: { flex: 1, minWidth: 140, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   recurrenceTypeOptions: { flexDirection: 'row', gap: 6 },
-  recurrenceTypeOption: { flex: 1, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  recurrenceTypeOption: { flex: 1, minWidth: 0, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  recurrenceTypeOptionWide: { flex: 1.25 },
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   radioDot: { width: 7, height: 7, borderRadius: 4 },
   recurrenceText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
