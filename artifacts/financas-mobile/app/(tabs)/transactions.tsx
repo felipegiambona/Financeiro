@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, minWidth: 0, paddingVertical: 0, fontSize: 11, fontFamily: 'Inter_400Regular' },
   clearSearchButton: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
   moreFiltersToggle: { minHeight: 34, flexDirection: 'row', alignItems: 'center' },
-  moreFiltersControl: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  moreFiltersControl: { marginLeft: 6, flexDirection: 'row', alignItems: 'center', gap: 7 },
   moreFiltersLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   activeFiltersDot: { width: 6, height: 6, borderRadius: 3 },
   moreFiltersContent: { gap: 7, paddingTop: 1 },
