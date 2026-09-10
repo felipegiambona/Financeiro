@@ -166,7 +166,9 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
+  const { themeMode } = useTheme();
+
+  if (isLiquidGlassAvailable() && themeMode === 'system') {
     return <NativeTabLayout />;
   }
   return <ClassicTabLayout />;
