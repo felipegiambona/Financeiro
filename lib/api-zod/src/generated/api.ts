@@ -226,14 +226,10 @@ export const DeleteTransactionsBody = zod.object({
 export const DeleteTransactionsResponse = zod.void()
 
 
-export const listWalletsResponseInitialBalanceMin = 0;
-
-
-
 export const ListWalletsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
-  "initialBalance": zod.number().min(listWalletsResponseInitialBalanceMin),
+  "initialBalance": zod.number(),
   "icon": zod.enum(['wallet-outline']),
   "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()
@@ -242,24 +238,18 @@ export const ListWalletsResponse = zod.array(ListWalletsResponseItem)
 
 
 
-export const createWalletBodyInitialBalanceMin = 0;
-
 
 
 export const CreateWalletBody = zod.object({
   "title": zod.string().min(1),
-  "initialBalance": zod.number().min(createWalletBodyInitialBalanceMin),
+  "initialBalance": zod.number(),
   "icon": zod.enum(['wallet-outline']).optional()
 })
-
-export const createWalletResponseInitialBalanceMin = 0;
-
-
 
 export const CreateWalletResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
-  "initialBalance": zod.number().min(createWalletResponseInitialBalanceMin),
+  "initialBalance": zod.number(),
   "icon": zod.enum(['wallet-outline']),
   "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()
@@ -271,24 +261,18 @@ export const UpdateWalletParams = zod.object({
 })
 
 
-export const updateWalletBodyInitialBalanceMin = 0;
-
 
 
 export const UpdateWalletBody = zod.object({
   "title": zod.string().min(1).optional(),
-  "initialBalance": zod.number().min(updateWalletBodyInitialBalanceMin).optional(),
+  "initialBalance": zod.number().optional(),
   "icon": zod.enum(['wallet-outline']).optional()
 })
-
-export const updateWalletResponseInitialBalanceMin = 0;
-
-
 
 export const UpdateWalletResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
-  "initialBalance": zod.number().min(updateWalletResponseInitialBalanceMin),
+  "initialBalance": zod.number(),
   "icon": zod.enum(['wallet-outline']),
   "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()

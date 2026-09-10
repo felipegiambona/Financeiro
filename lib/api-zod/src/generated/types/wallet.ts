@@ -10,7 +10,6 @@ import type { WalletIcon } from './walletIcon';
 export interface Wallet {
   id: string;
   title: string;
-  /** @minimum 0 */
   initialBalance: number;
   icon: WalletIcon;
   isDefault: boolean;

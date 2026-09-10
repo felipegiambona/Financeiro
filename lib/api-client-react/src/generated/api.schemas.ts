@@ -175,7 +175,6 @@ export const WalletIcon = {
 export interface Wallet {
   id: string;
   title: string;
-  /** @minimum 0 */
   initialBalance: number;
   icon: WalletIcon;
   isDefault: boolean;
@@ -192,7 +191,6 @@ export const WalletInputIcon = {
 export interface WalletInput {
   /** @minLength 1 */
   title: string;
-  /** @minimum 0 */
   initialBalance: number;
   icon?: WalletInputIcon;
 }
@@ -207,7 +205,6 @@ export const WalletUpdateIcon = {
 export interface WalletUpdate {
   /** @minLength 1 */
   title?: string;
-  /** @minimum 0 */
   initialBalance?: number;
   icon?: WalletUpdateIcon;
 }

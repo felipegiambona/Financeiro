@@ -10,7 +10,6 @@ import type { WalletUpdateIcon } from './walletUpdateIcon';
 export interface WalletUpdate {
   /** @minLength 1 */
   title?: string;
-  /** @minimum 0 */
   initialBalance?: number;
   icon?: WalletUpdateIcon;
 }

@@ -10,7 +10,6 @@ import type { WalletInputIcon } from './walletInputIcon';
 export interface WalletInput {
   /** @minLength 1 */
   title: string;
-  /** @minimum 0 */
   initialBalance: number;
   icon?: WalletInputIcon;
 }
