@@ -9,6 +9,7 @@ export const WALLET_ICON_OPTIONS = [
   { icon: 'bank-transfer', label: 'Inter' },
   { icon: 'finance', label: 'BTG' },
   { icon: 'card-account-details-outline', label: 'PicPay' },
+  { icon: 'recargapay', label: 'RecargaPay' },
 ] as const;
 
 export type WalletIcon = typeof WALLET_ICON_OPTIONS[number]['icon'];

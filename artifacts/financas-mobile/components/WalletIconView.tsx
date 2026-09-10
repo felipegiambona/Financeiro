@@ -13,6 +13,7 @@ const LOGO_ASSETS: Partial<Record<WalletIcon, ImageSourcePropType>> = {
   'bank-transfer': require('../assets/wallet-logos/inter.svg'),
   finance: require('../assets/wallet-logos/btg.png'),
   'card-account-details-outline': require('../assets/wallet-logos/picpay.svg'),
+  recargapay: require('../assets/wallet-logos/recargapay.png'),
 };
 
 const WIDE_LOGOS = new Set<WalletIcon>([
@@ -22,7 +23,7 @@ const WIDE_LOGOS = new Set<WalletIcon>([
 ]);
 
 function isPngAsset(icon: WalletIcon): boolean {
-  return icon === 'finance';
+  return icon === 'finance' || icon === 'recargapay';
 }
 
 export function WalletIconView({
