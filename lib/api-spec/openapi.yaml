@@ -318,18 +318,18 @@ components:
         initialBalance: { type: number, minimum: 0 }
         icon:
           type: string
-          enum: [wallet-outline, bank-outline, credit-card-outline, cash, safe-square-outline, wallet, briefcase-outline, bank-transfer, finance, card-account-details-outline, recargapay]
+          enum: [wallet-outline]
         isDefault: { type: boolean }
         createdAt: { type: string, format: date-time }
     WalletInput:
       type: object
-      required: [title, initialBalance, icon]
+      required: [title, initialBalance]
       properties:
         title: { type: string, minLength: 1 }
         initialBalance: { type: number, minimum: 0 }
         icon:
           type: string
-          enum: [wallet-outline, bank-outline, credit-card-outline, cash, safe-square-outline, wallet, briefcase-outline, bank-transfer, finance, card-account-details-outline, recargapay]
+          enum: [wallet-outline]
     WalletUpdate:
       type: object
       properties:
@@ -337,5 +337,5 @@ components:
         initialBalance: { type: number, minimum: 0 }
         icon:
           type: string
-          enum: [wallet-outline, bank-outline, credit-card-outline, cash, safe-square-outline, wallet, briefcase-outline, bank-transfer, finance, card-account-details-outline, recargapay]
+          enum: [wallet-outline]
 

@@ -11,14 +11,4 @@ export type WalletIcon = typeof WalletIcon[keyof typeof WalletIcon];
 
 export const WalletIcon = {
   'wallet-outline': 'wallet-outline',
-  'bank-outline': 'bank-outline',
-  'credit-card-outline': 'credit-card-outline',
-  cash: 'cash',
-  'safe-square-outline': 'safe-square-outline',
-  wallet: 'wallet',
-  'briefcase-outline': 'briefcase-outline',
-  'bank-transfer': 'bank-transfer',
-  finance: 'finance',
-  'card-account-details-outline': 'card-account-details-outline',
-  recargapay: 'recargapay',
 } as const;

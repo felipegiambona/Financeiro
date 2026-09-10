@@ -234,7 +234,7 @@ export const ListWalletsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
   "initialBalance": zod.number().min(listWalletsResponseInitialBalanceMin),
-  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline', 'recargapay']),
+  "icon": zod.enum(['wallet-outline']),
   "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -249,7 +249,7 @@ export const createWalletBodyInitialBalanceMin = 0;
 export const CreateWalletBody = zod.object({
   "title": zod.string().min(1),
   "initialBalance": zod.number().min(createWalletBodyInitialBalanceMin),
-  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline', 'recargapay'])
+  "icon": zod.enum(['wallet-outline']).optional()
 })
 
 export const createWalletResponseInitialBalanceMin = 0;
@@ -260,7 +260,7 @@ export const CreateWalletResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
   "initialBalance": zod.number().min(createWalletResponseInitialBalanceMin),
-  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline', 'recargapay']),
+  "icon": zod.enum(['wallet-outline']),
   "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -278,7 +278,7 @@ export const updateWalletBodyInitialBalanceMin = 0;
 export const UpdateWalletBody = zod.object({
   "title": zod.string().min(1).optional(),
   "initialBalance": zod.number().min(updateWalletBodyInitialBalanceMin).optional(),
-  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline', 'recargapay']).optional()
+  "icon": zod.enum(['wallet-outline']).optional()
 })
 
 export const updateWalletResponseInitialBalanceMin = 0;
@@ -289,7 +289,7 @@ export const UpdateWalletResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
   "initialBalance": zod.number().min(updateWalletResponseInitialBalanceMin),
-  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline', 'recargapay']),
+  "icon": zod.enum(['wallet-outline']),
   "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()
 })

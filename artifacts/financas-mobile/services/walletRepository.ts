@@ -4,12 +4,13 @@ import {
   listWallets,
   updateWallet as updateWalletRequest,
 } from '@workspace/api-client-react';
-import type { NewWalletInput, Wallet } from '@/types/wallet';
+import { DEFAULT_WALLET_ICON, type NewWalletInput, type Wallet } from '@/types/wallet';
 
 function normalizeWallet(value: Wallet): Wallet {
   return {
     ...value,
     initialBalance: Number(value.initialBalance),
+    icon: DEFAULT_WALLET_ICON,
   };
 }
 
@@ -19,12 +20,12 @@ export async function getWallets(): Promise<Wallet[]> {
 }
 
 export async function createWallet(input: NewWalletInput): Promise<Wallet> {
-  const wallet = await createWalletRequest(input);
+  const wallet = await createWalletRequest({ ...input, icon: DEFAULT_WALLET_ICON });
   return normalizeWallet(wallet as Wallet);
 }
 
 export async function updateWallet(id: string, updates: Partial<Omit<Wallet, 'id' | 'createdAt'>>): Promise<Wallet> {
-  const wallet = await updateWalletRequest(id, updates);
+  const wallet = await updateWalletRequest(id, { ...updates, icon: DEFAULT_WALLET_ICON });
   return normalizeWallet(wallet as Wallet);
 }
 

@@ -1,18 +1,5 @@
-export const WALLET_ICON_OPTIONS = [
-  { icon: 'wallet-outline', label: 'Carteira' },
-  { icon: 'bank-outline', label: 'Itaú' },
-  { icon: 'credit-card-outline', label: 'Nubank' },
-  { icon: 'cash', label: 'Bradesco' },
-  { icon: 'safe-square-outline', label: 'Caixa' },
-  { icon: 'wallet', label: 'Santander' },
-  { icon: 'briefcase-outline', label: 'Banco do Brasil' },
-  { icon: 'bank-transfer', label: 'Inter' },
-  { icon: 'finance', label: 'BTG' },
-  { icon: 'card-account-details-outline', label: 'PicPay' },
-  { icon: 'recargapay', label: 'RecargaPay' },
-] as const;
-
-export type WalletIcon = typeof WALLET_ICON_OPTIONS[number]['icon'];
+export const DEFAULT_WALLET_ICON = 'wallet-outline' as const;
+export type WalletIcon = typeof DEFAULT_WALLET_ICON;
 
 export interface Wallet {
   id: string;
@@ -26,5 +13,4 @@ export interface Wallet {
 export interface NewWalletInput {
   title: string;
   initialBalance: number;
-  icon: WalletIcon;
 }

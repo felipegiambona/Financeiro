@@ -9,28 +9,18 @@ import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
 import { useWallets } from '@/context/WalletContext';
 import { calculateWalletTotals } from '@/services/financialRules';
-import {
-  WALLET_ICON_OPTIONS,
-  type Wallet,
-  type WalletIcon,
-} from '@/types/wallet';
+import type { Wallet } from '@/types/wallet';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
 
 interface WalletForm {
   title: string;
   initialBalance: string;
-  icon: WalletIcon;
 }
 
 const EMPTY_FORM: WalletForm = {
   title: '',
   initialBalance: '0,00',
-  icon: 'wallet-outline',
 };
-
-function iconLabel(icon: WalletIcon): string {
-  return WALLET_ICON_OPTIONS.find((option) => option.icon === icon)?.label ?? 'Carteira';
-}
 
 export default function WalletsScreen() {
   const colors = useColors();
@@ -62,7 +52,6 @@ export default function WalletsScreen() {
     setForm({
       title: wallet.title,
       initialBalance: formatAmountValue(wallet.initialBalance),
-      icon: wallet.icon,
     });
     setModalVisible(true);
   };
@@ -88,9 +77,9 @@ export default function WalletsScreen() {
     try {
       setSaving(true);
       if (editingWalletId) {
-        await updateWallet(editingWalletId, { title, initialBalance, icon: form.icon });
+        await updateWallet(editingWalletId, { title, initialBalance });
       } else {
-        await createWallet({ title, initialBalance, icon: form.icon });
+        await createWallet({ title, initialBalance });
       }
       setModalVisible(false);
       setEditingWalletId(null);
@@ -149,7 +138,7 @@ export default function WalletsScreen() {
                 </View>
                 <View style={styles.walletCopy}>
                   <Text numberOfLines={1} style={[styles.walletTitle, { color: colors.foreground }]}>{wallet.title}</Text>
-                  <Text style={[styles.walletType, { color: colors.mutedForeground }]}>{iconLabel(wallet.icon)}</Text>
+                  <Text style={[styles.walletType, { color: colors.mutedForeground }]}>Carteira</Text>
                   <Text style={[styles.walletBalance, { color: total >= 0 ? colors.income : colors.expense }]}>{formatCurrency(total)}</Text>
                 </View>
                 <View style={styles.walletActions}>
@@ -232,35 +221,6 @@ export default function WalletsScreen() {
                 />
               </View>
 
-              <Text style={[styles.label, { color: colors.foreground }]}>Ícone da conta</Text>
-              <View style={styles.iconGrid}>
-                {WALLET_ICON_OPTIONS.map((option) => {
-                  const active = form.icon === option.icon;
-                  return (
-                    <Pressable
-                      key={option.icon}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      accessibilityLabel={`Ícone ${option.label}`}
-                      testID={`wallet-icon-${option.icon}`}
-                      onPress={() => setForm((current) => ({ ...current, icon: option.icon }))}
-                      style={[
-                        styles.iconOption,
-                        {
-                          backgroundColor: active ? colors.primary : colors.background,
-                          borderColor: active ? colors.primary : colors.border,
-                        },
-                      ]}
-                    >
-                      <WalletIconView icon={option.icon} size={20} color={active ? colors.primaryForeground : colors.foreground} />
-                      <Text numberOfLines={1} style={[styles.iconLabel, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
               <View style={styles.formActions}>
                 <Pressable
                   accessibilityRole="button"
@@ -314,9 +274,6 @@ const styles = StyleSheet.create({
   amountShell: { minHeight: 46, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
   currencyPrefix: { fontSize: 13, fontFamily: 'Inter_600SemiBold', marginRight: 7 },
   amountInput: { flex: 1, minWidth: 0, paddingVertical: 0, fontSize: 13, fontFamily: 'Inter_400Regular' },
-  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  iconOption: { width: '18.5%', minHeight: 62, borderRadius: 8, borderWidth: 1, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  iconLabel: { fontSize: 8, fontFamily: 'Inter_500Medium', textAlign: 'center' },
   formActions: { flexDirection: 'row', gap: 8, marginTop: 20 },
   cancelButton: { flex: 1, minHeight: 45, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   cancelLabel: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },

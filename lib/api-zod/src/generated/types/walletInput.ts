@@ -12,5 +12,5 @@ export interface WalletInput {
   title: string;
   /** @minimum 0 */
   initialBalance: number;
-  icon: WalletInputIcon;
+  icon?: WalletInputIcon;
 }

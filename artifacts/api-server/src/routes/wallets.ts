@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { db, transactionsTable, walletsTable } from "@workspace/db";
 import {
   CreateWalletBody,
@@ -53,6 +53,7 @@ export async function getUserWallet(userId: string, walletId?: string) {
 function toResponse(row: typeof walletsTable.$inferSelect) {
   return {
     ...row,
+    icon: "wallet-outline",
     initialBalance: Number(row.initialBalance),
     createdAt: row.createdAt.toISOString(),
   };
@@ -62,20 +63,19 @@ function serializeWallet(row: typeof walletsTable.$inferSelect) {
   return CreateWalletResponse.parse(toResponse(row));
 }
 
-async function migrateLegacyRecargaPayWallets(userId: string) {
+async function standardizeWalletIcons(userId: string) {
   await db.update(walletsTable)
-    .set({ icon: "recargapay" })
+    .set({ icon: "wallet-outline" })
     .where(and(
       eq(walletsTable.userId, userId),
-      ne(walletsTable.icon, "recargapay"),
-      sql`regexp_replace(lower(trim(${walletsTable.title})), '[^a-z0-9]', '', 'g') = 'recargapay'`,
+      ne(walletsTable.icon, "wallet-outline"),
     ));
 }
 
 router.get("/wallets", async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
   await ensureDefaultWallet(userId);
-  await migrateLegacyRecargaPayWallets(userId);
+  await standardizeWalletIcons(userId);
   const rows = await db.select().from(walletsTable)
     .where(eq(walletsTable.userId, userId))
     .orderBy(asc(walletsTable.createdAt));
@@ -91,9 +91,10 @@ router.post("/wallets", async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
   await ensureDefaultWallet(userId);
   const [row] = await db.insert(walletsTable).values({
-    ...parsed.data,
+    title: parsed.data.title,
     userId,
     initialBalance: String(parsed.data.initialBalance),
+    icon: "wallet-outline",
     isDefault: false,
   }).returning();
   res.status(201).json(serializeWallet(row));
@@ -109,6 +110,7 @@ router.patch("/wallets/:id", async (req, res): Promise<void> => {
   const { initialBalance, ...otherUpdates } = body.data;
   const updates = {
     ...otherUpdates,
+    icon: "wallet-outline",
     ...(initialBalance === undefined ? {} : { initialBalance: String(initialBalance) }),
   };
   const [row] = await db.update(walletsTable).set(updates)

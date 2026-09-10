@@ -170,16 +170,6 @@ export type WalletIcon = typeof WalletIcon[keyof typeof WalletIcon];
 
 export const WalletIcon = {
   'wallet-outline': 'wallet-outline',
-  'bank-outline': 'bank-outline',
-  'credit-card-outline': 'credit-card-outline',
-  cash: 'cash',
-  'safe-square-outline': 'safe-square-outline',
-  wallet: 'wallet',
-  'briefcase-outline': 'briefcase-outline',
-  'bank-transfer': 'bank-transfer',
-  finance: 'finance',
-  'card-account-details-outline': 'card-account-details-outline',
-  recargapay: 'recargapay',
 } as const;
 
 export interface Wallet {
@@ -197,16 +187,6 @@ export type WalletInputIcon = typeof WalletInputIcon[keyof typeof WalletInputIco
 
 export const WalletInputIcon = {
   'wallet-outline': 'wallet-outline',
-  'bank-outline': 'bank-outline',
-  'credit-card-outline': 'credit-card-outline',
-  cash: 'cash',
-  'safe-square-outline': 'safe-square-outline',
-  wallet: 'wallet',
-  'briefcase-outline': 'briefcase-outline',
-  'bank-transfer': 'bank-transfer',
-  finance: 'finance',
-  'card-account-details-outline': 'card-account-details-outline',
-  recargapay: 'recargapay',
 } as const;
 
 export interface WalletInput {
@@ -214,7 +194,7 @@ export interface WalletInput {
   title: string;
   /** @minimum 0 */
   initialBalance: number;
-  icon: WalletInputIcon;
+  icon?: WalletInputIcon;
 }
 
 export type WalletUpdateIcon = typeof WalletUpdateIcon[keyof typeof WalletUpdateIcon];
@@ -222,16 +202,6 @@ export type WalletUpdateIcon = typeof WalletUpdateIcon[keyof typeof WalletUpdate
 
 export const WalletUpdateIcon = {
   'wallet-outline': 'wallet-outline',
-  'bank-outline': 'bank-outline',
-  'credit-card-outline': 'credit-card-outline',
-  cash: 'cash',
-  'safe-square-outline': 'safe-square-outline',
-  wallet: 'wallet',
-  'briefcase-outline': 'briefcase-outline',
-  'bank-transfer': 'bank-transfer',
-  finance: 'finance',
-  'card-account-details-outline': 'card-account-details-outline',
-  recargapay: 'recargapay',
 } as const;
 
 export interface WalletUpdate {
