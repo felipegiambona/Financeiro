@@ -147,6 +147,7 @@ export default function TransactionsScreen() {
         } else if (transaction.type === 'expense') {
           summary.expense += transaction.amount;
         } else if (transaction.type === 'transfer') {
+          summary.transferTotal += transaction.amount;
           if (walletFilter !== 'all' && transaction.destinationWalletId === walletFilter) {
             summary.transfer += transaction.amount;
           } else if (walletFilter !== 'all' && transaction.walletId === walletFilter) {
@@ -155,7 +156,7 @@ export default function TransactionsScreen() {
         }
         return summary;
       },
-      { income: 0, expense: 0, transfer: 0 },
+      { income: 0, expense: 0, transfer: 0, transferTotal: 0 },
     ),
     [filteredTransactions, walletFilter],
   );
@@ -503,7 +504,11 @@ export default function TransactionsScreen() {
                   Total
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.foreground }]}>
-                  {formatCurrency(filteredSummary.income - filteredSummary.expense + filteredSummary.transfer)}
+                  {formatCurrency(
+                    typeFilter === 'transfer'
+                      ? filteredSummary.transferTotal
+                      : filteredSummary.income - filteredSummary.expense + filteredSummary.transfer,
+                  )}
                 </Text>
               </View>
             ) : null}
