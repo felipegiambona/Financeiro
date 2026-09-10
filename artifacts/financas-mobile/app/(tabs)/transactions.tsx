@@ -147,13 +147,17 @@ export default function TransactionsScreen() {
         } else if (transaction.type === 'expense') {
           summary.expense += transaction.amount;
         } else if (transaction.type === 'transfer') {
-          summary.transfer += transaction.amount;
+          if (walletFilter !== 'all' && transaction.destinationWalletId === walletFilter) {
+            summary.transfer += transaction.amount;
+          } else if (walletFilter !== 'all' && transaction.walletId === walletFilter) {
+            summary.transfer -= transaction.amount;
+          }
         }
         return summary;
       },
       { income: 0, expense: 0, transfer: 0 },
     ),
-    [filteredTransactions],
+    [filteredTransactions, walletFilter],
   );
   const currentBalance = calculateCurrentBalance(wallets, transactions);
   const forecast = calculateForecast(transactions, selectedMonth);
@@ -496,10 +500,10 @@ export default function TransactionsScreen() {
             {filteredTransactions.length > 0 ? (
               <View style={styles.monthSummary}>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
-                  {typeFilter === 'transfer' ? 'Total transferido' : 'No mês selecionado'}
+                  {walletFilter !== 'all' ? 'Impacto na carteira' : typeFilter === 'transfer' ? 'Total transferido' : 'No mês selecionado'}
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.foreground }]}>
-                  {formatCurrency(typeFilter === 'transfer' ? filteredSummary.transfer : filteredSummary.income - filteredSummary.expense)}
+                  {formatCurrency(filteredSummary.income - filteredSummary.expense + filteredSummary.transfer)}
                 </Text>
               </View>
             ) : null}
