@@ -28,8 +28,8 @@ type StatusFilter = 'all' | 'paid' | 'unpaid';
 
 const TYPE_FILTERS: Array<{ value: TypeFilter; label: string }> = [
   { value: 'all', label: 'Todos' },
-  { value: 'income', label: 'Receitas' },
   { value: 'expense', label: 'Despesas' },
+  { value: 'income', label: 'Receitas' },
   { value: 'transfer', label: 'Transferências' },
 ];
 
@@ -179,6 +179,30 @@ export default function TransactionsScreen() {
     }
   };
 
+  const renderTypeFilter = (option: { value: TypeFilter; label: string }) => {
+    const active = typeFilter === option.value;
+    return (
+      <Pressable
+        key={option.value}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={`Filtrar por ${option.label.toLowerCase()}`}
+        onPress={() => {
+          setTypeFilter(option.value);
+          leaveSelectionMode();
+        }}
+        style={[
+          styles.filterChip,
+          { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+        ]}
+      >
+        <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
+          {option.label}
+        </Text>
+      </Pressable>
+    );
+  };
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -258,30 +282,13 @@ export default function TransactionsScreen() {
             <View style={styles.moreFiltersContent}>
               <View style={styles.filterGroup}>
                 <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Tipo</Text>
-                <View style={styles.filterOptions}>
-                  {TYPE_FILTERS.map((option) => {
-                    const active = typeFilter === option.value;
-                    return (
-                      <Pressable
-                        key={option.value}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        accessibilityLabel={`Filtrar por ${option.label.toLowerCase()}`}
-                        onPress={() => {
-                          setTypeFilter(option.value);
-                          leaveSelectionMode();
-                        }}
-                        style={[
-                          styles.filterChip,
-                          { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
-                        ]}
-                      >
-                        <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                <View style={styles.filterRows}>
+                  <View style={styles.filterRow}>
+                    {TYPE_FILTERS.slice(0, 2).map(renderTypeFilter)}
+                  </View>
+                  <View style={styles.filterRow}>
+                    {TYPE_FILTERS.slice(2).map(renderTypeFilter)}
+                  </View>
                 </View>
               </View>
               <View style={styles.filterGroup}>
@@ -467,6 +474,8 @@ const styles = StyleSheet.create({
   moreFiltersContent: { gap: 7, paddingTop: 1 },
   filterGroup: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
   filterLabel: { width: 43, fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  filterRows: { flex: 1, gap: 5 },
+  filterRow: { flexDirection: 'row', gap: 5 },
   filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   filterChip: { minHeight: 28, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
