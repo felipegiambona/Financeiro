@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   filterChip: { minHeight: 28, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
-  clearFiltersAction: { alignSelf: 'flex-start', minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 3 },
+  clearFiltersAction: { alignSelf: 'flex-start', marginLeft: 50, minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 3 },
   clearFiltersLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   metrics: { flexDirection: 'row', gap: 7, marginBottom: 16 },
   metric: { flex: 1, minHeight: 64, borderRadius: 8, borderWidth: 1, padding: 10, justifyContent: 'space-between' },
