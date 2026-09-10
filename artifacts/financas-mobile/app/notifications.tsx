@@ -81,7 +81,7 @@ export default function NotificationsScreen() {
                         {isTransfer ? '' : isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}
                       </Text>
                     </View>
-                    <View style={styles.pendingBottom}>
+                    <View style={[styles.pendingBottom, { borderTopColor: colors.border }]}>
                       <Text style={[styles.status, { color: colors.pending }]}>Não pago</Text>
                       <Pressable
                         accessibilityRole="button"
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   description: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   date: { fontSize: 10, fontFamily: 'Inter_500Medium', marginTop: 3 },
   amount: { fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'right' },
-  pendingBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: '#292929' },
+  pendingBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 10, paddingTop: 9, borderTopWidth: 1 },
   status: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   payButton: { minHeight: 28, borderRadius: 6, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
   payButtonText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
