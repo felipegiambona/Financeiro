@@ -512,7 +512,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                   ]}
                 >
                   <View style={styles.walletMenuIcon}>
-                    <MaterialCommunityIcons name={wallet.icon} size={18} color={active ? colors.primary : colors.mutedForeground} />
+                    <WalletIconView icon={wallet.icon} size={18} color={active ? colors.primary : colors.mutedForeground} />
                   </View>
                   <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: colors.foreground }]}>{wallet.title}</Text>
                   <View style={styles.walletMenuTrailing}>

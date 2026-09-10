@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, LoadingState } from '@/components/StateView';
+import { WalletIconView } from '@/components/WalletIconView';
 import { useFinance } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWallets } from '@/context/WalletContext';
@@ -112,7 +113,11 @@ export default function DashboardScreen() {
                   >
                     <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Gerenciar</Text>
                   </Pressable>
-                  <MaterialCommunityIcons name="wallet-outline" size={18} color={colors.mutedForeground} />
+                  <WalletIconView
+                    icon={walletTotals[0]?.wallet.icon ?? 'wallet-outline'}
+                    size={18}
+                    color={colors.mutedForeground}
+                  />
                 </View>
               </View>
               {walletsLoading ? (
@@ -130,7 +135,7 @@ export default function DashboardScreen() {
                       ]}
                     >
                       <View style={styles.walletName}>
-                        <MaterialCommunityIcons name={wallet.icon} size={17} color={colors.mutedForeground} />
+                        <WalletIconView icon={wallet.icon} size={17} color={colors.mutedForeground} />
                         <Text numberOfLines={1} style={[styles.walletNameText, { color: colors.foreground }]}>{wallet.title}</Text>
                       </View>
                       <Text style={[styles.walletValue, { color: total >= 0 ? colors.income : colors.expense }]}>
