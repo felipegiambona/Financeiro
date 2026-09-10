@@ -95,20 +95,16 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [destinationWalletId, setDestinationWalletId] = useState(transaction?.destinationWalletId ?? '');
   const [dueDate, setDueDate] = useState(transaction?.dueDate ? toDateInput(transaction.dueDate) : '');
   const [recurrence, setRecurrence] = useState<RecurrenceKind>(transaction?.recurrence.kind ?? 'none');
-  const [recurrenceInterval, setRecurrenceInterval] = useState(String(transaction?.recurrence.interval ?? ''));
+  const [recurrenceCount, setRecurrenceCount] = useState(String(transaction?.recurrence.occurrences ?? ''));
   const [recurrencePeriod, setRecurrencePeriod] = useState<RecurrencePeriod>(getInitialPeriod(transaction));
   const [installmentCount, setInstallmentCount] = useState(
     transaction?.recurrence.kind === 'installment' ? String(transaction.recurrence.occurrences ?? '') : '',
   );
   const [amountMode, setAmountMode] = useState<InstallmentAmountMode>(transaction?.recurrence.amountMode ?? 'installment');
-  const [recurrenceEndDate, setRecurrenceEndDate] = useState(
-    transaction?.recurrence.endDate ? toDateInput(transaction.recurrence.endDate) : '',
-  );
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const [walletPickerTarget, setWalletPickerTarget] = useState<'source' | 'destination'>('source');
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [recurrenceEndDatePickerOpen, setRecurrenceEndDatePickerOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -149,8 +145,8 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
       return;
     }
     const selectedPeriod = RECURRENCE_PERIODS.find((option) => option.value === recurrencePeriod) ?? RECURRENCE_PERIODS[2];
-    const numericInterval = Number(recurrenceInterval);
-    if (recurrence === 'recurring' && (!Number.isInteger(numericInterval) || numericInterval <= 0)) {
+    const numericRecurrenceCount = Number(recurrenceCount);
+    if (recurrence === 'recurring' && (!Number.isInteger(numericRecurrenceCount) || numericRecurrenceCount <= 0)) {
       setError('Informe uma recorrência válida.');
       return;
     }
@@ -159,28 +155,14 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
       setError('Informe uma quantidade de parcelas válida.');
       return;
     }
-    const parsedRecurrenceEndDate = recurrenceEndDate ? parseDateInput(recurrenceEndDate) : null;
-    if (recurrence === 'recurring' && recurrenceEndDate && !parsedRecurrenceEndDate) {
-      setError('Informe uma data final de recorrência válida no formato DD/MM/AAAA.');
-      return;
-    }
-    const recurrenceStartDate = parsedDueDate ?? new Date();
-    if (
-      recurrence === 'recurring'
-      && parsedRecurrenceEndDate
-      && parsedRecurrenceEndDate.getTime() < recurrenceStartDate.getTime()
-    ) {
-      setError('A data final deve ser igual ou posterior ao início da recorrência.');
-      return;
-    }
 
     const recurrenceValue = recurrence === 'recurring'
       ? {
         kind: 'recurring' as const,
-        interval: numericInterval,
+        interval: 1,
         unit: selectedPeriod.unit,
         period: selectedPeriod.value,
-        ...(parsedRecurrenceEndDate ? { endDate: createLocalIsoDate(parsedRecurrenceEndDate) } : {}),
+        occurrences: numericRecurrenceCount,
       }
       : recurrence === 'installment'
         ? {
@@ -399,12 +381,12 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-         <Text style={[styles.label, { color: colors.foreground }]}>Recorrência</Text>
-        <View style={styles.recurrenceOptions}>
+        <Text style={[styles.label, { color: colors.foreground }]}>Recorrência</Text>
+        <View style={styles.recurrenceTypeOptions}>
           {(['none', 'recurring', 'installment'] as const).map((option) => {
             const active = recurrence === option;
             return (
-              <Pressable key={option} onPress={() => setRecurrence(option)} style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}>
+              <Pressable key={option} onPress={() => setRecurrence(option)} style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}>
                 <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
                 <Text style={[styles.recurrenceText, { color: colors.foreground }]}>
                   {option === 'none' ? 'Não recorrente' : option === 'recurring' ? 'Recorrente' : 'Parcelado'}
@@ -415,13 +397,16 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         </View>
 
         {recurrence === 'recurring' || recurrence === 'installment' ? (
-          <>
-            {recurrence === 'recurring' ? (
-              <>
-                <Text style={[styles.label, { color: colors.foreground }]}>Intervalo</Text>
+          <View style={[styles.schedulePanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Text style={[styles.scheduleTitle, { color: colors.foreground }]}>
+              {recurrence === 'recurring' ? 'Configuração da recorrência' : 'Configuração das parcelas'}
+            </Text>
+            <View style={styles.scheduleRow}>
+              <View style={styles.scheduleFieldWide}>
+                <Text style={[styles.compactLabel, { color: colors.mutedForeground }]}>Intervalo</Text>
                 <Pressable
-                  accessibilityLabel="Selecionar intervalo da recorrência"
-                  testID="recurrence-unit-select"
+                  accessibilityLabel={`Selecionar intervalo ${recurrence === 'recurring' ? 'da recorrência' : 'das parcelas'}`}
+                  testID={recurrence === 'recurring' ? 'recurrence-unit-select' : 'installment-unit-select'}
                   onPress={() => setUnitPickerOpen(true)}
                   style={({ pressed }) => [
                     styles.unitSelect,
@@ -434,77 +419,38 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                   </Text>
                   <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
                 </Pressable>
-                <Text style={[styles.label, { color: colors.foreground }]}>Recorrência</Text>
+              </View>
+              <View style={styles.scheduleFieldNarrow}>
+                <Text style={[styles.compactLabel, { color: colors.mutedForeground }]}>
+                  {recurrence === 'recurring' ? 'Recorrência' : 'Parcelas'}
+                </Text>
                 <View style={[styles.intervalInputShell, { backgroundColor: colors.card, borderColor: colors.input }]}>
                   <TextInput
-                    accessibilityLabel="Recorrência"
-                    testID="recurrence-interval-input"
+                    accessibilityLabel={recurrence === 'recurring' ? 'Recorrência' : 'Quantidade de parcelas'}
+                    testID={recurrence === 'recurring' ? 'recurrence-interval-input' : 'installment-count-input'}
                     keyboardType="number-pad"
-                    placeholder="1"
+                    placeholder={recurrence === 'recurring' ? '1' : '0'}
                     placeholderTextColor={colors.mutedForeground}
-                    value={recurrenceInterval}
-                    onChangeText={(value) => setRecurrenceInterval(value.replace(/\D/g, ''))}
+                    value={recurrence === 'recurring' ? recurrenceCount : installmentCount}
+                    onChangeText={(value) => {
+                      const sanitized = value.replace(/\D/g, '');
+                      if (recurrence === 'recurring') setRecurrenceCount(sanitized);
+                      else setInstallmentCount(sanitized);
+                    }}
                     style={[styles.intervalInput, { color: colors.foreground }]}
                   />
                 </View>
-                <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
-                  O lançamento será repetido a cada {recurrenceInterval || '1'} {selectedPeriodLabel(recurrencePeriod).toLowerCase()}.
-                </Text>
-                <Text style={[styles.label, { color: colors.foreground }]}>Limite da recorrência</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Selecionar data limite da recorrência"
-                  testID="recurrence-end-date-picker"
-                  onPress={() => setRecurrenceEndDatePickerOpen(true)}
-                  style={({ pressed }) => [
-                    styles.dateInputShell,
-                    { backgroundColor: colors.card, borderColor: colors.input },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Feather name="calendar" size={16} color={colors.mutedForeground} />
-                  <Text style={[styles.dateInput, { color: recurrenceEndDate ? colors.foreground : colors.mutedForeground }]}>
-                    {recurrenceEndDate || 'Manter até (opcional)'}
-                  </Text>
-                  <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
-                </Pressable>
-                <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
-                  Sem uma data limite, a recorrência continuará indefinidamente.
-                </Text>
-              </>
-            ) : (
+              </View>
+            </View>
+            <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
+              {recurrence === 'recurring'
+                ? `O lançamento acontecerá ${recurrenceCount || '1'} vez(es), com intervalo ${selectedPeriodLabel(recurrencePeriod).toLowerCase()}.`
+                : `Serão geradas ${installmentCount || '0'} parcela(s) com intervalo ${selectedPeriodLabel(recurrencePeriod).toLowerCase()}.`}
+            </Text>
+            {recurrence === 'installment' ? (
               <>
-                <Text style={[styles.label, { color: colors.foreground }]}>Quantidade de parcelas</Text>
-                <View style={[styles.intervalInputShell, { backgroundColor: colors.card, borderColor: colors.input }]}>
-                  <TextInput
-                    accessibilityLabel="Quantidade de parcelas"
-                    testID="installment-count-input"
-                    keyboardType="number-pad"
-                    placeholder="0"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={installmentCount}
-                    onChangeText={(value) => setInstallmentCount(value.replace(/\D/g, ''))}
-                    style={[styles.intervalInput, { color: colors.foreground }]}
-                  />
-                </View>
-                <Text style={[styles.label, { color: colors.foreground }]}>Intervalo</Text>
-                <Pressable
-                  accessibilityLabel="Selecionar intervalo das parcelas"
-                  testID="installment-unit-select"
-                  onPress={() => setUnitPickerOpen(true)}
-                  style={({ pressed }) => [
-                    styles.unitSelect,
-                    { backgroundColor: colors.card, borderColor: colors.input },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={[styles.unitSelectText, { color: colors.foreground }]}>
-                    {selectedPeriodLabel(recurrencePeriod)}
-                  </Text>
-                  <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
-                </Pressable>
-                <Text style={[styles.label, { color: colors.foreground }]}>Valor considerado</Text>
-                <View style={styles.recurrenceOptions}>
+                <Text style={[styles.compactLabel, { color: colors.mutedForeground }]}>Valor considerado</Text>
+                <View style={styles.amountModeOptions}>
                   {(['installment', 'total'] as InstallmentAmountMode[]).map((option) => {
                     const active = amountMode === option;
                     return (
@@ -512,7 +458,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                         key={option}
                         testID={`amount-mode-${option}`}
                         onPress={() => setAmountMode(option)}
-                        style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}
+                        style={[styles.amountModeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.card : 'transparent' }]}
                       >
                         <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
                         <Text style={[styles.recurrenceText, { color: colors.foreground }]}>
@@ -528,8 +474,8 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                     : 'O valor informado será usado em cada parcela.'}
                 </Text>
               </>
-            )}
-          </>
+            ) : null}
+          </View>
         ) : null}
 
         <Text style={[styles.label, { color: colors.foreground }]}>Status do pagamento</Text>
