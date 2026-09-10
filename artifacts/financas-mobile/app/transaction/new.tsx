@@ -42,6 +42,7 @@ function parseDateInput(value: string): Date | null {
 
 function getInitialPeriod(transaction?: Transaction): RecurrencePeriod {
   if (transaction?.recurrence.period) return transaction.recurrence.period;
+  if (transaction?.recurrence.kind === 'recurring' && transaction.recurrence.occurrences == null) return 'fixed';
   if (transaction?.recurrence.unit === 'week') return 'weekly';
   if (transaction?.recurrence.unit === 'year') return 'annual';
   return 'monthly';
@@ -110,6 +111,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [saving, setSaving] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const amountInputRef = useRef<TextInput>(null);
+  const isFixedRecurrence = recurrence === 'recurring' && recurrencePeriod === 'fixed';
 
   useEffect(() => {
     if (isEditing) return;
@@ -146,7 +148,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
     }
     const selectedPeriod = RECURRENCE_PERIODS.find((option) => option.value === recurrencePeriod) ?? RECURRENCE_PERIODS[2];
     const numericRecurrenceCount = Number(recurrenceCount);
-    if (recurrence === 'recurring' && (!Number.isInteger(numericRecurrenceCount) || numericRecurrenceCount <= 0)) {
+    if (recurrence === 'recurring' && !isFixedRecurrence && (!Number.isInteger(numericRecurrenceCount) || numericRecurrenceCount <= 0)) {
       setError('Informe uma recorrência válida.');
       return;
     }
@@ -162,7 +164,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         interval: 1,
         unit: selectedPeriod.unit,
         period: selectedPeriod.value,
-        occurrences: numericRecurrenceCount,
+        ...(isFixedRecurrence ? {} : { occurrences: numericRecurrenceCount }),
       }
       : recurrence === 'installment'
         ? {
@@ -395,7 +397,14 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           {(['none', 'recurring', 'installment'] as const).map((option) => {
             const active = recurrence === option;
             return (
-              <Pressable key={option} onPress={() => setRecurrence(option)} style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}>
+              <Pressable
+                key={option}
+                onPress={() => {
+                  setRecurrence(option);
+                  if (option === 'installment' && recurrencePeriod === 'fixed') setRecurrencePeriod('monthly');
+                }}
+                style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}
+              >
                 <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
                 <Text style={[styles.recurrenceText, { color: colors.foreground }]}>
                   {option === 'none' ? 'Única' : option === 'recurring' ? 'Recorrente' : 'Parcelado'}
@@ -433,11 +442,12 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 <Text style={[styles.compactLabel, { color: colors.mutedForeground }]}>
                   {recurrence === 'recurring' ? 'Recorrência' : 'Parcelas'}
                 </Text>
-                <View style={[styles.intervalInputShell, { backgroundColor: colors.card, borderColor: colors.input }]}>
+                <View style={[styles.intervalInputShell, { backgroundColor: colors.card, borderColor: colors.input }, isFixedRecurrence && styles.disabled]}>
                   <TextInput
                     accessibilityLabel={recurrence === 'recurring' ? 'Recorrência' : 'Quantidade de parcelas'}
                     testID={recurrence === 'recurring' ? 'recurrence-interval-input' : 'installment-count-input'}
                     keyboardType="number-pad"
+                    editable={!isFixedRecurrence}
                     placeholder={recurrence === 'recurring' ? '1' : '0'}
                     placeholderTextColor={colors.mutedForeground}
                     value={recurrence === 'recurring' ? recurrenceCount : installmentCount}
@@ -452,7 +462,9 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               </View>
             </View>
             <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
-              {recurrence === 'recurring'
+              {isFixedRecurrence
+                ? 'O lançamento acontecerá continuamente, sem limite de ocorrências.'
+                : recurrence === 'recurring'
                 ? `O lançamento acontecerá ${recurrenceCount || '1'} vez(es), com intervalo ${selectedPeriodLabel(recurrencePeriod).toLowerCase()}.`
                 : `Serão geradas ${installmentCount || '0'} parcela(s) com intervalo ${selectedPeriodLabel(recurrencePeriod).toLowerCase()}.`}
             </Text>
@@ -521,7 +533,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <Pressable accessibilityLabel="Fechar seletor" onPress={() => setUnitPickerOpen(false)} style={StyleSheet.absoluteFill} />
           <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Intervalo</Text>
-            {RECURRENCE_PERIODS.map((option) => {
+            {RECURRENCE_PERIODS.filter((option) => recurrence === 'recurring' || option.value !== 'fixed').map((option) => {
               const active = recurrencePeriod === option.value;
               return (
                 <Pressable
@@ -529,6 +541,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                   testID={`recurrence-period-${option.value}`}
                   onPress={() => {
                     setRecurrencePeriod(option.value);
+                    if (recurrence === 'recurring' && option.value === 'fixed') setRecurrenceCount('');
                     setUnitPickerOpen(false);
                   }}
                   style={({ pressed }) => [

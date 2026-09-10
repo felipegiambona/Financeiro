@@ -245,7 +245,7 @@ components:
           enum: [day, week, month, year]
         period:
           type: string
-          enum: [weekly, biweekly, monthly, bimonthly, quarterly, semiannual, annual]
+          enum: [fixed, weekly, biweekly, monthly, bimonthly, quarterly, semiannual, annual]
         frequency:
           type: string
           enum: [monthly, weekly, yearly]

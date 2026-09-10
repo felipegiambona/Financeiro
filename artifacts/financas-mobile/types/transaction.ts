@@ -2,7 +2,7 @@ export type TransactionType = 'income' | 'expense' | 'transfer';
 
 export type RecurrenceKind = 'none' | 'recurring' | 'installment';
 export type RecurrenceUnit = 'day' | 'week' | 'month' | 'year';
-export type RecurrencePeriod = 'weekly' | 'biweekly' | 'monthly' | 'bimonthly' | 'quarterly' | 'semiannual' | 'annual';
+export type RecurrencePeriod = 'fixed' | 'weekly' | 'biweekly' | 'monthly' | 'bimonthly' | 'quarterly' | 'semiannual' | 'annual';
 export type InstallmentAmountMode = 'installment' | 'total';
 
 export type PaymentStatus = 'paid' | 'unpaid';
@@ -13,6 +13,7 @@ export const RECURRENCE_PERIODS: Array<{
   unit: RecurrenceUnit;
   multiplier: number;
 }> = [
+  { value: 'fixed', label: 'Fixo', unit: 'month', multiplier: 1 },
   { value: 'weekly', label: 'Semanal', unit: 'week', multiplier: 1 },
   { value: 'biweekly', label: 'Quinzenal', unit: 'week', multiplier: 2 },
   { value: 'monthly', label: 'Mensal', unit: 'month', multiplier: 1 },

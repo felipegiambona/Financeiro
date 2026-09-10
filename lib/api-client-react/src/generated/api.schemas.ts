@@ -32,6 +32,7 @@ export type RecurrencePeriod = typeof RecurrencePeriod[keyof typeof RecurrencePe
 
 
 export const RecurrencePeriod = {
+  fixed: 'fixed',
   weekly: 'weekly',
   biweekly: 'biweekly',
   monthly: 'monthly',
