@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   searchField: { minHeight: 36, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
   searchInput: { flex: 1, minWidth: 0, paddingVertical: 0, fontSize: 11, fontFamily: 'Inter_400Regular' },
   clearSearchButton: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
-  moreFiltersToggle: { minHeight: 34, flexDirection: 'row', alignItems: 'center', paddingTop: 5 },
+  moreFiltersToggle: { minHeight: 34, flexDirection: 'row', alignItems: 'center' },
   moreFiltersControl: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 7 },
   moreFiltersLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   activeFiltersDot: { width: 6, height: 6, borderRadius: 3 },
