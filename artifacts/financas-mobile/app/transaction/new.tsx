@@ -212,18 +212,27 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 12 }]}>
+        <Pressable accessibilityLabel="Cancelar" onPress={onExit} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
+          <Feather name="x" size={20} color={colors.foreground} />
+        </Pressable>
+        <Text style={[styles.topTitle, { color: colors.foreground }]}>{isEditing ? 'Editar lançamento' : 'Novo lançamento'}</Text>
+        <Pressable
+          testID="save-transaction-button"
+          accessibilityLabel={saving ? 'Salvando lançamento' : isEditing ? 'Salvar alterações' : 'Salvar lançamento'}
+          disabled={saving}
+          onPress={() => void handleSave()}
+          style={({ pressed }) => [styles.topSaveButton, { backgroundColor: colors.primary }, saving && styles.disabled, pressed && styles.pressed]}
+        >
+          <Text style={styles.topSaveText}>{saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar lançamento'}</Text>
+          {!saving ? <Feather name="check" size={16} color="#FFFFFF" /> : null}
+        </Pressable>
+      </View>
       <KeyboardAwareScrollViewCompat
         bottomOffset={24}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.content, { paddingTop: 8, paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topBar}>
-          <Pressable accessibilityLabel="Cancelar" onPress={onExit} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
-            <Feather name="x" size={20} color={colors.foreground} />
-          </Pressable>
-          <Text style={[styles.topTitle, { color: colors.foreground }]}>{isEditing ? 'Editar lançamento' : 'Novo lançamento'}</Text>
-          <View style={styles.topSpacer} />
-        </View>
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>
           {isEditing ? 'Atualize os dados e o status deste lançamento.' : 'Registre uma movimentação para manter seu saldo sempre atualizado.'}
         </Text>
@@ -492,18 +501,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         </View>
 
         {error ? <Text style={[styles.error, { color: colors.expense }]}>{error}</Text> : null}
-        <Pressable
-          testID="save-transaction-button"
-          disabled={saving}
-          onPress={() => void handleSave()}
-          style={({ pressed }) => [styles.saveButton, { backgroundColor: colors.primary }, saving && styles.disabled, pressed && styles.pressed]}
-        >
-          <Text style={styles.saveText}>{saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar lançamento'}</Text>
-          {!saving ? <Feather name="check" size={18} color="#FFFFFF" /> : null}
-        </Pressable>
-        <Pressable disabled={saving} onPress={onExit} style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}>
-          <Text style={[styles.cancelText, { color: colors.mutedForeground }]}>Cancelar</Text>
-        </Pressable>
       </KeyboardAwareScrollViewCompat>
       <DatePickerModal
         visible={datePickerOpen}
@@ -622,10 +619,11 @@ const styles = StyleSheet.create({
   notFoundButton: { minHeight: 42, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   notFoundButtonText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   content: { paddingHorizontal: 16 },
-  topBar: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  topBar: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 },
   closeButton: { width: 32, height: 32, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  topSpacer: { width: 32 },
-  topTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
+  topTitle: { flex: 1, minWidth: 0, fontSize: 16, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+  topSaveButton: { minHeight: 34, maxWidth: 154, borderRadius: 7, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  topSaveText: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_700Bold', flexShrink: 1 },
   intro: { fontSize: 13, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: 10, marginBottom: 18 },
   label: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 6, marginTop: 14 },
   segmented: { borderRadius: 8, padding: 3, flexDirection: 'row', gap: 2 },
@@ -670,10 +668,6 @@ const styles = StyleSheet.create({
   walletMenuOptionText: { flex: 1, minWidth: 0, fontSize: 13, fontFamily: 'Inter_500Medium', marginLeft: 7 },
   walletMenuTrailing: { minWidth: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
   error: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 9 },
-  saveButton: { minHeight: 48, borderRadius: 8, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  saveText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter_700Bold' },
-  cancelButton: { minHeight: 38, alignItems: 'center', justifyContent: 'center' },
-  cancelText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.72 },
 });
