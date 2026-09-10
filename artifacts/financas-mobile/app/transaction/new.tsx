@@ -514,16 +514,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           setDatePickerOpen(false);
         }}
       />
-      <DatePickerModal
-        visible={recurrenceEndDatePickerOpen}
-        value={parseDateInput(recurrenceEndDate) ?? parseDateInput(dueDate) ?? new Date()}
-        eyebrow="LIMITE DA RECORRÊNCIA"
-        onClose={() => setRecurrenceEndDatePickerOpen(false)}
-        onConfirm={(date) => {
-          setRecurrenceEndDate(`${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`);
-          setRecurrenceEndDatePickerOpen(false);
-        }}
-      />
       <Modal
         animationType="fade"
         transparent
@@ -649,12 +639,21 @@ const styles = StyleSheet.create({
   dateInputShell: { minHeight: 46, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 9 },
   dateInput: { flex: 1, paddingVertical: 0, fontSize: 13, fontFamily: 'Inter_500Medium' },
   defaultWalletLabel: { marginLeft: 'auto', fontSize: 10, fontFamily: 'Inter_500Medium' },
-  recurrenceOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  recurrenceOptions: { flexDirection: 'row', gap: 8 },
   recurrenceOption: { flex: 1, minWidth: 140, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  recurrenceTypeOptions: { flexDirection: 'row', gap: 6 },
+  recurrenceTypeOption: { flex: 1, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   radioDot: { width: 7, height: 7, borderRadius: 4 },
   recurrenceText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  intervalRow: { flexDirection: 'row', gap: 8 },
+  schedulePanel: { borderRadius: 9, borderWidth: 1, padding: 10, marginTop: 10, gap: 8 },
+  scheduleTitle: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  scheduleRow: { flexDirection: 'row', gap: 8 },
+  scheduleFieldWide: { flex: 1, minWidth: 0, gap: 5 },
+  scheduleFieldNarrow: { width: 104, gap: 5 },
+  compactLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  amountModeOptions: { flexDirection: 'row', gap: 8 },
+  amountModeOption: { flex: 1, minHeight: 38, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   intervalInputShell: { width: 76, minHeight: 42, borderRadius: 7, borderWidth: 1, justifyContent: 'center' },
   intervalInput: { paddingHorizontal: 12, paddingVertical: 0, fontSize: 14, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
   unitSelect: { flex: 1, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
