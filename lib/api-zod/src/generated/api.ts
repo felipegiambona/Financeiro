@@ -298,3 +298,9 @@ export const DeleteWalletParams = zod.object({
 export const DeleteWalletResponse = zod.void()
 
 
+/**
+ * @summary Permanently delete the authenticated account
+ */
+export const DeleteAccountResponse = zod.void()
+
+

@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -18,7 +18,7 @@ function getInitials(name: string, email: string): string {
 export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { session, signOut } = useAuth();
+  const { session, signOut, deleteAccount } = useAuth();
   const {
     clearPendingNotifications,
     notificationAccessEnabled,
@@ -31,6 +31,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const name = session?.name || 'Usuário';
   const email = session?.email || 'E-mail não informado';
   const initials = useMemo(() => getInitials(name, email), [email, name]);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useFocusEffect(useCallback(() => {
     void refreshNotificationAccess();
@@ -52,6 +53,17 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const handleSignOut = async () => {
     await clearPendingNotifications();
     await signOut();
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+      await clearPendingNotifications();
+    } catch {
+      setDeletingAccount(false);
+      Alert.alert('Não foi possível excluir a conta', 'Sua conta não foi excluída. Tente novamente.');
+    }
   };
 
   return (
@@ -155,6 +167,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
           accessibilityRole="button"
           accessibilityLabel="Sair da conta"
           testID="profile-sign-out-button"
+          disabled={deletingAccount}
           onPress={() => Alert.alert(
             'Sair da conta',
             'As notificações pendentes deste dispositivo serão descartadas.',
@@ -168,6 +181,39 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
           <Feather name="log-out" size={17} color={colors.expense} />
           <Text style={[styles.signOutText, { color: colors.expense }]}>Sair da conta</Text>
         </Pressable>
+
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Zona de perigo</Text>
+        <View style={[styles.deleteCard, { backgroundColor: colors.card, borderColor: colors.expense }]}>
+          <Text style={[styles.deleteTitle, { color: colors.foreground }]}>Excluir conta</Text>
+          <Text style={[styles.deleteDescription, { color: colors.mutedForeground }]}>
+            Remove permanentemente seu perfil, carteiras e lançamentos. Essa ação não pode ser desfeita.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Excluir conta permanentemente"
+            testID="profile-delete-account-button"
+            disabled={deletingAccount}
+            onPress={() => Alert.alert(
+              'Excluir conta permanentemente?',
+              'Todos os seus dados financeiros serão removidos e você não poderá recuperar esta conta.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Excluir conta', style: 'destructive', onPress: () => void handleDeleteAccount() },
+              ],
+            )}
+            style={({ pressed }) => [
+              styles.deleteButton,
+              { backgroundColor: colors.expense, borderColor: colors.expense },
+              deletingAccount && styles.disabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Feather name="trash-2" size={16} color={colors.primaryForeground} />
+            <Text style={[styles.deleteButtonText, { color: colors.primaryForeground }]}>
+              {deletingAccount ? 'Excluindo conta...' : 'Excluir conta'}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </View>
   );
@@ -204,5 +250,11 @@ const styles = StyleSheet.create({
   privacyNote: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular', marginTop: 10 },
   signOutButton: { minHeight: 48, borderRadius: 8, borderWidth: 1, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   signOutText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
+  deleteCard: { borderWidth: 1, borderRadius: 9, padding: 13 },
+  deleteTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
+  deleteDescription: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', marginTop: 5 },
+  deleteButton: { minHeight: 42, borderRadius: 7, borderWidth: 1, marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  deleteButtonText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  disabled: { opacity: 0.5 },
   pressed: { opacity: 0.72 },
 });

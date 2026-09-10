@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useAuth as useClerkAuth, useClerk, useUser } from '@clerk/expo';
-import { setAuthTokenGetter } from '@workspace/api-client-react';
+import { deleteAccount as deleteAccountRequest, setAuthTokenGetter } from '@workspace/api-client-react';
 
 interface AuthSession {
   userId: string;
@@ -12,6 +12,7 @@ interface AuthContextValue {
   session: AuthSession | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,6 +35,12 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     await clerkSignOut();
   }, [clerkSignOut]);
 
+  const deleteAccount = useCallback(async () => {
+    await deleteAccountRequest();
+    setAuthTokenGetter(null);
+    await clerkSignOut().catch(() => undefined);
+  }, [clerkSignOut]);
+
   const session = isSignedIn && userId
     ? {
         userId,
@@ -42,8 +49,8 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
       }
     : null;
   const value = useMemo(
-    () => ({ session, loading: !isLoaded, signOut }),
-    [isLoaded, session?.email, session?.name, session?.userId, signOut],
+    () => ({ session, loading: !isLoaded, signOut, deleteAccount }),
+    [deleteAccount, isLoaded, session?.email, session?.name, session?.userId, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
