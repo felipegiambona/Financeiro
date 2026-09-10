@@ -187,93 +187,100 @@ export default function WalletsScreen() {
         <View style={styles.modalRoot}>
           <Pressable accessibilityLabel="Fechar formulário" onPress={closeModal} style={StyleSheet.absoluteFill} />
           <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={[styles.modalEyebrow, { color: colors.mutedForeground }]}>Carteiras</Text>
-                <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-                  {editingWallet ? 'Editar carteira' : 'Nova carteira'}
-                </Text>
+            <ScrollView
+              style={styles.modalFormScroll}
+              contentContainerStyle={styles.modalFormContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.modalHeader}>
+                <View>
+                  <Text style={[styles.modalEyebrow, { color: colors.mutedForeground }]}>Carteiras</Text>
+                  <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                    {editingWallet ? 'Editar carteira' : 'Nova carteira'}
+                  </Text>
+                </View>
+                <Pressable accessibilityLabel="Fechar" onPress={closeModal} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
+                  <MaterialCommunityIcons name="close" size={18} color={colors.foreground} />
+                </Pressable>
               </View>
-              <Pressable accessibilityLabel="Fechar" onPress={closeModal} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
-                <MaterialCommunityIcons name="close" size={18} color={colors.foreground} />
-              </Pressable>
-            </View>
 
-            <Text style={[styles.label, { color: colors.foreground }]}>Título</Text>
-            <TextInput
-              accessibilityLabel="Título da carteira"
-              testID="wallet-title-input"
-              autoCapitalize="sentences"
-              placeholder="Ex.: Conta principal"
-              placeholderTextColor={colors.mutedForeground}
-              value={form.title}
-              onChangeText={(title) => setForm((current) => ({ ...current, title }))}
-              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
-            />
-
-            <Text style={[styles.label, { color: colors.foreground }]}>Saldo inicial</Text>
-            <View style={[styles.amountShell, { backgroundColor: colors.background, borderColor: colors.input }]}>
-              <Text style={[styles.currencyPrefix, { color: colors.mutedForeground }]}>R$</Text>
+              <Text style={[styles.label, { color: colors.foreground }]}>Título</Text>
               <TextInput
-                accessibilityLabel="Saldo inicial"
-                testID="wallet-balance-input"
-                keyboardType="decimal-pad"
-                placeholder="0,00"
+                accessibilityLabel="Título da carteira"
+                testID="wallet-title-input"
+                autoCapitalize="sentences"
+                placeholder="Ex.: Conta principal"
                 placeholderTextColor={colors.mutedForeground}
-                value={form.initialBalance}
-                onChangeText={(value) => setForm((current) => ({ ...current, initialBalance: formatAmountInput(value) }))}
-                style={[styles.amountInput, { color: colors.foreground }]}
+                value={form.title}
+                onChangeText={(title) => setForm((current) => ({ ...current, title }))}
+                style={[styles.input, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
               />
-            </View>
 
-            <Text style={[styles.label, { color: colors.foreground }]}>Ícone da conta</Text>
-            <View style={styles.iconGrid}>
-              {WALLET_ICON_OPTIONS.map((option) => {
-                const active = form.icon === option.icon;
-                return (
-                  <Pressable
-                    key={option.icon}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Ícone ${option.label}`}
-                    testID={`wallet-icon-${option.icon}`}
-                    onPress={() => setForm((current) => ({ ...current, icon: option.icon }))}
-                    style={[
-                      styles.iconOption,
-                      {
-                        backgroundColor: active ? colors.primary : colors.background,
-                        borderColor: active ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <WalletIconView icon={option.icon} size={20} color={active ? colors.primaryForeground : colors.foreground} />
-                    <Text numberOfLines={1} style={[styles.iconLabel, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+              <Text style={[styles.label, { color: colors.foreground }]}>Saldo inicial</Text>
+              <View style={[styles.amountShell, { backgroundColor: colors.background, borderColor: colors.input }]}>
+                <Text style={[styles.currencyPrefix, { color: colors.mutedForeground }]}>R$</Text>
+                <TextInput
+                  accessibilityLabel="Saldo inicial"
+                  testID="wallet-balance-input"
+                  keyboardType="decimal-pad"
+                  placeholder="0,00"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={form.initialBalance}
+                  onChangeText={(value) => setForm((current) => ({ ...current, initialBalance: formatAmountInput(value) }))}
+                  style={[styles.amountInput, { color: colors.foreground }]}
+                />
+              </View>
 
-            <View style={styles.formActions}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={saving}
-                onPress={closeModal}
-                style={({ pressed }) => [styles.cancelButton, { borderColor: colors.border }, pressed && styles.pressed]}
-              >
-                <Text style={[styles.cancelLabel, { color: colors.foreground }]}>Cancelar</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={saving}
-                testID="save-wallet-button"
-                onPress={() => void handleSave()}
-                style={({ pressed }) => [styles.saveButton, { backgroundColor: colors.accent }, saving && styles.disabled, pressed && styles.pressed]}
-              >
-                <Text style={[styles.saveLabel, { color: colors.accentForeground }]}>{saving ? 'Salvando...' : 'Salvar carteira'}</Text>
-              </Pressable>
-            </View>
+              <Text style={[styles.label, { color: colors.foreground }]}>Ícone da conta</Text>
+              <View style={styles.iconGrid}>
+                {WALLET_ICON_OPTIONS.map((option) => {
+                  const active = form.icon === option.icon;
+                  return (
+                    <Pressable
+                      key={option.icon}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={`Ícone ${option.label}`}
+                      testID={`wallet-icon-${option.icon}`}
+                      onPress={() => setForm((current) => ({ ...current, icon: option.icon }))}
+                      style={[
+                        styles.iconOption,
+                        {
+                          backgroundColor: active ? colors.primary : colors.background,
+                          borderColor: active ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <WalletIconView icon={option.icon} size={20} color={active ? colors.primaryForeground : colors.foreground} />
+                      <Text numberOfLines={1} style={[styles.iconLabel, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View style={styles.formActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={saving}
+                  onPress={closeModal}
+                  style={({ pressed }) => [styles.cancelButton, { borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.cancelLabel, { color: colors.foreground }]}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={saving}
+                  testID="save-wallet-button"
+                  onPress={() => void handleSave()}
+                  style={({ pressed }) => [styles.saveButton, { backgroundColor: colors.accent }, saving && styles.disabled, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.saveLabel, { color: colors.accentForeground }]}>{saving ? 'Salvando...' : 'Salvar carteira'}</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -295,7 +302,9 @@ const styles = StyleSheet.create({
   walletActions: { flexDirection: 'row', gap: 6 },
   iconButton: { width: 30, height: 30, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.76)', justifyContent: 'flex-end' },
-  modalCard: { borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: 1, paddingHorizontal: 18, paddingTop: 17, paddingBottom: 28 },
+  modalCard: { maxHeight: '92%', borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: 1, paddingHorizontal: 18, paddingTop: 17, paddingBottom: 28 },
+  modalFormScroll: { flexShrink: 1 },
+  modalFormContent: { paddingBottom: 1 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
   modalEyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 },
   modalTitle: { fontSize: 20, fontFamily: 'Inter_700Bold' },

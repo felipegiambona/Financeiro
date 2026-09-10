@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { db, transactionsTable, walletsTable } from "@workspace/db";
 import {
   CreateWalletBody,
@@ -62,9 +62,20 @@ function serializeWallet(row: typeof walletsTable.$inferSelect) {
   return CreateWalletResponse.parse(toResponse(row));
 }
 
+async function migrateLegacyRecargaPayWallets(userId: string) {
+  await db.update(walletsTable)
+    .set({ icon: "recargapay" })
+    .where(and(
+      eq(walletsTable.userId, userId),
+      ne(walletsTable.icon, "recargapay"),
+      sql`regexp_replace(lower(trim(${walletsTable.title})), '[^a-z0-9]', '', 'g') = 'recargapay'`,
+    ));
+}
+
 router.get("/wallets", async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
   await ensureDefaultWallet(userId);
+  await migrateLegacyRecargaPayWallets(userId);
   const rows = await db.select().from(walletsTable)
     .where(eq(walletsTable.userId, userId))
     .orderBy(asc(walletsTable.createdAt));
