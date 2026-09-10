@@ -1,6 +1,7 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, LoadingState } from '@/components/StateView';
@@ -73,7 +74,21 @@ export default function DashboardScreen() {
             </View>
             <View style={[styles.walletCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.walletHeader}>
-                <Text style={[styles.walletTitle, { color: colors.foreground }]}>Carteiras</Text>
+                <View style={styles.walletHeaderTitle}>
+                  <Text style={[styles.walletTitle, { color: colors.foreground }]}>Carteiras</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Gerenciar carteiras"
+                    onPress={() => router.push('/wallets')}
+                    style={({ pressed }) => [
+                      styles.manageWalletButton,
+                      { backgroundColor: colors.secondary, borderColor: colors.border },
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Gerenciar</Text>
+                  </Pressable>
+                </View>
                 <MaterialCommunityIcons name="wallet-outline" size={18} color={colors.mutedForeground} />
               </View>
               {walletsLoading ? (
@@ -126,11 +141,15 @@ const styles = StyleSheet.create({
   metricValue: { fontSize: 16, fontFamily: 'Inter_700Bold', marginTop: 5 },
   walletCard: { borderRadius: 9, borderWidth: 1, padding: 14, marginTop: 2 },
   walletHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  walletHeaderTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
   walletTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  manageWalletButton: { minHeight: 27, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  manageWalletButtonText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   walletState: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   walletRows: { gap: 0 },
   walletRow: { minHeight: 43, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   walletName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   walletNameText: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium' },
   walletValue: { fontSize: 13, fontFamily: 'Inter_700Bold', textAlign: 'right' },
+  pressed: { opacity: 0.72 },
 });
