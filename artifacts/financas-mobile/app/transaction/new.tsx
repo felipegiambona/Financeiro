@@ -16,6 +16,7 @@ import {
   PaymentStatus,
   RECURRENCE_PERIODS,
   RecurrenceKind,
+  RecurrenceLimitMode,
   RecurrencePeriod,
   Transaction,
   TransactionType,
@@ -41,11 +42,15 @@ function parseDateInput(value: string): Date | null {
 }
 
 function getInitialPeriod(transaction?: Transaction): RecurrencePeriod {
-  if (transaction?.recurrence.period) return transaction.recurrence.period;
-  if (transaction?.recurrence.kind === 'recurring' && transaction.recurrence.occurrences == null) return 'fixed';
+  if (transaction?.recurrence.period && transaction.recurrence.period !== 'fixed') return transaction.recurrence.period;
   if (transaction?.recurrence.unit === 'week') return 'weekly';
   if (transaction?.recurrence.unit === 'year') return 'annual';
   return 'monthly';
+}
+
+function getInitialLimitMode(transaction?: Transaction): RecurrenceLimitMode {
+  if (transaction?.recurrence.kind !== 'recurring') return 'limited';
+  return transaction.recurrence.period === 'fixed' || transaction.recurrence.occurrences == null ? 'fixed' : 'limited';
 }
 
 function selectedPeriodLabel(period: RecurrencePeriod): string {
@@ -98,6 +103,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [recurrence, setRecurrence] = useState<RecurrenceKind>(transaction?.recurrence.kind ?? 'none');
   const [recurrenceCount, setRecurrenceCount] = useState(String(transaction?.recurrence.occurrences ?? ''));
   const [recurrencePeriod, setRecurrencePeriod] = useState<RecurrencePeriod>(getInitialPeriod(transaction));
+  const [recurrenceLimitMode, setRecurrenceLimitMode] = useState<RecurrenceLimitMode>(getInitialLimitMode(transaction));
   const [installmentCount, setInstallmentCount] = useState(
     transaction?.recurrence.kind === 'installment' ? String(transaction.recurrence.occurrences ?? '') : '',
   );
@@ -111,7 +117,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [saving, setSaving] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const amountInputRef = useRef<TextInput>(null);
-  const isFixedRecurrence = recurrence === 'recurring' && recurrencePeriod === 'fixed';
+  const isFixedRecurrence = recurrence === 'recurring' && recurrenceLimitMode === 'fixed';
 
   useEffect(() => {
     if (isEditing) return;
