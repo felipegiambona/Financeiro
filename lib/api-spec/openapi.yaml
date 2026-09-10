@@ -258,6 +258,11 @@ components:
         occurrences:
           type: integer
           minimum: 1
+        excludedDates:
+          type: array
+          items:
+            type: string
+            format: date
         amountMode:
           type: string
           enum: [installment, total]

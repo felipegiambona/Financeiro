@@ -70,6 +70,7 @@ export interface Recurrence {
   endDate?: string;
   /** @minimum 1 */
   occurrences?: number;
+  excludedDates?: string[];
   amountMode?: RecurrenceAmountMode;
 }
 

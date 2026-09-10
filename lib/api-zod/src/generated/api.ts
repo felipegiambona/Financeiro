@@ -41,6 +41,7 @@ export const ListTransactionsResponseItem = zod.object({
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
   "occurrences": zod.number().int().min(1).optional(),
+  "excludedDates": zod.array(zod.coerce.date()).optional(),
   "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid']),
@@ -74,6 +75,7 @@ export const CreateTransactionBody = zod.object({
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
   "occurrences": zod.number().int().min(1).optional(),
+  "excludedDates": zod.array(zod.coerce.date()).optional(),
   "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid'])
@@ -103,6 +105,7 @@ export const CreateTransactionResponse = zod.object({
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
   "occurrences": zod.number().int().min(1).optional(),
+  "excludedDates": zod.array(zod.coerce.date()).optional(),
   "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid']),
@@ -142,6 +145,7 @@ export const UpdateTransactionBody = zod.object({
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
   "occurrences": zod.number().int().min(1).optional(),
+  "excludedDates": zod.array(zod.coerce.date()).optional(),
   "amountMode": zod.enum(['installment', 'total']).optional()
 }).optional(),
   "paymentStatus": zod.enum(['paid', 'unpaid']).optional(),
@@ -172,6 +176,7 @@ export const UpdateTransactionResponse = zod.object({
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
   "occurrences": zod.number().int().min(1).optional(),
+  "excludedDates": zod.array(zod.coerce.date()).optional(),
   "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid']),
@@ -220,6 +225,7 @@ export const UpdateTransactionOccurrencePaymentStatusResponse = zod.object({
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
   "occurrences": zod.number().int().min(1).optional(),
+  "excludedDates": zod.array(zod.coerce.date()).optional(),
   "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid']),

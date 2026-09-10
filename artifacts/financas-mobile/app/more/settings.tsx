@@ -69,8 +69,8 @@ export default function SettingsScreen() {
                     <Text style={[styles.optionTitle, { color: colors.foreground }]}>{option.title}</Text>
                     <Text style={[styles.optionDescription, { color: colors.mutedForeground }]}>{option.description}</Text>
                   </View>
-                  <View style={[styles.radio, { borderColor: selected ? colors.primary : colors.border }]}>
-                    {selected ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}
+                  <View style={[styles.radio, { borderColor: selected ? colors.radio : colors.border }]}>
+                    {selected ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}
                   </View>
                 </Pressable>
               </React.Fragment>

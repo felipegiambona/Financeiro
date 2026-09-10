@@ -22,5 +22,6 @@ export interface Recurrence {
   endDate?: Date;
   /** @minimum 1 */
   occurrences?: number;
+  excludedDates?: Date[];
   amountMode?: RecurrenceAmountMode;
 }

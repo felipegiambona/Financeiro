@@ -30,6 +30,13 @@ export function normalizeRecurrence(recurrence?: Partial<Recurrence>): Recurrenc
   const occurrences = Number.isInteger(rawOccurrences) && rawOccurrences > 0
     ? rawOccurrences
     : recurrence.kind === 'installment' ? 1 : undefined;
+  const excludedDates = Array.isArray(recurrence.excludedDates)
+    ? Array.from(new Set(
+      recurrence.excludedDates
+        .filter((date): date is string => typeof date === 'string')
+        .map((date) => createLocalIsoDate(parseStoredDate(date))),
+    ))
+    : undefined;
 
   return {
     kind: recurrence.kind,
@@ -38,6 +45,7 @@ export function normalizeRecurrence(recurrence?: Partial<Recurrence>): Recurrenc
     period,
     endDate,
     occurrences,
+    ...(excludedDates && excludedDates.length > 0 ? { excludedDates } : {}),
     ...(recurrence.kind === 'installment' && recurrence.amountMode ? { amountMode: recurrence.amountMode } : {}),
   };
 }
@@ -130,6 +138,7 @@ export function getTransactionOccurrencesInRange(
       if (occurrenceTime < startTime) continue;
 
       const date = createLocalIsoDate(occurrenceDate);
+      if (recurrence.excludedDates?.includes(date)) continue;
       occurrences.push({
         ...transaction,
         amount: recurrence.kind === 'installment'

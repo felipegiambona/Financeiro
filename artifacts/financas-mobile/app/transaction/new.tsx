@@ -261,10 +261,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                     setDestinationWalletId(wallets.find((wallet) => wallet.id !== walletId)?.id ?? '');
                   }
                 }}
-                style={[styles.segment, active && { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[styles.segment, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
               >
-                <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={16} color={active ? (isTransfer ? colors.foreground : isIncome ? colors.income : colors.expense) : colors.mutedForeground} />
-                <Text numberOfLines={1} style={[styles.segmentText, { color: active ? colors.foreground : colors.mutedForeground }]}>{isTransfer ? 'Transferência' : isIncome ? 'Receita' : 'Despesa'}</Text>
+                <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={16} color={active ? colors.primaryForeground : colors.mutedForeground} />
+                <Text numberOfLines={1} style={[styles.segmentText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>{isTransfer ? 'Transferência' : isIncome ? 'Receita' : 'Despesa'}</Text>
               </Pressable>
             );
           })}
@@ -409,10 +409,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                   setRecurrence(option);
                   if (option === 'installment' && recurrencePeriod === 'fixed') setRecurrencePeriod('monthly');
                 }}
-                style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}
+                style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}
               >
-                <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
-                <Text style={[styles.recurrenceText, { color: colors.foreground }]}>
+                <View style={[styles.radio, { borderColor: active ? colors.radio : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}</View>
+                <Text style={[styles.recurrenceText, { color: active ? colors.primaryForeground : colors.foreground }]}>
                   {option === 'none' ? 'Única' : option === 'recurring' ? 'Recorrente' : 'Parcelado'}
                 </Text>
               </Pressable>
@@ -440,10 +440,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                           setRecurrenceLimitMode(option);
                           if (option === 'fixed') setRecurrenceCount('');
                         }}
-                        style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.card : 'transparent' }]}
+                        style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}
                       >
-                        <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
-                        <Text style={[styles.recurrenceText, { color: colors.foreground }]}>
+                        <View style={[styles.radio, { borderColor: active ? colors.radio : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}</View>
+                        <Text style={[styles.recurrenceText, { color: active ? colors.primaryForeground : colors.foreground }]}>
                           {option === 'fixed' ? 'Fixo' : 'Com limite'}
                         </Text>
                       </Pressable>
@@ -513,10 +513,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                         key={option}
                         testID={`amount-mode-${option}`}
                         onPress={() => setAmountMode(option)}
-                        style={[styles.amountModeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.card : 'transparent' }]}
+                        style={[styles.amountModeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}
                       >
-                        <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
-                        <Text style={[styles.recurrenceText, { color: colors.foreground }]}>
+                        <View style={[styles.radio, { borderColor: active ? colors.radio : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}</View>
+                        <Text style={[styles.recurrenceText, { color: active ? colors.primaryForeground : colors.foreground }]}>
                           {option === 'installment' ? 'Valor da parcela' : 'Valor total'}
                         </Text>
                       </Pressable>
@@ -538,9 +538,9 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           {(['paid', 'unpaid'] as PaymentStatus[]).map((option) => {
             const active = paymentStatus === option;
             return (
-              <Pressable key={option} testID={`${option}-status-option`} onPress={() => setPaymentStatus(option)} style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}>
-                <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
-                <Text style={[styles.recurrenceText, { color: colors.foreground }]}>{option === 'paid' ? 'Pago' : 'Não pago'}</Text>
+              <Pressable key={option} testID={`${option}-status-option`} onPress={() => setPaymentStatus(option)} style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}>
+                <View style={[styles.radio, { borderColor: active ? colors.radio : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}</View>
+                <Text style={[styles.recurrenceText, { color: active ? colors.primaryForeground : colors.foreground }]}>{option === 'paid' ? 'Pago' : 'Não pago'}</Text>
               </Pressable>
             );
           })}
@@ -579,12 +579,12 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                   }}
                   style={({ pressed }) => [
                     styles.unitMenuOption,
-                    { borderColor: colors.border, backgroundColor: active ? colors.secondary : colors.card },
+                    { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card },
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.unitMenuOptionText, { color: colors.foreground }]}>{option.label}</Text>
-                  {active ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+                  <Text style={[styles.unitMenuOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{option.label}</Text>
+                  {active ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
                 </Pressable>
               );
             })}
@@ -625,17 +625,17 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                   }}
                   style={({ pressed }) => [
                     styles.unitMenuOption,
-                    { borderColor: colors.border, backgroundColor: active ? colors.secondary : colors.card, opacity: disabled ? 0.45 : 1 },
+                    { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card, opacity: disabled ? 0.45 : 1 },
                     pressed && styles.pressed,
                   ]}
                 >
                   <View style={styles.walletMenuIcon}>
-                    <WalletIconView icon={wallet.icon} size={18} color={active ? colors.primary : colors.mutedForeground} />
+                    <WalletIconView icon={wallet.icon} size={18} color={active ? colors.primaryForeground : colors.mutedForeground} />
                   </View>
-                  <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: colors.foreground }]}>{wallet.title}</Text>
+                  <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{wallet.title}</Text>
                   <View style={styles.walletMenuTrailing}>
                     {wallet.isDefault ? <Text style={[styles.defaultWalletLabel, { color: colors.mutedForeground }]}>Padrão</Text> : null}
-                    {active ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+                    {active ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
                   </View>
                 </Pressable>
               );

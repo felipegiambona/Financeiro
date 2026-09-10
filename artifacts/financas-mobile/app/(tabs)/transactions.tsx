@@ -30,6 +30,11 @@ interface DeleteConfirmation {
   message: string;
   confirmLabel: string;
   onConfirm: () => Promise<void>;
+  options?: Array<{
+    label: string;
+    onConfirm: () => Promise<void>;
+    destructive?: boolean;
+  }>;
 }
 
 type TypeFilter = 'all' | 'income' | 'expense' | 'transfer';
@@ -223,11 +228,33 @@ export default function TransactionsScreen() {
   };
 
   const confirmDeleteOne = (transaction: TransactionOccurrence) => {
+    if (transaction.recurrence.kind !== 'none') {
+      const occurrenceDate = getDateKey(parseStoredDate(transaction.date));
+      const excludedDates = Array.from(new Set([
+        ...(transaction.recurrence.excludedDates ?? []),
+        occurrenceDate,
+      ])).sort();
+      const deleteOnlyOccurrence = () => updateTransaction(transaction.sourceId, {
+        recurrence: {
+          ...transaction.recurrence,
+          excludedDates,
+        },
+      });
+      setDeleteConfirmation({
+        title: 'Excluir ocorrência?',
+        message: 'Escolha se deseja remover apenas este lançamento ou toda a série recorrente.',
+        confirmLabel: 'Toda a série',
+        onConfirm: () => deleteTransaction(transaction.sourceId),
+        options: [
+          { label: 'Apenas este lançamento', onConfirm: deleteOnlyOccurrence },
+          { label: 'Toda a série', onConfirm: () => deleteTransaction(transaction.sourceId), destructive: true },
+        ],
+      });
+      return;
+    }
     setDeleteConfirmation({
       title: 'Excluir lançamento?',
-      message: transaction.recurrence.kind !== 'none'
-        ? 'Esta ação excluirá a série e todas as suas ocorrências.'
-        : 'Esta ação não poderá ser desfeita.',
+      message: 'Esta ação não poderá ser desfeita.',
       confirmLabel: 'Excluir',
       onConfirm: () => deleteTransaction(transaction.sourceId),
     });
@@ -346,7 +373,7 @@ export default function TransactionsScreen() {
             return (
               <Pressable key={getDateKey(month)} onPress={() => setSelectedMonth(month)} style={[styles.monthChip, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}>
                 <Text style={[styles.monthChipText, { color: active ? '#FFFFFF' : colors.mutedForeground }]}>{new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(month).replace('.', '')}</Text>
-                <Text style={[styles.monthChipYear, { color: active ? colors.accent : colors.foreground }]}>{month.getFullYear()}</Text>
+                <Text style={[styles.monthChipYear, { color: active ? colors.primaryForeground : colors.foreground }]}>{month.getFullYear()}</Text>
               </Pressable>
             );
           })}
@@ -668,13 +695,13 @@ export default function TransactionsScreen() {
               }}
               style={({ pressed }) => [
                 styles.walletMenuOption,
-                { backgroundColor: walletFilter === 'all' ? colors.secondary : colors.card, borderColor: colors.border },
+                { backgroundColor: walletFilter === 'all' ? colors.primary : colors.card, borderColor: walletFilter === 'all' ? colors.primary : colors.border },
                 pressed && styles.pressed,
               ]}
             >
-              <Feather name="layers" size={17} color={walletFilter === 'all' ? colors.foreground : colors.mutedForeground} />
-              <Text style={[styles.walletMenuOptionText, { color: colors.foreground }]}>Todas as carteiras</Text>
-              {walletFilter === 'all' ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+              <Feather name="layers" size={17} color={walletFilter === 'all' ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[styles.walletMenuOptionText, { color: walletFilter === 'all' ? colors.primaryForeground : colors.foreground }]}>Todas as carteiras</Text>
+              {walletFilter === 'all' ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
             </Pressable>
             {wallets.map((wallet) => {
               const active = wallet.id === walletFilter;
@@ -689,13 +716,13 @@ export default function TransactionsScreen() {
                   }}
                   style={({ pressed }) => [
                     styles.walletMenuOption,
-                    { backgroundColor: active ? colors.secondary : colors.card, borderColor: colors.border },
+                    { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Feather name="briefcase" size={17} color={active ? colors.foreground : colors.mutedForeground} />
-                  <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: colors.foreground }]}>{wallet.title}</Text>
-                  {active ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+                  <Feather name="briefcase" size={17} color={active ? colors.primaryForeground : colors.mutedForeground} />
+                  <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{wallet.title}</Text>
+                  {active ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
                 </Pressable>
               );
             })}
@@ -721,24 +748,68 @@ export default function TransactionsScreen() {
             </View>
             <Text style={[styles.confirmationTitle, { color: colors.foreground }]}>{deleteConfirmation?.title}</Text>
             <Text style={[styles.confirmationMessage, { color: colors.mutedForeground }]}>{deleteConfirmation?.message}</Text>
-            <View style={styles.confirmationActions}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={deleting}
-                onPress={() => setDeleteConfirmation(null)}
-                style={({ pressed }) => [styles.confirmationCancel, { borderColor: colors.border }, pressed && styles.pressed]}
-              >
-                <Text style={[styles.confirmationCancelLabel, { color: colors.foreground }]}>Cancelar</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={deleting}
-                onPress={() => void executeConfirmedDeletion()}
-                style={({ pressed }) => [styles.confirmationDelete, { backgroundColor: colors.expense }, deleting && styles.disabled, pressed && styles.pressed]}
-              >
-                <Text style={styles.confirmationDeleteLabel}>{deleting ? 'Excluindo...' : deleteConfirmation?.confirmLabel}</Text>
-              </Pressable>
-            </View>
+            {deleteConfirmation?.options ? (
+              <View style={styles.confirmationOptionStack}>
+                {deleteConfirmation.options.map((option) => (
+                  <Pressable
+                    key={option.label}
+                    accessibilityRole="button"
+                    disabled={deleting}
+                    onPress={() => void (async () => {
+                      setDeleting(true);
+                      try {
+                        await option.onConfirm();
+                        setDeleteConfirmation(null);
+                        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      } catch {
+                        Alert.alert('Não foi possível excluir', 'Tente novamente.');
+                      } finally {
+                        setDeleting(false);
+                      }
+                    })()}
+                    style={({ pressed }) => [
+                      styles.confirmationOption,
+                      option.destructive
+                        ? { backgroundColor: colors.expense, borderColor: colors.expense }
+                        : { backgroundColor: colors.card, borderColor: colors.border },
+                      deleting && styles.disabled,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={[styles.confirmationOptionLabel, { color: option.destructive ? '#FFFFFF' : colors.foreground }]}>
+                      {deleting ? 'Excluindo...' : option.label}
+                    </Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={deleting}
+                  onPress={() => setDeleteConfirmation(null)}
+                  style={({ pressed }) => [styles.confirmationCancel, { borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.confirmationCancelLabel, { color: colors.foreground }]}>Cancelar</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.confirmationActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={deleting}
+                  onPress={() => setDeleteConfirmation(null)}
+                  style={({ pressed }) => [styles.confirmationCancel, { borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.confirmationCancelLabel, { color: colors.foreground }]}>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={deleting}
+                  onPress={() => void executeConfirmedDeletion()}
+                  style={({ pressed }) => [styles.confirmationDelete, { backgroundColor: colors.expense }, deleting && styles.disabled, pressed && styles.pressed]}
+                >
+                  <Text style={styles.confirmationDeleteLabel}>{deleting ? 'Excluindo...' : deleteConfirmation?.confirmLabel}</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -815,6 +886,9 @@ const styles = StyleSheet.create({
   confirmationTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', textAlign: 'center' },
   confirmationMessage: { marginTop: 7, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', textAlign: 'center' },
   confirmationActions: { width: '100%', flexDirection: 'row', gap: 8, marginTop: 18 },
+  confirmationOptionStack: { width: '100%', gap: 8, marginTop: 18 },
+  confirmationOption: { minHeight: 40, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  confirmationOptionLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'center' },
   confirmationCancel: { flex: 1, minHeight: 40, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   confirmationCancelLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   confirmationDelete: { flex: 1.35, minHeight: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },

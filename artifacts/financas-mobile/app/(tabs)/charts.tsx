@@ -91,7 +91,7 @@ export default function ChartsScreen() {
                             style={[
                               styles.monthChip,
                               {
-                                backgroundColor: isSelected ? colors.primary : colors.muted,
+                                backgroundColor: isSelected ? colors.primary : colors.card,
                                 borderColor: isSelected ? colors.primary : colors.border,
                               },
                             ]}

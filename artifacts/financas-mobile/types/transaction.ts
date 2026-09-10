@@ -32,6 +32,7 @@ export interface Recurrence {
   startDate?: string;
   endDate?: string;
   occurrences?: number;
+  excludedDates?: string[];
   amountMode?: InstallmentAmountMode;
 }
 
