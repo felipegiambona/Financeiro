@@ -446,9 +446,7 @@ export default function TransactionsScreen() {
               transactionGroups.map((group) => (
                 <View key={group.key} style={styles.transactionGroup}>
                   <View style={styles.groupHeader}>
-                    <View style={[styles.groupRule, { backgroundColor: colors.border }]} />
                     <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>{group.label}</Text>
-                    <View style={[styles.groupRule, { backgroundColor: colors.border }]} />
                   </View>
                   {group.transactions.map((transaction) => (
                     <TransactionRow
@@ -571,8 +569,7 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.72 },
   transactionGroup: { marginBottom: 7 },
-  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3, marginBottom: 7 },
-  groupRule: { flex: 1, height: 1 },
+  groupHeader: { alignItems: 'flex-start', marginTop: 3, marginBottom: 7 },
   groupLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', textTransform: 'capitalize' },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.76)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
   confirmationCard: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 18, alignItems: 'center' },
