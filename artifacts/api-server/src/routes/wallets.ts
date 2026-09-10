@@ -17,29 +17,44 @@ function userIdFrom(req: unknown): string {
   return (req as AuthenticatedRequest).userId;
 }
 
+type StoredWallet = typeof walletsTable.$inferSelect;
+const defaultWalletLocks = new Map<string, Promise<StoredWallet>>();
+
 export async function ensureDefaultWallet(userId: string) {
-  const existing = await db.select().from(walletsTable)
-    .where(eq(walletsTable.userId, userId))
-    .orderBy(asc(walletsTable.createdAt));
-  const currentDefault = existing.find((wallet) => wallet.isDefault);
-  if (currentDefault) return currentDefault;
+  const pending = defaultWalletLocks.get(userId);
+  if (pending) return pending;
 
-  if (existing[0]) {
-    const [updated] = await db.update(walletsTable)
-      .set({ isDefault: true })
-      .where(and(eq(walletsTable.id, existing[0].id), eq(walletsTable.userId, userId)))
-      .returning();
-    return updated;
+  const operation = (async (): Promise<StoredWallet> => {
+    const existing = await db.select().from(walletsTable)
+      .where(eq(walletsTable.userId, userId))
+      .orderBy(asc(walletsTable.createdAt));
+    const currentDefault = existing.find((wallet) => wallet.isDefault);
+    if (currentDefault) return currentDefault;
+
+    if (existing[0]) {
+      const [updated] = await db.update(walletsTable)
+        .set({ isDefault: true })
+        .where(and(eq(walletsTable.id, existing[0].id), eq(walletsTable.userId, userId)))
+        .returning();
+      return updated;
+    }
+
+    const [created] = await db.insert(walletsTable).values({
+      userId,
+      title: "Carteira padrão",
+      initialBalance: "0",
+      icon: "wallet-outline",
+      isDefault: true,
+    }).returning();
+    return created;
+  })();
+
+  defaultWalletLocks.set(userId, operation);
+  try {
+    return await operation;
+  } finally {
+    if (defaultWalletLocks.get(userId) === operation) defaultWalletLocks.delete(userId);
   }
-
-  const [created] = await db.insert(walletsTable).values({
-    userId,
-    title: "Carteira padrão",
-    initialBalance: "0",
-    icon: "wallet-outline",
-    isDefault: true,
-  }).returning();
-  return created;
 }
 
 export async function getUserWallet(userId: string, walletId?: string) {

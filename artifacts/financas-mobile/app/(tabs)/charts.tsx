@@ -81,12 +81,6 @@ export default function ChartsScreen() {
                 </Pressable>
                 {selectedMonth && (
                   <View style={[styles.chartFooter, { borderTopColor: colors.border }]}>
-                    <View style={styles.footerHeader}>
-                      <Text style={[styles.footerLabel, { color: colors.mutedForeground }]}>Maior movimento</Text>
-                      <Text style={[styles.selectedMonthLabel, { color: colors.foreground }]}>
-                        {formatShortMonthLabel(selectedMonth.date)}
-                      </Text>
-                    </View>
                     <View style={styles.monthSelector} accessibilityLabel="Selecionar mês">
                       {totals.map((month) => {
                         const isSelected = month.key === selectedMonth.key;
@@ -161,11 +155,9 @@ const styles = StyleSheet.create({
   bar: { width: 7, minHeight: 0, borderRadius: 2 },
   monthLabel: { fontSize: 9, fontFamily: 'Inter_600SemiBold' },
   chartFooter: { borderTopWidth: 1, paddingTop: 12, marginTop: 14 },
-  footerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   footerLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
   footerValue: { fontSize: 12, fontFamily: 'Inter_700Bold' },
-  selectedMonthLabel: { fontSize: 11, fontFamily: 'Inter_700Bold' },
-  monthSelector: { flexDirection: 'row', gap: 5, marginTop: 10 },
+  monthSelector: { flexDirection: 'row', gap: 5 },
   monthChip: { minWidth: 35, borderRadius: 12, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 5, alignItems: 'center' },
   monthChipText: { fontSize: 9, fontFamily: 'Inter_700Bold' },
   movementRows: { gap: 9, marginTop: 12 },

@@ -19,8 +19,13 @@ export function normalizeRecurrence(recurrence?: Partial<Recurrence>): Recurrenc
   const unit = recurrence.unit ?? legacyUnit ?? 'month';
   const rawInterval = Number(recurrence.interval);
   const interval = Number.isInteger(rawInterval) && rawInterval > 0 ? rawInterval : 1;
+  const endDate = recurrence.endDate
+    ? createLocalIsoDate(parseStoredDate(recurrence.endDate))
+    : undefined;
+  const rawOccurrences = Number(recurrence.occurrences);
+  const occurrences = Number.isInteger(rawOccurrences) && rawOccurrences > 0 ? rawOccurrences : undefined;
 
-  return { kind: 'recurring', interval, unit };
+  return { kind: 'recurring', interval, unit, endDate, occurrences };
 }
 
 function addMonthsClamped(start: Date, months: number): Date {
@@ -80,9 +85,11 @@ export function getTransactionOccurrencesInRange(
     const unit = recurrence.unit ?? 'month';
 
     for (let occurrenceIndex = 0; occurrenceIndex < 100000; occurrenceIndex += 1) {
+      if (recurrence.occurrences !== undefined && occurrenceIndex >= recurrence.occurrences) break;
       const occurrenceDate = getRecurrenceDate(seriesStart, interval, unit, occurrenceIndex);
       const occurrenceTime = occurrenceDate.getTime();
       if (occurrenceTime > endTime) break;
+      if (recurrence.endDate && occurrenceTime > parseStoredDate(recurrence.endDate).getTime()) break;
       if (occurrenceTime < startTime) continue;
 
       const date = createLocalIsoDate(occurrenceDate);

@@ -90,10 +90,14 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [recurrence, setRecurrence] = useState<'none' | 'recurring'>(transaction?.recurrence.kind ?? 'none');
   const [recurrenceInterval, setRecurrenceInterval] = useState(String(transaction?.recurrence.interval ?? 1));
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>(transaction?.recurrence.unit ?? 'month');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState(
+    transaction?.recurrence.endDate ? toDateInput(transaction.recurrence.endDate) : '',
+  );
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const [walletPickerTarget, setWalletPickerTarget] = useState<'source' | 'destination'>('source');
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [recurrenceEndDatePickerOpen, setRecurrenceEndDatePickerOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -138,9 +142,28 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
       setError('Informe um intervalo de recorrência válido.');
       return;
     }
+    const parsedRecurrenceEndDate = recurrenceEndDate ? parseDateInput(recurrenceEndDate) : null;
+    if (recurrence === 'recurring' && recurrenceEndDate && !parsedRecurrenceEndDate) {
+      setError('Informe uma data final de recorrência válida no formato DD/MM/AAAA.');
+      return;
+    }
+    const recurrenceStartDate = parsedDueDate ?? new Date();
+    if (
+      recurrence === 'recurring'
+      && parsedRecurrenceEndDate
+      && parsedRecurrenceEndDate.getTime() < recurrenceStartDate.getTime()
+    ) {
+      setError('A data final deve ser igual ou posterior ao início da recorrência.');
+      return;
+    }
 
     const recurrenceValue = recurrence === 'recurring'
-      ? { kind: 'recurring' as const, interval: numericInterval, unit: recurrenceUnit }
+      ? {
+        kind: 'recurring' as const,
+        interval: numericInterval,
+        unit: recurrenceUnit,
+        ...(parsedRecurrenceEndDate ? { endDate: createLocalIsoDate(parsedRecurrenceEndDate) } : {}),
+      }
       : { kind: 'none' as const };
 
     try {
@@ -400,6 +423,27 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                   : RECURRENCE_UNITS.find((option) => option.value === recurrenceUnit)?.pluralLabel
               }.
             </Text>
+            <Text style={[styles.label, { color: colors.foreground }]}>Limite da recorrência</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Selecionar data limite da recorrência"
+              testID="recurrence-end-date-picker"
+              onPress={() => setRecurrenceEndDatePickerOpen(true)}
+              style={({ pressed }) => [
+                styles.dateInputShell,
+                { backgroundColor: colors.card, borderColor: colors.input },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Feather name="calendar" size={16} color={colors.mutedForeground} />
+              <Text style={[styles.dateInput, { color: recurrenceEndDate ? colors.foreground : colors.mutedForeground }]}>
+                {recurrenceEndDate || 'Manter até (opcional)'}
+              </Text>
+              <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+            </Pressable>
+            <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
+              Sem uma data limite, a recorrência continuará indefinidamente.
+            </Text>
           </>
         ) : null}
 
@@ -437,6 +481,16 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         onConfirm={(date) => {
           setDueDate(`${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`);
           setDatePickerOpen(false);
+        }}
+      />
+      <DatePickerModal
+        visible={recurrenceEndDatePickerOpen}
+        value={parseDateInput(recurrenceEndDate) ?? parseDateInput(dueDate) ?? new Date()}
+        eyebrow="LIMITE DA RECORRÊNCIA"
+        onClose={() => setRecurrenceEndDatePickerOpen(false)}
+        onConfirm={(date) => {
+          setRecurrenceEndDate(`${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`);
+          setRecurrenceEndDatePickerOpen(false);
         }}
       />
       <Modal

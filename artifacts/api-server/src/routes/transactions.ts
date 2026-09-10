@@ -108,7 +108,16 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
   await db.update(transactionsTable)
     .set({ walletId: defaultWallet.id })
     .where(and(eq(transactionsTable.userId, userId), isNull(transactionsTable.walletId)));
-  const { amount, date, dueDate, walletId, destinationWalletId, type, ...otherUpdates } = body.data;
+  const {
+    amount,
+    date,
+    dueDate,
+    walletId,
+    destinationWalletId,
+    type,
+    paymentStatus,
+    ...otherUpdates
+  } = body.data;
   const [current] = await db.select().from(transactionsTable)
     .where(and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId)));
   if (!current) {
@@ -136,6 +145,7 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     ...(dueDate === undefined ? {} : { dueDate: dateOnly(dueDate) }),
     ...(walletId === undefined ? {} : { walletId: wallet.id }),
     ...(type === undefined ? {} : { type }),
+    ...(paymentStatus === undefined ? {} : { paymentStatus }),
     ...(destinationWalletId === undefined && type === undefined
       ? {}
       : { destinationWalletId: effectiveType === "transfer" ? destinationWallet?.id : null }),

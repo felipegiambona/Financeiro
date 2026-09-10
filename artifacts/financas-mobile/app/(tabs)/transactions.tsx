@@ -11,7 +11,7 @@ import { useFinance } from '@/context/FinanceContext';
 import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateForecast } from '@/services/financialRules';
-import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
+import { getTransactionOccurrencesForMonth, getTransactionOccurrencesInRange } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
 import {
   formatMonthLabel,
@@ -23,6 +23,7 @@ import {
   shiftMonth,
 } from '@/utils/date';
 import { TransactionOccurrence } from '@/types/transaction';
+import { DatePickerModal } from '@/components/DatePickerModal';
 
 interface DeleteConfirmation {
   title: string;
@@ -33,6 +34,8 @@ interface DeleteConfirmation {
 
 type TypeFilter = 'all' | 'income' | 'expense' | 'transfer';
 type StatusFilter = 'all' | 'paid' | 'unpaid';
+type RecurrenceFilter = 'all' | 'recurring' | 'nonRecurring';
+type DateFilterTarget = 'start' | 'end';
 
 const TYPE_FILTERS: Array<{ value: TypeFilter; label: string }> = [
   { value: 'all', label: 'Todos' },
@@ -47,11 +50,25 @@ const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
   { value: 'unpaid', label: 'Não pago' },
 ];
 
+const RECURRENCE_FILTERS: Array<{ value: RecurrenceFilter; label: string }> = [
+  { value: 'all', label: 'Todos' },
+  { value: 'recurring', label: 'Recorrentes' },
+  { value: 'nonRecurring', label: 'Não recorrentes' },
+];
+
 const normalizeSearchText = (value: string) => value
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
   .toLocaleLowerCase('pt-BR')
   .trim();
+
+function formatFilterDate(date: Date): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
 
 export default function TransactionsScreen() {
   const colors = useColors();
@@ -79,8 +96,12 @@ export default function TransactionsScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [recurrenceFilter, setRecurrenceFilter] = useState<RecurrenceFilter>('all');
   const [walletFilter, setWalletFilter] = useState('all');
   const [searchText, setSearchText] = useState('');
+  const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
+  const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
+  const [datePickerTarget, setDatePickerTarget] = useState<DateFilterTarget | null>(null);
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
@@ -99,12 +120,25 @@ export default function TransactionsScreen() {
   }, [routeStatusFilter, routeTypeFilter]);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
   const selectedTransactions = useMemo(
-    () => getTransactionOccurrencesForMonth(transactions, selectedMonth).sort((a, b) => {
-      const dateDifference = parseStoredDate(b.date).getTime() - parseStoredDate(a.date).getTime();
-      if (dateDifference !== 0) return dateDifference;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }),
-    [transactions, selectedMonth],
+    () => {
+      const occurrences = dateRangeStart || dateRangeEnd
+        ? getTransactionOccurrencesInRange(
+          transactions,
+          dateRangeStart
+            ? new Date(dateRangeStart.getFullYear(), dateRangeStart.getMonth(), dateRangeStart.getDate(), 0, 0, 0, 0)
+            : new Date(1970, 0, 1, 0, 0, 0, 0),
+          dateRangeEnd
+            ? new Date(dateRangeEnd.getFullYear(), dateRangeEnd.getMonth(), dateRangeEnd.getDate(), 23, 59, 59, 999)
+            : new Date(2100, 0, 1, 23, 59, 59, 999),
+        )
+        : getTransactionOccurrencesForMonth(transactions, selectedMonth);
+      return occurrences.sort((a, b) => {
+        const dateDifference = parseStoredDate(b.date).getTime() - parseStoredDate(a.date).getTime();
+        if (dateDifference !== 0) return dateDifference;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    },
+    [dateRangeEnd, dateRangeStart, selectedMonth, transactions],
   );
   const searchQuery = useMemo(() => normalizeSearchText(searchText), [searchText]);
   const filteredTransactions = useMemo(
@@ -114,12 +148,17 @@ export default function TransactionsScreen() {
       (typeFilter === 'all' || transaction.type === typeFilter)
       && (statusFilter === 'all' || transaction.paymentStatus === statusFilter)
       && (
+        recurrenceFilter === 'all'
+        || (recurrenceFilter === 'recurring' && transaction.recurrence.kind === 'recurring')
+        || (recurrenceFilter === 'nonRecurring' && transaction.recurrence.kind !== 'recurring')
+      )
+      && (
         walletFilter === 'all'
         || transaction.walletId === walletFilter
         || transaction.destinationWalletId === walletFilter
       )
     )),
-    [searchQuery, selectedTransactions, statusFilter, typeFilter, walletFilter],
+    [recurrenceFilter, searchQuery, selectedTransactions, statusFilter, typeFilter, walletFilter],
   );
   const transactionGroups = useMemo(() => {
     const groups = new Map<string, TransactionOccurrence[]>();
@@ -137,8 +176,16 @@ export default function TransactionsScreen() {
       key,
       label: formatTransactionGroupLabel(groupTransactions[0].date),
       transactions: groupTransactions,
+      total: groupTransactions.reduce((total, transaction) => {
+        if (transaction.type === 'income') return total + transaction.amount;
+        if (transaction.type === 'expense') return total - transaction.amount;
+        if (typeFilter === 'transfer') return total + transaction.amount;
+        if (walletFilter !== 'all' && transaction.destinationWalletId === walletFilter) return total + transaction.amount;
+        if (walletFilter !== 'all' && transaction.walletId === walletFilter) return total - transaction.amount;
+        return total;
+      }, 0),
     }));
-  }, [filteredTransactions]);
+  }, [filteredTransactions, typeFilter, walletFilter]);
   const filteredSummary = useMemo(
     () => filteredTransactions.reduce(
       (summary, transaction) => {
@@ -262,8 +309,12 @@ export default function TransactionsScreen() {
   const clearFilters = () => {
     setTypeFilter('all');
     setStatusFilter('all');
+    setRecurrenceFilter('all');
     setWalletFilter('all');
     setSearchText('');
+    setDateRangeStart(null);
+    setDateRangeEnd(null);
+    setDatePickerTarget(null);
     setMoreFiltersOpen(false);
     setWalletPickerOpen(false);
     leaveSelectionMode();
@@ -339,7 +390,7 @@ export default function TransactionsScreen() {
           >
             <View style={styles.moreFiltersControl}>
               <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
-              {(typeFilter !== 'all' || statusFilter !== 'all' || walletFilter !== 'all') ? (
+              {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter !== 'all' || dateRangeStart !== null || dateRangeEnd !== null) ? (
                 <View style={[styles.activeFiltersDot, { backgroundColor: colors.primary }]} />
               ) : null}
               <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
@@ -405,6 +456,67 @@ export default function TransactionsScreen() {
                   </Text>
                   <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
                 </Pressable>
+              </View>
+              <View style={styles.filterGroup}>
+                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Data</Text>
+                <View style={styles.dateFilterContent}>
+                  <View style={styles.dateFilterRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Selecionar data inicial"
+                      onPress={() => setDatePickerTarget('start')}
+                      style={[styles.dateFilterButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    >
+                      <Feather name="calendar" size={13} color={colors.mutedForeground} />
+                      <Text style={[styles.dateFilterText, { color: dateRangeStart ? colors.foreground : colors.mutedForeground }]}>
+                        {dateRangeStart ? formatFilterDate(dateRangeStart) : 'Data inicial'}
+                      </Text>
+                    </Pressable>
+                    <Text style={[styles.dateFilterSeparator, { color: colors.mutedForeground }]}>até</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Selecionar data final"
+                      onPress={() => setDatePickerTarget('end')}
+                      style={[styles.dateFilterButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    >
+                      <Feather name="calendar" size={13} color={colors.mutedForeground} />
+                      <Text style={[styles.dateFilterText, { color: dateRangeEnd ? colors.foreground : colors.mutedForeground }]}>
+                        {dateRangeEnd ? formatFilterDate(dateRangeEnd) : 'Data final'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  {dateRangeStart && dateRangeEnd && dateRangeStart.getTime() > dateRangeEnd.getTime() ? (
+                    <Text style={[styles.dateFilterError, { color: colors.expense }]}>A data inicial deve ser anterior à data final.</Text>
+                  ) : null}
+                </View>
+              </View>
+              <View style={styles.filterGroup}>
+                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Recorrência</Text>
+                <View style={styles.filterOptions}>
+                  {RECURRENCE_FILTERS.map((option) => {
+                    const active = recurrenceFilter === option.value;
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={`Filtrar por ${option.label.toLowerCase()}`}
+                        onPress={() => {
+                          setRecurrenceFilter(option.value);
+                          leaveSelectionMode();
+                        }}
+                        style={[
+                          styles.filterChip,
+                          { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+                        ]}
+                      >
+                        <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -481,6 +593,9 @@ export default function TransactionsScreen() {
                 <View key={group.key} style={styles.transactionGroup}>
                   <View style={styles.groupHeader}>
                     <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>{group.label}</Text>
+                      <Text style={[styles.groupTotal, { color: group.total >= 0 ? colors.income : colors.expense }]}>
+                        {formatCurrency(group.total)}
+                      </Text>
                   </View>
                   {group.transactions.map((transaction) => (
                     <TransactionRow
@@ -515,6 +630,21 @@ export default function TransactionsScreen() {
           </>
         )}
       </ScrollView>
+      <DatePickerModal
+        visible={datePickerTarget !== null}
+        value={
+          datePickerTarget === 'start'
+            ? dateRangeStart ?? selectedMonth
+            : dateRangeEnd ?? dateRangeStart ?? selectedMonth
+        }
+        eyebrow={datePickerTarget === 'start' ? 'DATA INICIAL' : 'DATA FINAL'}
+        onClose={() => setDatePickerTarget(null)}
+        onConfirm={(date) => {
+          if (datePickerTarget === 'start') setDateRangeStart(date);
+          if (datePickerTarget === 'end') setDateRangeEnd(date);
+          setDatePickerTarget(null);
+        }}
+      />
       <Modal
         animationType="fade"
         transparent
@@ -666,8 +796,15 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.72 },
   transactionGroup: { marginBottom: 7 },
-  groupHeader: { alignItems: 'flex-start', marginTop: 3, marginBottom: 7 },
+  groupHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 3, marginBottom: 7 },
   groupLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', textTransform: 'capitalize' },
+  groupTotal: { fontSize: 10, fontFamily: 'Inter_700Bold' },
+  dateFilterContent: { flex: 1, gap: 5 },
+  dateFilterRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dateFilterButton: { flex: 1, minHeight: 34, borderRadius: 6, borderWidth: 1, paddingHorizontal: 7, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dateFilterText: { flex: 1, fontSize: 9, fontFamily: 'Inter_500Medium' },
+  dateFilterSeparator: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  dateFilterError: { fontSize: 9, fontFamily: 'Inter_500Medium' },
   walletMenu: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 13, gap: 7 },
   walletMenuTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', marginBottom: 2 },
   walletMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },

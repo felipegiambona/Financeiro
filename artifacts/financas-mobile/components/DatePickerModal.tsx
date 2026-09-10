@@ -9,6 +9,7 @@ interface DatePickerModalProps {
   value: Date;
   onClose: () => void;
   onConfirm: (date: Date) => void;
+  eyebrow?: string;
 }
 
 const WEEKDAYS = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
@@ -19,7 +20,13 @@ function isSameDay(first: Date, second: Date): boolean {
     && first.getDate() === second.getDate();
 }
 
-export function DatePickerModal({ visible, value, onClose, onConfirm }: DatePickerModalProps) {
+export function DatePickerModal({
+  visible,
+  value,
+  onClose,
+  onConfirm,
+  eyebrow = 'VENCIMENTO',
+}: DatePickerModalProps) {
   const colors = useColors();
   const valueTime = value.getTime();
   const [selectedDate, setSelectedDate] = useState(value);
@@ -53,7 +60,7 @@ export function DatePickerModal({ visible, value, onClose, onConfirm }: DatePick
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.header}>
             <View>
-              <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>VENCIMENTO</Text>
+              <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>{eyebrow}</Text>
               <Text style={[styles.title, { color: colors.foreground }]}>
                 {monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}
               </Text>
