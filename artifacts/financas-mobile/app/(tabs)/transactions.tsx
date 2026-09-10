@@ -16,6 +16,7 @@ import { formatCurrency } from '@/utils/currency';
 import {
   formatMonthLabel,
   formatTransactionGroupLabel,
+  createLocalIsoDate,
   getDateKey,
   getDayKey,
   getMonthStart,
@@ -229,7 +230,7 @@ export default function TransactionsScreen() {
 
   const confirmDeleteOne = (transaction: TransactionOccurrence) => {
     if (transaction.recurrence.kind !== 'none') {
-      const occurrenceDate = getDateKey(parseStoredDate(transaction.date));
+      const occurrenceDate = createLocalIsoDate(parseStoredDate(transaction.date));
       const excludedDates = Array.from(new Set([
         ...(transaction.recurrence.excludedDates ?? []),
         occurrenceDate,
