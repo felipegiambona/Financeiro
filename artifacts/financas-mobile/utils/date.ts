@@ -2,6 +2,10 @@ export function getDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+export function getDayKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function parseStoredDate(value: string): Date {
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (dateOnly) {
@@ -38,6 +42,23 @@ export function formatDate(dateString: string): string {
     day: '2-digit',
     month: '2-digit',
   }).format(parseStoredDate(dateString));
+}
+
+export function formatTransactionGroupLabel(dateString: string, now = new Date()): string {
+  const date = parseStoredDate(dateString);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  if (getDayKey(date) === getDayKey(today)) return 'Hoje';
+  if (getDayKey(date) === getDayKey(yesterday)) return 'Ontem';
+
+  const formatted = new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
 export function formatTime(dateString: string): string {

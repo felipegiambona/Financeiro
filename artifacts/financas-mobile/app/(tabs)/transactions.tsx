@@ -13,7 +13,15 @@ import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateForecast } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
-import { formatMonthLabel, getDateKey, getMonthStart, parseStoredDate, shiftMonth } from '@/utils/date';
+import {
+  formatMonthLabel,
+  formatTransactionGroupLabel,
+  getDateKey,
+  getDayKey,
+  getMonthStart,
+  parseStoredDate,
+  shiftMonth,
+} from '@/utils/date';
 import { TransactionOccurrence } from '@/types/transaction';
 
 interface DeleteConfirmation {
@@ -90,9 +98,9 @@ export default function TransactionsScreen() {
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
   const selectedTransactions = useMemo(
     () => getTransactionOccurrencesForMonth(transactions, selectedMonth).sort((a, b) => {
-      const createdAtDifference = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      if (createdAtDifference !== 0) return createdAtDifference;
-      return parseStoredDate(b.date).getTime() - parseStoredDate(a.date).getTime();
+      const dateDifference = parseStoredDate(b.date).getTime() - parseStoredDate(a.date).getTime();
+      if (dateDifference !== 0) return dateDifference;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }),
     [transactions, selectedMonth],
   );
@@ -106,6 +114,24 @@ export default function TransactionsScreen() {
     )),
     [searchQuery, selectedTransactions, statusFilter, typeFilter],
   );
+  const transactionGroups = useMemo(() => {
+    const groups = new Map<string, TransactionOccurrence[]>();
+    filteredTransactions.forEach((transaction) => {
+      const key = getDayKey(parseStoredDate(transaction.date));
+      const group = groups.get(key);
+      if (group) {
+        group.push(transaction);
+      } else {
+        groups.set(key, [transaction]);
+      }
+    });
+
+    return Array.from(groups, ([key, groupTransactions]) => ({
+      key,
+      label: formatTransactionGroupLabel(groupTransactions[0].date),
+      transactions: groupTransactions,
+    }));
+  }, [filteredTransactions]);
   const filteredSummary = useMemo(
     () => filteredTransactions.reduce(
       (summary, transaction) => {
@@ -417,18 +443,27 @@ export default function TransactionsScreen() {
             {filteredTransactions.length === 0 ? (
               <EmptyState message={selectedTransactions.length === 0 ? 'Não há lançamentos neste mês.' : 'Nenhum lançamento corresponde aos filtros.'} />
             ) : (
-              filteredTransactions.map((transaction) => (
-                <TransactionRow
-                  key={transaction.occurrenceKey}
-                  transaction={transaction}
-                  onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
-                  onTogglePaymentStatus={() => void handleTogglePaymentStatus(transaction)}
-                  paymentStatusUpdating={updatingStatusId === transaction.occurrenceKey}
-                  onDelete={() => confirmDeleteOne(transaction)}
-                  selectionMode={selectionMode}
-                  selected={selectedIdSet.has(transaction.sourceId)}
-                  onToggleSelection={() => toggleSelection(transaction.sourceId)}
-                />
+              transactionGroups.map((group) => (
+                <View key={group.key} style={styles.transactionGroup}>
+                  <View style={styles.groupHeader}>
+                    <View style={[styles.groupRule, { backgroundColor: colors.border }]} />
+                    <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>{group.label}</Text>
+                    <View style={[styles.groupRule, { backgroundColor: colors.border }]} />
+                  </View>
+                  {group.transactions.map((transaction) => (
+                    <TransactionRow
+                      key={transaction.occurrenceKey}
+                      transaction={transaction}
+                      onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
+                      onTogglePaymentStatus={() => void handleTogglePaymentStatus(transaction)}
+                      paymentStatusUpdating={updatingStatusId === transaction.occurrenceKey}
+                      onDelete={() => confirmDeleteOne(transaction)}
+                      selectionMode={selectionMode}
+                      selected={selectedIdSet.has(transaction.sourceId)}
+                      onToggleSelection={() => toggleSelection(transaction.sourceId)}
+                    />
+                  ))}
+                </View>
               ))
             )}
             {filteredTransactions.length > 0 ? (
@@ -535,6 +570,10 @@ const styles = StyleSheet.create({
   deleteSelectedLabel: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.72 },
+  transactionGroup: { marginBottom: 7 },
+  groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3, marginBottom: 7 },
+  groupRule: { flex: 1, height: 1 },
+  groupLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', textTransform: 'capitalize' },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.76)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
   confirmationCard: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 18, alignItems: 'center' },
   confirmationIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
