@@ -246,11 +246,13 @@ export default function TransactionsScreen() {
             onPress={() => setMoreFiltersOpen((open) => !open)}
             style={({ pressed }) => [styles.moreFiltersToggle, { borderColor: colors.border }, pressed && styles.pressed]}
           >
-            <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
-            {(typeFilter !== 'all' || statusFilter !== 'all') ? (
-              <View style={[styles.activeFiltersDot, { backgroundColor: colors.primary }]} />
-            ) : null}
-            <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+            <View style={styles.moreFiltersControl}>
+              <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
+              {(typeFilter !== 'all' || statusFilter !== 'all') ? (
+                <View style={[styles.activeFiltersDot, { backgroundColor: colors.primary }]} />
+              ) : null}
+              <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+            </View>
           </Pressable>
           {moreFiltersOpen ? (
             <View style={styles.moreFiltersContent}>
@@ -458,8 +460,9 @@ const styles = StyleSheet.create({
   searchField: { minHeight: 36, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
   searchInput: { flex: 1, minWidth: 0, paddingVertical: 0, fontSize: 11, fontFamily: 'Inter_400Regular' },
   clearSearchButton: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
-  moreFiltersToggle: { minHeight: 34, flexDirection: 'row', alignItems: 'center', paddingTop: 5, gap: 7 },
-  moreFiltersLabel: { flex: 1, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  moreFiltersToggle: { minHeight: 34, flexDirection: 'row', alignItems: 'center', paddingTop: 5 },
+  moreFiltersControl: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 7 },
+  moreFiltersLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   activeFiltersDot: { width: 6, height: 6, borderRadius: 3 },
   moreFiltersContent: { gap: 7, paddingTop: 1 },
   filterGroup: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
