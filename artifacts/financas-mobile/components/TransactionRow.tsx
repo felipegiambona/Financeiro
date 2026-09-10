@@ -61,10 +61,12 @@ export function TransactionRow({
         <View style={styles.details}>
           <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
           <View style={styles.meta}>
-            {transaction.recurrence.kind === 'recurring' ? (
+            {transaction.recurrence.kind !== 'none' ? (
               <View style={[styles.recurrence, { backgroundColor: colors.secondary }]}>
                 <Feather name="repeat" size={10} color={colors.secondaryForeground} />
-                <Text style={[styles.recurrenceText, { color: colors.secondaryForeground }]}>Recorrente</Text>
+                <Text style={[styles.recurrenceText, { color: colors.secondaryForeground }]}>
+                  {transaction.recurrence.kind === 'installment' ? 'Parcelado' : 'Recorrente'}
+                </Text>
               </View>
             ) : null}
           </View>

@@ -33,13 +33,15 @@ export const ListTransactionsResponseItem = zod.object({
   "date": zod.coerce.date(),
   "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
-  "kind": zod.enum(['none', 'recurring']),
+  "kind": zod.enum(['none', 'recurring', 'installment']),
   "interval": zod.number().int().min(1).optional(),
   "unit": zod.enum(['day', 'week', 'month', 'year']).optional(),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']).optional(),
   "frequency": zod.enum(['monthly', 'weekly', 'yearly']).optional(),
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
-  "occurrences": zod.number().int().min(1).optional()
+  "occurrences": zod.number().int().min(1).optional(),
+  "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid']),
   "paymentStatusOverrides": zod.record(zod.string(), zod.enum(['paid', 'unpaid'])),
@@ -64,13 +66,15 @@ export const CreateTransactionBody = zod.object({
   "date": zod.coerce.date(),
   "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
-  "kind": zod.enum(['none', 'recurring']),
+  "kind": zod.enum(['none', 'recurring', 'installment']),
   "interval": zod.number().int().min(1).optional(),
   "unit": zod.enum(['day', 'week', 'month', 'year']).optional(),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']).optional(),
   "frequency": zod.enum(['monthly', 'weekly', 'yearly']).optional(),
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
-  "occurrences": zod.number().int().min(1).optional()
+  "occurrences": zod.number().int().min(1).optional(),
+  "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid'])
 })
@@ -91,13 +95,15 @@ export const CreateTransactionResponse = zod.object({
   "date": zod.coerce.date(),
   "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
-  "kind": zod.enum(['none', 'recurring']),
+  "kind": zod.enum(['none', 'recurring', 'installment']),
   "interval": zod.number().int().min(1).optional(),
   "unit": zod.enum(['day', 'week', 'month', 'year']).optional(),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']).optional(),
   "frequency": zod.enum(['monthly', 'weekly', 'yearly']).optional(),
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
-  "occurrences": zod.number().int().min(1).optional()
+  "occurrences": zod.number().int().min(1).optional(),
+  "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid']),
   "paymentStatusOverrides": zod.record(zod.string(), zod.enum(['paid', 'unpaid'])),
@@ -128,13 +134,15 @@ export const UpdateTransactionBody = zod.object({
   "date": zod.coerce.date().optional(),
   "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
-  "kind": zod.enum(['none', 'recurring']),
+  "kind": zod.enum(['none', 'recurring', 'installment']),
   "interval": zod.number().int().min(1).optional(),
   "unit": zod.enum(['day', 'week', 'month', 'year']).optional(),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']).optional(),
   "frequency": zod.enum(['monthly', 'weekly', 'yearly']).optional(),
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
-  "occurrences": zod.number().int().min(1).optional()
+  "occurrences": zod.number().int().min(1).optional(),
+  "amountMode": zod.enum(['installment', 'total']).optional()
 }).optional(),
   "paymentStatus": zod.enum(['paid', 'unpaid']).optional(),
   "paymentStatusOverrides": zod.record(zod.string(), zod.enum(['paid', 'unpaid'])).optional()
@@ -156,13 +164,15 @@ export const UpdateTransactionResponse = zod.object({
   "date": zod.coerce.date(),
   "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
-  "kind": zod.enum(['none', 'recurring']),
+  "kind": zod.enum(['none', 'recurring', 'installment']),
   "interval": zod.number().int().min(1).optional(),
   "unit": zod.enum(['day', 'week', 'month', 'year']).optional(),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']).optional(),
   "frequency": zod.enum(['monthly', 'weekly', 'yearly']).optional(),
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
-  "occurrences": zod.number().int().min(1).optional()
+  "occurrences": zod.number().int().min(1).optional(),
+  "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid']),
   "paymentStatusOverrides": zod.record(zod.string(), zod.enum(['paid', 'unpaid'])),
@@ -202,13 +212,15 @@ export const UpdateTransactionOccurrencePaymentStatusResponse = zod.object({
   "date": zod.coerce.date(),
   "dueDate": zod.coerce.date().nullish(),
   "recurrence": zod.object({
-  "kind": zod.enum(['none', 'recurring']),
+  "kind": zod.enum(['none', 'recurring', 'installment']),
   "interval": zod.number().int().min(1).optional(),
   "unit": zod.enum(['day', 'week', 'month', 'year']).optional(),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']).optional(),
   "frequency": zod.enum(['monthly', 'weekly', 'yearly']).optional(),
   "startDate": zod.coerce.date().optional(),
   "endDate": zod.coerce.date().optional(),
-  "occurrences": zod.number().int().min(1).optional()
+  "occurrences": zod.number().int().min(1).optional(),
+  "amountMode": zod.enum(['installment', 'total']).optional()
 }),
   "paymentStatus": zod.enum(['paid', 'unpaid']),
   "paymentStatusOverrides": zod.record(zod.string(), zod.enum(['paid', 'unpaid'])),

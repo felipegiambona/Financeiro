@@ -224,13 +224,16 @@ components:
       properties:
         kind:
           type: string
-          enum: [none, recurring]
+          enum: [none, recurring, installment]
         interval:
           type: integer
           minimum: 1
         unit:
           type: string
           enum: [day, week, month, year]
+        period:
+          type: string
+          enum: [weekly, biweekly, monthly, bimonthly, quarterly, semiannual, annual]
         frequency:
           type: string
           enum: [monthly, weekly, yearly]
@@ -243,6 +246,9 @@ components:
         occurrences:
           type: integer
           minimum: 1
+        amountMode:
+          type: string
+          enum: [installment, total]
     Transaction:
       type: object
       required: [id, walletId, destinationWalletId, type, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]

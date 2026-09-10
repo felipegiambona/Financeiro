@@ -6,11 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type RecurrenceKind = typeof RecurrenceKind[keyof typeof RecurrenceKind];
+export type RecurrenceAmountMode = typeof RecurrenceAmountMode[keyof typeof RecurrenceAmountMode];
 
 
-export const RecurrenceKind = {
-  none: 'none',
-  recurring: 'recurring',
+export const RecurrenceAmountMode = {
   installment: 'installment',
+  total: 'total',
 } as const;

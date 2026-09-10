@@ -5,8 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RecurrenceAmountMode } from './recurrenceAmountMode';
 import type { RecurrenceFrequency } from './recurrenceFrequency';
 import type { RecurrenceKind } from './recurrenceKind';
+import type { RecurrencePeriod } from './recurrencePeriod';
 import type { RecurrenceUnit } from './recurrenceUnit';
 
 export interface Recurrence {
@@ -14,9 +16,11 @@ export interface Recurrence {
   /** @minimum 1 */
   interval?: number;
   unit?: RecurrenceUnit;
+  period?: RecurrencePeriod;
   frequency?: RecurrenceFrequency;
   startDate?: Date;
   endDate?: Date;
   /** @minimum 1 */
   occurrences?: number;
+  amountMode?: RecurrenceAmountMode;
 }

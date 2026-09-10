@@ -149,8 +149,8 @@ export default function TransactionsScreen() {
       && (statusFilter === 'all' || transaction.paymentStatus === statusFilter)
       && (
         recurrenceFilter === 'all'
-        || (recurrenceFilter === 'recurring' && transaction.recurrence.kind === 'recurring')
-        || (recurrenceFilter === 'nonRecurring' && transaction.recurrence.kind !== 'recurring')
+        || (recurrenceFilter === 'recurring' && transaction.recurrence.kind !== 'none')
+        || (recurrenceFilter === 'nonRecurring' && transaction.recurrence.kind === 'none')
       )
       && (
         walletFilter === 'all'
@@ -225,8 +225,8 @@ export default function TransactionsScreen() {
   const confirmDeleteOne = (transaction: TransactionOccurrence) => {
     setDeleteConfirmation({
       title: 'Excluir lançamento?',
-      message: transaction.recurrence.kind === 'recurring'
-        ? 'Esta ação excluirá a série recorrente e todas as suas ocorrências.'
+      message: transaction.recurrence.kind !== 'none'
+        ? 'Esta ação excluirá a série e todas as suas ocorrências.'
         : 'Esta ação não poderá ser desfeita.',
       confirmLabel: 'Excluir',
       onConfirm: () => deleteTransaction(transaction.sourceId),
@@ -265,7 +265,7 @@ export default function TransactionsScreen() {
     try {
       setUpdatingStatusId(transaction.occurrenceKey);
       const nextStatus = transaction.paymentStatus === 'paid' ? 'unpaid' : 'paid';
-      if (transaction.recurrence.kind === 'recurring') {
+      if (transaction.recurrence.kind !== 'none') {
         await updateTransactionOccurrencePaymentStatus(
           transaction.sourceId,
           transaction.date,

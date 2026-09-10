@@ -15,6 +15,7 @@ export type RecurrenceKind = typeof RecurrenceKind[keyof typeof RecurrenceKind];
 export const RecurrenceKind = {
   none: 'none',
   recurring: 'recurring',
+  installment: 'installment',
 } as const;
 
 export type RecurrenceUnit = typeof RecurrenceUnit[keyof typeof RecurrenceUnit];
@@ -27,6 +28,19 @@ export const RecurrenceUnit = {
   year: 'year',
 } as const;
 
+export type RecurrencePeriod = typeof RecurrencePeriod[keyof typeof RecurrencePeriod];
+
+
+export const RecurrencePeriod = {
+  weekly: 'weekly',
+  biweekly: 'biweekly',
+  monthly: 'monthly',
+  bimonthly: 'bimonthly',
+  quarterly: 'quarterly',
+  semiannual: 'semiannual',
+  annual: 'annual',
+} as const;
+
 export type RecurrenceFrequency = typeof RecurrenceFrequency[keyof typeof RecurrenceFrequency];
 
 
@@ -36,16 +50,26 @@ export const RecurrenceFrequency = {
   yearly: 'yearly',
 } as const;
 
+export type RecurrenceAmountMode = typeof RecurrenceAmountMode[keyof typeof RecurrenceAmountMode];
+
+
+export const RecurrenceAmountMode = {
+  installment: 'installment',
+  total: 'total',
+} as const;
+
 export interface Recurrence {
   kind: RecurrenceKind;
   /** @minimum 1 */
   interval?: number;
   unit?: RecurrenceUnit;
+  period?: RecurrencePeriod;
   frequency?: RecurrenceFrequency;
   startDate?: string;
   endDate?: string;
   /** @minimum 1 */
   occurrences?: number;
+  amountMode?: RecurrenceAmountMode;
 }
 
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];

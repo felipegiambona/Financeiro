@@ -20,7 +20,7 @@ export default function NotificationsScreen() {
   const markAsPaid = async (transaction: TransactionOccurrence) => {
     try {
       setUpdatingKey(transaction.occurrenceKey);
-      if (transaction.recurrence.kind === 'recurring') {
+      if (transaction.recurrence.kind !== 'none') {
         await updateTransactionOccurrencePaymentStatus(transaction.sourceId, transaction.date, 'paid');
       } else {
         await updateTransaction(transaction.sourceId, { paymentStatus: 'paid' });
@@ -74,7 +74,9 @@ export default function NotificationsScreen() {
                         <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
                         <Text style={[styles.date, { color: colors.pending }]}>
                           {formatPendingTransactionDate(transaction.date)}
-                          {transaction.recurrence.kind === 'recurring' ? ' · Recorrente' : ''}
+                          {transaction.recurrence.kind === 'installment'
+                            ? ' · Parcelado'
+                            : transaction.recurrence.kind === 'recurring' ? ' · Recorrente' : ''}
                         </Text>
                       </View>
                       <Text style={[styles.amount, { color: tone }]}>

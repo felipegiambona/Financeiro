@@ -1,5 +1,6 @@
 import {
   Recurrence,
+  RECURRENCE_PERIODS,
   RecurrenceUnit,
   Transaction,
   TransactionOccurrence,
@@ -13,19 +14,56 @@ const LEGACY_FREQUENCY_UNITS: Record<string, RecurrenceUnit> = {
 };
 
 export function normalizeRecurrence(recurrence?: Partial<Recurrence>): Recurrence {
-  if (recurrence?.kind !== 'recurring') return { kind: 'none' };
+  if (recurrence?.kind !== 'recurring' && recurrence?.kind !== 'installment') return { kind: 'none' };
 
   const legacyUnit = recurrence.frequency ? LEGACY_FREQUENCY_UNITS[recurrence.frequency] : undefined;
   const unit = recurrence.unit ?? legacyUnit ?? 'month';
   const rawInterval = Number(recurrence.interval);
   const interval = Number.isInteger(rawInterval) && rawInterval > 0 ? rawInterval : 1;
+  const period = RECURRENCE_PERIODS.some((option) => option.value === recurrence.period)
+    ? recurrence.period
+    : undefined;
   const endDate = recurrence.endDate
     ? createLocalIsoDate(parseStoredDate(recurrence.endDate))
     : undefined;
   const rawOccurrences = Number(recurrence.occurrences);
-  const occurrences = Number.isInteger(rawOccurrences) && rawOccurrences > 0 ? rawOccurrences : undefined;
+  const occurrences = Number.isInteger(rawOccurrences) && rawOccurrences > 0
+    ? rawOccurrences
+    : recurrence.kind === 'installment' ? 1 : undefined;
 
-  return { kind: 'recurring', interval, unit, endDate, occurrences };
+  return {
+    kind: recurrence.kind,
+    interval,
+    unit,
+    period,
+    endDate,
+    occurrences,
+    ...(recurrence.kind === 'installment' && recurrence.amountMode ? { amountMode: recurrence.amountMode } : {}),
+  };
+}
+
+function getRecurrenceCadence(recurrence: Recurrence): { interval: number; unit: RecurrenceUnit } {
+  const period = RECURRENCE_PERIODS.find((option) => option.value === recurrence.period);
+  if (!period) {
+    return { interval: recurrence.interval ?? 1, unit: recurrence.unit ?? 'month' };
+  }
+  return {
+    interval: (recurrence.interval ?? 1) * period.multiplier,
+    unit: period.unit,
+  };
+}
+
+function getInstallmentAmount(
+  totalAmount: number,
+  installments: number,
+  occurrenceIndex: number,
+  amountMode?: Recurrence['amountMode'],
+): number {
+  if (amountMode !== 'total' || installments <= 0) return totalAmount;
+  const totalCents = Math.round(totalAmount * 100);
+  const baseCents = Math.floor(totalCents / installments);
+  const remainderCents = totalCents - baseCents * installments;
+  return (baseCents + (occurrenceIndex < remainderCents ? 1 : 0)) / 100;
 }
 
 function addMonthsClamped(start: Date, months: number): Date {
@@ -81,8 +119,7 @@ export function getTransactionOccurrencesInRange(
       continue;
     }
 
-    const interval = recurrence.interval ?? 1;
-    const unit = recurrence.unit ?? 'month';
+    const { interval, unit } = getRecurrenceCadence(recurrence);
 
     for (let occurrenceIndex = 0; occurrenceIndex < 100000; occurrenceIndex += 1) {
       if (recurrence.occurrences !== undefined && occurrenceIndex >= recurrence.occurrences) break;
@@ -95,6 +132,14 @@ export function getTransactionOccurrencesInRange(
       const date = createLocalIsoDate(occurrenceDate);
       occurrences.push({
         ...transaction,
+        amount: recurrence.kind === 'installment'
+          ? getInstallmentAmount(
+            transaction.amount,
+            recurrence.occurrences ?? 1,
+            occurrenceIndex,
+            recurrence.amountMode,
+          )
+          : transaction.amount,
         date,
         dueDate: date,
         paymentStatus: transaction.paymentStatusOverrides?.[date]
