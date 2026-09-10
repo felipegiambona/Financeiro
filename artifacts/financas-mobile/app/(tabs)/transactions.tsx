@@ -57,7 +57,6 @@ export default function TransactionsScreen() {
     updateTransactionOccurrencePaymentStatus,
     deleteTransaction,
     deleteTransactions,
-    clearTransactions,
   } = useFinance();
   const { wallets } = useWallets();
   const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
@@ -140,18 +139,6 @@ export default function TransactionsScreen() {
       confirmLabel: 'Excluir selecionados',
       onConfirm: async () => {
         await deleteTransactions(ids);
-        leaveSelectionMode();
-      },
-    });
-  };
-
-  const confirmClearAll = () => {
-    setDeleteConfirmation({
-      title: 'Apagar todos os lançamentos?',
-      message: 'Todos os lançamentos e séries recorrentes serão excluídos permanentemente.',
-      confirmLabel: 'Apagar todos',
-      onConfirm: async () => {
-        await clearTransactions();
         leaveSelectionMode();
       },
     });
@@ -381,15 +368,6 @@ export default function TransactionsScreen() {
                   <Text style={styles.deleteSelectedLabel}>Excluir selecionados</Text>
                 </Pressable>
               </View>
-            ) : transactions.length > 0 ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={confirmClearAll}
-                style={({ pressed }) => [styles.clearAllAction, pressed && styles.pressed]}
-              >
-                <Feather name="trash-2" size={13} color={colors.expense} />
-                <Text style={[styles.clearAllLabel, { color: colors.expense }]}>Apagar todos</Text>
-              </Pressable>
             ) : null}
             {filteredTransactions.length === 0 ? (
               <EmptyState message={selectedTransactions.length === 0 ? 'Não há lançamentos neste mês.' : 'Nenhum lançamento corresponde aos filtros.'} />
@@ -505,8 +483,6 @@ const styles = StyleSheet.create({
   secondaryActionLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   deleteSelectedAction: { flex: 1, minHeight: 34, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
   deleteSelectedLabel: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
-  clearAllAction: { alignSelf: 'flex-end', marginTop: -3, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 4 },
-  clearAllLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.72 },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.76)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
