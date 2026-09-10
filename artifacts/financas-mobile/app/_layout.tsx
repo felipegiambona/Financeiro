@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StatusBar as NativeStatusBar, StyleSheet, View } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -81,15 +81,13 @@ function ThemedApp() {
 
   return (
     <>
-      <StatusBar
-        style={resolvedColorScheme === 'dark' ? 'light' : 'dark'}
+      <StatusBar style={resolvedColorScheme === 'dark' ? 'light' : 'dark'} />
+      <NativeStatusBar
+        barStyle={resolvedColorScheme === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor={colors.background}
         translucent={false}
       />
-      <NavigationBar
-        style={resolvedColorScheme === 'dark' ? 'light' : 'dark'}
-        backgroundColor={colors.background}
-      />
+      <NavigationBar style={resolvedColorScheme === 'dark' ? 'light' : 'dark'} />
       <ErrorBoundary>
         <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
           <ClerkLoaded>
