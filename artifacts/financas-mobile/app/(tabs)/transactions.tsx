@@ -381,6 +381,26 @@ export default function TransactionsScreen() {
                   })}
                 </View>
               </View>
+              <View style={styles.filterGroup}>
+                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Carteira</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Selecionar carteira, ${walletFilter === 'all' ? 'todas as carteiras' : wallets.find((wallet) => wallet.id === walletFilter)?.title ?? 'carteira selecionada'}`}
+                  testID="wallet-filter-picker"
+                  onPress={() => setWalletPickerOpen(true)}
+                  style={({ pressed }) => [
+                    styles.walletFilterCombo,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Feather name="briefcase" size={14} color={colors.mutedForeground} />
+                  <Text numberOfLines={1} style={[styles.walletFilterText, { color: colors.foreground }]}>
+                    {walletFilter === 'all' ? 'Todas as carteiras' : wallets.find((wallet) => wallet.id === walletFilter)?.title ?? 'Carteira selecionada'}
+                  </Text>
+                  <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Limpar filtros"
@@ -489,6 +509,63 @@ export default function TransactionsScreen() {
       <Modal
         animationType="fade"
         transparent
+        visible={walletPickerOpen}
+        onRequestClose={() => setWalletPickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Fechar seletor de carteira"
+            onPress={() => setWalletPickerOpen(false)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={[styles.walletMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por carteira</Text>
+            <Pressable
+              testID="wallet-filter-option-all"
+              onPress={() => {
+                setWalletFilter('all');
+                setWalletPickerOpen(false);
+                leaveSelectionMode();
+              }}
+              style={({ pressed }) => [
+                styles.walletMenuOption,
+                { backgroundColor: walletFilter === 'all' ? colors.secondary : colors.card, borderColor: colors.border },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Feather name="layers" size={17} color={walletFilter === 'all' ? colors.foreground : colors.mutedForeground} />
+              <Text style={[styles.walletMenuOptionText, { color: colors.foreground }]}>Todas as carteiras</Text>
+              {walletFilter === 'all' ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+            </Pressable>
+            {wallets.map((wallet) => {
+              const active = wallet.id === walletFilter;
+              return (
+                <Pressable
+                  key={wallet.id}
+                  testID={`wallet-filter-option-${wallet.id}`}
+                  onPress={() => {
+                    setWalletFilter(wallet.id);
+                    setWalletPickerOpen(false);
+                    leaveSelectionMode();
+                  }}
+                  style={({ pressed }) => [
+                    styles.walletMenuOption,
+                    { backgroundColor: active ? colors.secondary : colors.card, borderColor: colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Feather name="briefcase" size={17} color={active ? colors.foreground : colors.mutedForeground} />
+                  <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: colors.foreground }]}>{wallet.title}</Text>
+                  {active ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent
         visible={deleteConfirmation !== null}
         onRequestClose={() => !deleting && setDeleteConfirmation(null)}
       >
@@ -557,6 +634,8 @@ const styles = StyleSheet.create({
   filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   filterChip: { minHeight: 28, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  walletFilterCombo: { minHeight: 34, flex: 1, borderRadius: 6, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  walletFilterText: { flex: 1, minWidth: 0, fontSize: 10, fontFamily: 'Inter_500Medium' },
   clearFiltersAction: { alignSelf: 'flex-start', marginLeft: 53, minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 3 },
   clearFiltersLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   metrics: { flexDirection: 'row', gap: 7, marginBottom: 16 },
@@ -580,6 +659,10 @@ const styles = StyleSheet.create({
   transactionGroup: { marginBottom: 7 },
   groupHeader: { alignItems: 'flex-start', marginTop: 3, marginBottom: 7 },
   groupLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', textTransform: 'capitalize' },
+  walletMenu: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 13, gap: 7 },
+  walletMenuTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', marginBottom: 2 },
+  walletMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  walletMenuOptionText: { flex: 1, minWidth: 0, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.76)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
   confirmationCard: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 18, alignItems: 'center' },
   confirmationIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
