@@ -221,6 +221,15 @@ export default function TransactionsScreen() {
     );
   };
 
+  const clearFilters = () => {
+    setTypeFilter('all');
+    setStatusFilter('all');
+    setSearchText('');
+    setMoreFiltersOpen(false);
+    leaveSelectionMode();
+    router.setParams({ typeFilter: undefined, statusFilter: undefined });
+  };
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -337,6 +346,15 @@ export default function TransactionsScreen() {
                   })}
                 </View>
               </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Limpar filtros"
+                onPress={clearFilters}
+                style={({ pressed }) => [styles.clearFiltersAction, pressed && styles.pressed]}
+              >
+                <Feather name="x-circle" size={14} color={colors.mutedForeground} />
+                <Text style={[styles.clearFiltersLabel, { color: colors.mutedForeground }]}>Limpar filtros</Text>
+              </Pressable>
             </View>
           ) : null}
         </View>
@@ -497,6 +515,8 @@ const styles = StyleSheet.create({
   filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   filterChip: { minHeight: 28, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  clearFiltersAction: { alignSelf: 'flex-start', minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 3 },
+  clearFiltersLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   metrics: { flexDirection: 'row', gap: 7, marginBottom: 16 },
   metric: { flex: 1, minHeight: 64, borderRadius: 8, borderWidth: 1, padding: 10, justifyContent: 'space-between' },
   metricLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
