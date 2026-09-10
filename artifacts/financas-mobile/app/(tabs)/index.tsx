@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,17 +6,20 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
+import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
-import { calculateCurrentBalance, calculateMonthlyTotals } from '@/services/financialRules';
+import { calculateCurrentBalance, calculateMonthlyTotals, calculateWalletTotals } from '@/services/financialRules';
 import { formatCurrency } from '@/utils/currency';
 
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { transactions, loading, error, refresh } = useFinance();
+  const { wallets, loading: walletsLoading } = useWallets();
   const { signOut } = useAuth();
   const balance = calculateCurrentBalance(transactions);
   const monthlyTotals = useMemo(() => calculateMonthlyTotals(transactions, new Date()), [transactions]);
+  const walletTotals = useMemo(() => calculateWalletTotals(wallets, transactions), [transactions, wallets]);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -68,6 +71,37 @@ export default function DashboardScreen() {
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.payable)}</Text>
               </View>
             </View>
+            <View style={[styles.walletCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.walletHeader}>
+                <Text style={[styles.walletTitle, { color: colors.foreground }]}>Carteiras</Text>
+                <MaterialCommunityIcons name="wallet-outline" size={18} color={colors.mutedForeground} />
+              </View>
+              {walletsLoading ? (
+                <Text style={[styles.walletState, { color: colors.mutedForeground }]}>Carregando carteiras...</Text>
+              ) : walletTotals.length === 0 ? (
+                <Text style={[styles.walletState, { color: colors.mutedForeground }]}>Nenhuma carteira cadastrada.</Text>
+              ) : (
+                <View style={styles.walletRows}>
+                  {walletTotals.map(({ wallet, total }, index) => (
+                    <View
+                      key={wallet.id}
+                      style={[
+                        styles.walletRow,
+                        index < walletTotals.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
+                      ]}
+                    >
+                      <View style={styles.walletName}>
+                        <MaterialCommunityIcons name={wallet.icon} size={17} color={colors.mutedForeground} />
+                        <Text numberOfLines={1} style={[styles.walletNameText, { color: colors.foreground }]}>{wallet.title}</Text>
+                      </View>
+                      <Text style={[styles.walletValue, { color: total >= 0 ? colors.income : colors.expense }]}>
+                        {formatCurrency(total)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
           </>
         )}
       </ScrollView>
@@ -90,4 +124,13 @@ const styles = StyleSheet.create({
   metricIcon: { width: 29, height: 29, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   metricLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   metricValue: { fontSize: 16, fontFamily: 'Inter_700Bold', marginTop: 5 },
+  walletCard: { borderRadius: 9, borderWidth: 1, padding: 14, marginTop: 2 },
+  walletHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  walletTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  walletState: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
+  walletRows: { gap: 0 },
+  walletRow: { minHeight: 43, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  walletName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  walletNameText: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium' },
+  walletValue: { fontSize: 13, fontFamily: 'Inter_700Bold', textAlign: 'right' },
 });

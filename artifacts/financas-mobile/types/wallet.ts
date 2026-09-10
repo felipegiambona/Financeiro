@@ -18,6 +18,7 @@ export interface Wallet {
   title: string;
   initialBalance: number;
   icon: WalletIcon;
+  isDefault: boolean;
   createdAt: string;
 }
 

@@ -25,6 +25,7 @@ export const listTransactionsResponseAmountExclusiveMin = 0;
 
 export const ListTransactionsResponseItem = zod.object({
   "id": zod.string().uuid(),
+  "walletId": zod.string().uuid(),
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number().gt(listTransactionsResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -54,6 +55,7 @@ export const createTransactionBodyAmountExclusiveMin = 0;
 
 
 export const CreateTransactionBody = zod.object({
+  "walletId": zod.string().uuid().optional(),
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number().gt(createTransactionBodyAmountExclusiveMin),
   "description": zod.string().min(1),
@@ -79,6 +81,7 @@ export const createTransactionResponseAmountExclusiveMin = 0;
 
 export const CreateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
+  "walletId": zod.string().uuid(),
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number().gt(createTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -114,6 +117,7 @@ export const updateTransactionBodyAmountExclusiveMin = 0;
 
 
 export const UpdateTransactionBody = zod.object({
+  "walletId": zod.string().uuid().optional(),
   "type": zod.enum(['income', 'expense']).optional(),
   "amount": zod.number().gt(updateTransactionBodyAmountExclusiveMin).optional(),
   "description": zod.string().min(1).optional(),
@@ -140,6 +144,7 @@ export const updateTransactionResponseAmountExclusiveMin = 0;
 
 export const UpdateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
+  "walletId": zod.string().uuid(),
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number().gt(updateTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -184,6 +189,7 @@ export const updateTransactionOccurrencePaymentStatusResponseAmountExclusiveMin 
 
 export const UpdateTransactionOccurrencePaymentStatusResponse = zod.object({
   "id": zod.string().uuid(),
+  "walletId": zod.string().uuid(),
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number().gt(updateTransactionOccurrencePaymentStatusResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -223,6 +229,7 @@ export const ListWalletsResponseItem = zod.object({
   "title": zod.string(),
   "initialBalance": zod.number().min(listWalletsResponseInitialBalanceMin),
   "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline']),
+  "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
 export const ListWalletsResponse = zod.array(ListWalletsResponseItem)
@@ -248,6 +255,7 @@ export const CreateWalletResponse = zod.object({
   "title": zod.string(),
   "initialBalance": zod.number().min(createWalletResponseInitialBalanceMin),
   "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline']),
+  "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
 
@@ -276,6 +284,7 @@ export const UpdateWalletResponse = zod.object({
   "title": zod.string(),
   "initialBalance": zod.number().min(updateWalletResponseInitialBalanceMin),
   "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline']),
+  "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
 

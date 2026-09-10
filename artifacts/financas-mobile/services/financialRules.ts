@@ -1,4 +1,5 @@
 import { Transaction } from '@/types/transaction';
+import { Wallet } from '@/types/wallet';
 import { getDateKey, isFutureDate, parseStoredDate } from '@/utils/date';
 import {
   getTransactionOccurrencesForMonth,
@@ -16,6 +17,11 @@ export interface MonthlyForecast {
   key: string;
   date: Date;
   forecast: number;
+}
+
+export interface WalletTotal {
+  wallet: Wallet;
+  total: number;
 }
 
 function transactionValue(transaction: Transaction): number {
@@ -61,6 +67,32 @@ export function calculateCurrentBalance(
     if (isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid') return total;
     return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
   }, 0);
+}
+
+export function calculateWalletTotals(
+  wallets: Wallet[],
+  transactions: Transaction[],
+  now = new Date(),
+): WalletTotal[] {
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  return wallets.map((wallet) => {
+    const walletTransactions = transactions.filter((transaction) => transaction.walletId === wallet.id);
+    const earliest = walletTransactions.length > 0
+      ? Math.min(...walletTransactions.map((transaction) => parseStoredDate(transaction.dueDate ?? transaction.date).getTime()))
+      : todayEnd.getTime();
+    const occurrences = getTransactionOccurrencesInRange(
+      walletTransactions,
+      new Date(earliest),
+      todayEnd,
+    );
+    const total = occurrences.reduce((balance, transaction) => {
+      if (isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid') return balance;
+      return balance + transactionValue(transaction);
+    }, wallet.initialBalance);
+
+    return { wallet, total };
+  });
 }
 
 export function calculateMonthlyTotals(

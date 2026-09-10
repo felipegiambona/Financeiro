@@ -12,6 +12,7 @@ import type { TransactionType } from './transactionType';
 
 export interface Transaction {
   id: string;
+  walletId: string;
   type: TransactionType;
   /** @exclusiveMinimum 0 */
   amount: number;

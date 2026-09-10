@@ -245,9 +245,10 @@ components:
           minimum: 1
     Transaction:
       type: object
-      required: [id, type, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
+      required: [id, walletId, type, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
       properties:
         id: { type: string, format: uuid }
+        walletId: { type: string, format: uuid }
         type: { type: string, enum: [income, expense] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string }
@@ -266,6 +267,7 @@ components:
       type: object
       required: [type, amount, description, date, recurrence, paymentStatus]
       properties:
+        walletId: { type: string, format: uuid }
         type: { type: string, enum: [income, expense] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
@@ -277,6 +279,7 @@ components:
     TransactionUpdate:
       type: object
       properties:
+        walletId: { type: string, format: uuid }
         type: { type: string, enum: [income, expense] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
@@ -305,7 +308,7 @@ components:
           items: { type: string, format: uuid }
     Wallet:
       type: object
-      required: [id, title, initialBalance, icon, createdAt]
+      required: [id, title, initialBalance, icon, isDefault, createdAt]
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
@@ -313,6 +316,7 @@ components:
         icon:
           type: string
           enum: [wallet-outline, bank-outline, credit-card-outline, cash, safe-square-outline, wallet, briefcase-outline, bank-transfer, finance, card-account-details-outline]
+        isDefault: { type: boolean }
         createdAt: { type: string, format: date-time }
     WalletInput:
       type: object

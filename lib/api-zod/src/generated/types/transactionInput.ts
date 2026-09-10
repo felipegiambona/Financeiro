@@ -10,6 +10,7 @@ import type { TransactionInputPaymentStatus } from './transactionInputPaymentSta
 import type { TransactionInputType } from './transactionInputType';
 
 export interface TransactionInput {
+  walletId?: string;
   type: TransactionInputType;
   /** @exclusiveMinimum 0 */
   amount: number;

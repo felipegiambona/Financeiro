@@ -17,6 +17,7 @@ export interface Recurrence {
 
 export interface Transaction {
   id: string;
+  walletId: string;
   type: TransactionType;
   amount: number;
   description: string;
@@ -29,6 +30,7 @@ export interface Transaction {
 }
 
 export interface NewTransactionInput {
+  walletId?: string;
   type: TransactionType;
   amount: number;
   description: string;

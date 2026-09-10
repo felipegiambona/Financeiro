@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Response } from "express";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db, transactionsTable } from "@workspace/db";
 import {
   CreateTransactionBody,
@@ -13,6 +13,7 @@ import {
   UpdateTransactionResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { ensureDefaultWallet, getUserWallet } from "./wallets";
 
 const router: IRouter = Router();
 router.use("/transactions", requireAuth);
@@ -52,6 +53,10 @@ function userIdFrom(req: unknown): string {
 
 router.get("/transactions", async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
+  const defaultWallet = await ensureDefaultWallet(userId);
+  await db.update(transactionsTable)
+    .set({ walletId: defaultWallet.id })
+    .where(and(eq(transactionsTable.userId, userId), isNull(transactionsTable.walletId)));
   const rows = await db.select().from(transactionsTable)
     .where(eq(transactionsTable.userId, userId))
     .orderBy(desc(transactionsTable.date), desc(transactionsTable.createdAt));
@@ -70,9 +75,15 @@ router.post("/transactions", async (req, res): Promise<void> => {
     return;
   }
   const userId = userIdFrom(req);
+  const wallet = await getUserWallet(userId, parsed.data.walletId);
+  if (!wallet) {
+    res.status(400).json({ error: "Wallet not found" });
+    return;
+  }
   const [row] = await db.insert(transactionsTable).values({
     ...parsed.data,
     userId,
+    walletId: wallet.id,
     amount: String(parsed.data.amount),
     date: dateOnly(parsed.data.date),
     dueDate: dateOnly(parsed.data.dueDate),
@@ -89,12 +100,22 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     return;
   }
   const userId = userIdFrom(req);
-  const { amount, date, dueDate, ...otherUpdates } = body.data;
+  const defaultWallet = await ensureDefaultWallet(userId);
+  await db.update(transactionsTable)
+    .set({ walletId: defaultWallet.id })
+    .where(and(eq(transactionsTable.userId, userId), isNull(transactionsTable.walletId)));
+  const { amount, date, dueDate, walletId, ...otherUpdates } = body.data;
+  const wallet = walletId === undefined ? null : await getUserWallet(userId, walletId);
+  if (walletId !== undefined && !wallet) {
+    res.status(400).json({ error: "Wallet not found" });
+    return;
+  }
   const updates = {
     ...otherUpdates,
     ...(amount === undefined ? {} : { amount: String(amount) }),
     ...(date === undefined ? {} : { date: dateOnly(date) }),
     ...(dueDate === undefined ? {} : { dueDate: dateOnly(dueDate) }),
+    ...(walletId === undefined ? {} : { walletId: wallet?.id }),
   };
   const [row] = await db.update(transactionsTable).set(updates)
     .where(and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId)))
@@ -118,6 +139,10 @@ router.patch("/transactions/:id/occurrences/:occurrenceDate/payment-status", asy
     return;
   }
   const userId = userIdFrom(req);
+  const defaultWallet = await ensureDefaultWallet(userId);
+  await db.update(transactionsTable)
+    .set({ walletId: defaultWallet.id })
+    .where(and(eq(transactionsTable.userId, userId), isNull(transactionsTable.walletId)));
   const occurrenceDate = rawOccurrenceDate;
   const [current] = await db.select().from(transactionsTable)
     .where(and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId)));

@@ -68,6 +68,7 @@ export type TransactionPaymentStatusOverrides = {[key: string]: 'paid' | 'unpaid
 
 export interface Transaction {
   id: string;
+  walletId: string;
   type: TransactionType;
   /** @exclusiveMinimum 0 */
   amount: number;
@@ -97,6 +98,7 @@ export const TransactionInputPaymentStatus = {
 } as const;
 
 export interface TransactionInput {
+  walletId?: string;
   type: TransactionInputType;
   /** @exclusiveMinimum 0 */
   amount: number;
@@ -127,6 +129,7 @@ export const TransactionUpdatePaymentStatus = {
 export type TransactionUpdatePaymentStatusOverrides = {[key: string]: 'paid' | 'unpaid'};
 
 export interface TransactionUpdate {
+  walletId?: string;
   type?: TransactionUpdateType;
   /** @exclusiveMinimum 0 */
   amount?: number;
@@ -178,6 +181,7 @@ export interface Wallet {
   /** @minimum 0 */
   initialBalance: number;
   icon: WalletIcon;
+  isDefault: boolean;
   createdAt: string;
 }
 

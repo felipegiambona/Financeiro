@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 export const transactionsTable = pgTable("finance_transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
+  walletId: uuid("wallet_id"),
   type: text("type").notNull(),
   amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
   description: text("description").notNull(),
@@ -17,6 +18,7 @@ export const transactionsTable = pgTable("finance_transactions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [
   index("finance_transactions_user_id_idx").on(table.userId),
+  index("finance_transactions_wallet_id_idx").on(table.walletId),
 ]);
 
 export const insertTransactionSchema = createInsertSchema(transactionsTable).omit({

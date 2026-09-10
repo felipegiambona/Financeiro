@@ -11,6 +11,7 @@ import type { TransactionUpdatePaymentStatusOverrides } from './transactionUpdat
 import type { TransactionUpdateType } from './transactionUpdateType';
 
 export interface TransactionUpdate {
+  walletId?: string;
   type?: TransactionUpdateType;
   /** @exclusiveMinimum 0 */
   amount?: number;

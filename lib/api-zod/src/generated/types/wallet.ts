@@ -13,5 +13,6 @@ export interface Wallet {
   /** @minimum 0 */
   initialBalance: number;
   icon: WalletIcon;
+  isDefault: boolean;
   createdAt: Date;
 }

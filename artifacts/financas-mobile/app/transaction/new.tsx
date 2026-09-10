@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
+import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 import { CalculatorModal } from '@/components/CalculatorModal';
 import {
@@ -76,15 +77,19 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { createTransaction, updateTransaction } = useFinance();
+  const { wallets, loading: walletsLoading } = useWallets();
   const isEditing = Boolean(transaction);
+  const defaultWallet = wallets.find((wallet) => wallet.isDefault) ?? wallets[0];
   const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
   const [amount, setAmount] = useState(transaction ? transaction.amount.toFixed(2).replace('.', ',') : '');
   const [description, setDescription] = useState(transaction?.description ?? '');
+  const [walletId, setWalletId] = useState(transaction?.walletId ?? '');
   const [dueDate, setDueDate] = useState(transaction?.dueDate ? toDateInput(transaction.dueDate) : '');
   const [recurrence, setRecurrence] = useState<'none' | 'recurring'>(transaction?.recurrence.kind ?? 'none');
   const [recurrenceInterval, setRecurrenceInterval] = useState(String(transaction?.recurrence.interval ?? 1));
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>(transaction?.recurrence.unit ?? 'month');
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
+  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
   const [error, setError] = useState('');
@@ -98,6 +103,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
     return () => clearTimeout(focusTimer);
   }, [isEditing]);
 
+  useEffect(() => {
+    if (!walletId && defaultWallet) setWalletId(defaultWallet.id);
+  }, [defaultWallet, walletId]);
+
   const handleSave = async () => {
     const numericAmount = parseAmountInput(amount);
     if (!type || !numericAmount || numericAmount <= 0) {
@@ -106,6 +115,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
     }
     if (!description.trim()) {
       setError('Informe uma descrição para o lançamento.');
+      return;
+    }
+    if (!walletId) {
+      setError('Selecione uma carteira para o lançamento.');
       return;
     }
     const parsedDueDate = dueDate ? parseDateInput(dueDate) : null;
@@ -131,12 +144,14 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           type,
           amount: numericAmount,
           description: description.trim(),
+          walletId,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
           recurrence: recurrenceValue,
           paymentStatus,
         });
       } else {
         await createTransaction({
+          walletId,
           type,
           amount: numericAmount,
           description,
@@ -230,6 +245,33 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           returnKeyType="done"
           style={[styles.textInput, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }]}
         />
+
+        <Text style={[styles.label, { color: colors.foreground }]}>Carteira</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Selecionar carteira"
+          testID="wallet-select"
+          disabled={walletsLoading || wallets.length === 0}
+          onPress={() => setWalletPickerOpen(true)}
+          style={({ pressed }) => [
+            styles.dateInputShell,
+            { backgroundColor: colors.card, borderColor: colors.input },
+            (walletsLoading || wallets.length === 0) && styles.disabled,
+            pressed && styles.pressed,
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={(wallets.find((wallet) => wallet.id === walletId) ?? defaultWallet)?.icon ?? 'wallet-outline'}
+            size={17}
+            color={colors.mutedForeground}
+          />
+          <Text style={[styles.dateInput, { color: walletId ? colors.foreground : colors.mutedForeground }]}>
+            {walletsLoading
+              ? 'Carregando carteiras...'
+              : wallets.find((wallet) => wallet.id === walletId)?.title ?? 'Selecione uma carteira'}
+          </Text>
+          <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+        </Pressable>
 
         <Text style={[styles.label, { color: colors.foreground }]}>Data de vencimento</Text>
         <Pressable
@@ -374,6 +416,42 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           </View>
         </View>
       </Modal>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={walletPickerOpen}
+        onRequestClose={() => setWalletPickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable accessibilityLabel="Fechar seletor" onPress={() => setWalletPickerOpen(false)} style={StyleSheet.absoluteFill} />
+          <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Escolha a carteira</Text>
+            {wallets.map((wallet) => {
+              const active = wallet.id === walletId;
+              return (
+                <Pressable
+                  key={wallet.id}
+                  testID={`wallet-option-${wallet.id}`}
+                  onPress={() => {
+                    setWalletId(wallet.id);
+                    setWalletPickerOpen(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.unitMenuOption,
+                    { borderColor: colors.border, backgroundColor: active ? colors.secondary : colors.card },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <MaterialCommunityIcons name={wallet.icon} size={18} color={active ? colors.primary : colors.mutedForeground} />
+                  <Text style={[styles.unitMenuOptionText, { color: colors.foreground }]}>{wallet.title}</Text>
+                  {wallet.isDefault ? <Text style={[styles.defaultWalletLabel, { color: colors.mutedForeground }]}>Padrão</Text> : null}
+                  {active ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
       {calculatorOpen ? (
         <CalculatorModal
           initialValue={amount}
@@ -412,6 +490,7 @@ const styles = StyleSheet.create({
   textInput: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   dateInputShell: { minHeight: 46, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 9 },
   dateInput: { flex: 1, paddingVertical: 0, fontSize: 13, fontFamily: 'Inter_500Medium' },
+  defaultWalletLabel: { marginLeft: 'auto', fontSize: 10, fontFamily: 'Inter_500Medium' },
   recurrenceOptions: { flexDirection: 'row', gap: 8 },
   recurrenceOption: { flex: 1, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
