@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, StatusBar as NativeStatusBar, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StatusBar as NativeStatusBar, StyleSheet, View } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationBar } from 'expo-navigation-bar';
-import { StatusBar } from 'expo-status-bar';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
   Inter_400Regular,
@@ -78,12 +77,20 @@ function AuthenticatedApp() {
 function ThemedApp() {
   const colors = useColors();
   const { resolvedColorScheme } = useTheme();
+  const nativeBarStyle = resolvedColorScheme === 'dark' ? 'light-content' : 'dark-content';
+
+  useEffect(() => {
+    NativeStatusBar.setBarStyle(nativeBarStyle, true);
+    if (Platform.OS === 'android') {
+      NativeStatusBar.setBackgroundColor(colors.background, true);
+      NavigationBar.setStyle(resolvedColorScheme === 'dark' ? 'dark' : 'light');
+    }
+  }, [colors.background, nativeBarStyle, resolvedColorScheme]);
 
   return (
     <>
-      <StatusBar style={resolvedColorScheme === 'dark' ? 'light' : 'dark'} />
       <NativeStatusBar
-        barStyle={resolvedColorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        barStyle={nativeBarStyle}
         backgroundColor={colors.background}
         translucent={false}
       />

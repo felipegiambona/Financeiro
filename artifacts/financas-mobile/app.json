@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "financas-mobile",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#F5F7F4",
+    "backgroundColor": "#090909",
     "ios": {
       "supportsTablet": false
     },
@@ -28,7 +28,7 @@
         "expo-navigation-bar",
         {
           "enforceContrast": false,
-          "style": "light"
+          "style": "dark"
         }
       ],
       "expo-secure-store",
