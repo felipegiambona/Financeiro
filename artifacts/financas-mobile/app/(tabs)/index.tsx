@@ -70,7 +70,10 @@ export default function DashboardScreen() {
                 <View style={[styles.metricIcon, { backgroundColor: colors.incomeSoft }]}>
                   <Feather name="clock" size={16} color={colors.income} />
                 </View>
-                <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>A Receber</Text>
+                <View style={styles.metricLabelRow}>
+                  <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>A Receber</Text>
+                  <Feather name="chevron-right" size={13} color={colors.mutedForeground} />
+                </View>
                 <Text style={[styles.metricValue, { color: colors.income }]}>{formatCurrency(monthlyTotals.receivable)}</Text>
               </Pressable>
               <Pressable
@@ -86,7 +89,10 @@ export default function DashboardScreen() {
                 <View style={[styles.metricIcon, { backgroundColor: colors.expenseSoft }]}>
                   <Feather name="credit-card" size={16} color={colors.expense} />
                 </View>
-                <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>A Pagar</Text>
+                <View style={styles.metricLabelRow}>
+                  <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>A Pagar</Text>
+                  <Feather name="chevron-right" size={13} color={colors.mutedForeground} />
+                </View>
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.payable)}</Text>
               </Pressable>
             </View>
@@ -155,6 +161,7 @@ const styles = StyleSheet.create({
   monthMetrics: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   monthMetric: { flex: 1, minHeight: 112, borderRadius: 9, borderWidth: 1, padding: 12 },
   metricIcon: { width: 29, height: 29, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  metricLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metricLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   metricValue: { fontSize: 16, fontFamily: 'Inter_700Bold', marginTop: 5 },
   walletCard: { borderRadius: 9, borderWidth: 1, padding: 14, marginTop: 2 },
