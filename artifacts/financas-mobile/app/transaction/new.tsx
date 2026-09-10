@@ -84,12 +84,14 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [amount, setAmount] = useState(transaction ? transaction.amount.toFixed(2).replace('.', ',') : '');
   const [description, setDescription] = useState(transaction?.description ?? '');
   const [walletId, setWalletId] = useState(transaction?.walletId ?? '');
+  const [destinationWalletId, setDestinationWalletId] = useState(transaction?.destinationWalletId ?? '');
   const [dueDate, setDueDate] = useState(transaction?.dueDate ? toDateInput(transaction.dueDate) : '');
   const [recurrence, setRecurrence] = useState<'none' | 'recurring'>(transaction?.recurrence.kind ?? 'none');
   const [recurrenceInterval, setRecurrenceInterval] = useState(String(transaction?.recurrence.interval ?? 1));
   const [recurrenceUnit, setRecurrenceUnit] = useState<RecurrenceUnit>(transaction?.recurrence.unit ?? 'month');
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
+  const [walletPickerTarget, setWalletPickerTarget] = useState<'source' | 'destination'>('source');
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
   const [error, setError] = useState('');
@@ -121,6 +123,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
       setError('Selecione uma carteira para o lançamento.');
       return;
     }
+    if (type === 'transfer' && (!destinationWalletId || destinationWalletId === walletId)) {
+      setError('Selecione uma carteira de destino diferente da origem.');
+      return;
+    }
     const parsedDueDate = dueDate ? parseDateInput(dueDate) : null;
     if (dueDate && !parsedDueDate) {
       setError('Informe uma data de vencimento válida no formato DD/MM/AAAA.');
@@ -145,6 +151,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           amount: numericAmount,
           description: description.trim(),
           walletId,
+           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
           recurrence: recurrenceValue,
           paymentStatus,
@@ -156,6 +163,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           amount: numericAmount,
           description,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
+           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
           recurrence: recurrenceValue,
           paymentStatus,
         });
@@ -189,18 +197,24 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
 
         <Text style={[styles.label, { color: colors.foreground }]}>Tipo</Text>
         <View style={[styles.segmented, { backgroundColor: colors.secondary }]}>
-          {(['expense', 'income'] as TransactionType[]).map((option) => {
+          {(['expense', 'income', 'transfer'] as TransactionType[]).map((option) => {
             const active = type === option;
             const isIncome = option === 'income';
+            const isTransfer = option === 'transfer';
             return (
               <Pressable
                 key={option}
                 testID={`${option}-type-option`}
-                onPress={() => setType(option)}
+                onPress={() => {
+                  setType(option);
+                  if (option === 'transfer' && (!destinationWalletId || destinationWalletId === walletId)) {
+                    setDestinationWalletId(wallets.find((wallet) => wallet.id !== walletId)?.id ?? '');
+                  }
+                }}
                 style={[styles.segment, active && { backgroundColor: colors.card, borderColor: colors.border }]}
               >
-                <Feather name={isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={16} color={active ? (isIncome ? colors.income : colors.expense) : colors.mutedForeground} />
-                <Text style={[styles.segmentText, { color: active ? colors.foreground : colors.mutedForeground }]}>{isIncome ? 'Receita' : 'Despesa'}</Text>
+                <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={16} color={active ? (isTransfer ? colors.foreground : isIncome ? colors.income : colors.expense) : colors.mutedForeground} />
+                <Text style={[styles.segmentText, { color: active ? colors.foreground : colors.mutedForeground }]}>{isTransfer ? 'Transferência' : isIncome ? 'Receita' : 'Despesa'}</Text>
               </Pressable>
             );
           })}
@@ -246,13 +260,16 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           style={[styles.textInput, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }]}
         />
 
-        <Text style={[styles.label, { color: colors.foreground }]}>Carteira</Text>
+        <Text style={[styles.label, { color: colors.foreground }]}>{type === 'transfer' ? 'Carteira de origem' : 'Carteira'}</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Selecionar carteira"
           testID="wallet-select"
           disabled={walletsLoading || wallets.length === 0}
-          onPress={() => setWalletPickerOpen(true)}
+           onPress={() => {
+             setWalletPickerTarget('source');
+             setWalletPickerOpen(true);
+           }}
           style={({ pressed }) => [
             styles.dateInputShell,
             { backgroundColor: colors.card, borderColor: colors.input },
@@ -272,6 +289,45 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           </Text>
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
+
+        {type === 'transfer' ? (
+          <>
+            <Text style={[styles.label, { color: colors.foreground }]}>Carteira de destino</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Selecionar carteira de destino"
+              testID="destination-wallet-select"
+              disabled={walletsLoading || wallets.length < 2}
+              onPress={() => {
+                setWalletPickerTarget('destination');
+                setWalletPickerOpen(true);
+              }}
+              style={({ pressed }) => [
+                styles.dateInputShell,
+                { backgroundColor: colors.card, borderColor: colors.input },
+                (walletsLoading || wallets.length < 2) && styles.disabled,
+                pressed && styles.pressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                name={(wallets.find((wallet) => wallet.id === destinationWalletId))?.icon ?? 'wallet-outline'}
+                size={17}
+                color={colors.mutedForeground}
+              />
+              <Text style={[styles.dateInput, { color: destinationWalletId ? colors.foreground : colors.mutedForeground }]}>
+                {walletsLoading
+                  ? 'Carregando carteiras...'
+                  : wallets.find((wallet) => wallet.id === destinationWalletId)?.title ?? 'Selecione uma carteira'}
+              </Text>
+              <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+            </Pressable>
+            {wallets.length < 2 ? (
+              <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
+                Cadastre pelo menos duas carteiras para fazer uma transferência.
+              </Text>
+            ) : null}
+          </>
+        ) : null}
 
         <Text style={[styles.label, { color: colors.foreground }]}>Data de vencimento</Text>
         <Pressable
@@ -425,20 +481,32 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         <View style={styles.modalRoot}>
           <Pressable accessibilityLabel="Fechar seletor" onPress={() => setWalletPickerOpen(false)} style={StyleSheet.absoluteFill} />
           <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Escolha a carteira</Text>
+            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>
+              {walletPickerTarget === 'destination' ? 'Escolha a carteira de destino' : 'Escolha a carteira de origem'}
+            </Text>
             {wallets.map((wallet) => {
-              const active = wallet.id === walletId;
+              const selectedWalletId = walletPickerTarget === 'destination' ? destinationWalletId : walletId;
+              const active = wallet.id === selectedWalletId;
+              const disabled = walletPickerTarget === 'destination' && wallet.id === walletId;
               return (
                 <Pressable
                   key={wallet.id}
                   testID={`wallet-option-${wallet.id}`}
+                  disabled={disabled}
                   onPress={() => {
-                    setWalletId(wallet.id);
+                    if (walletPickerTarget === 'destination') {
+                      setDestinationWalletId(wallet.id);
+                    } else {
+                      setWalletId(wallet.id);
+                      if (type === 'transfer' && wallet.id === destinationWalletId) {
+                        setDestinationWalletId(wallets.find((item) => item.id !== wallet.id)?.id ?? '');
+                      }
+                    }
                     setWalletPickerOpen(false);
                   }}
                   style={({ pressed }) => [
                     styles.unitMenuOption,
-                    { borderColor: colors.border, backgroundColor: active ? colors.secondary : colors.card },
+                    { borderColor: colors.border, backgroundColor: active ? colors.secondary : colors.card, opacity: disabled ? 0.45 : 1 },
                     pressed && styles.pressed,
                   ]}
                 >

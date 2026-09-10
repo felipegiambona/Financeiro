@@ -25,7 +25,18 @@ export interface WalletTotal {
 }
 
 function transactionValue(transaction: Transaction): number {
-  return transaction.type === 'income' ? transaction.amount : -transaction.amount;
+  if (transaction.type === 'income') return transaction.amount;
+  if (transaction.type === 'expense') return -transaction.amount;
+  return 0;
+}
+
+function walletTransactionValue(transaction: Transaction, walletId: string): number {
+  if (transaction.type === 'transfer') {
+    if (transaction.walletId === walletId) return -transaction.amount;
+    if (transaction.destinationWalletId === walletId) return transaction.amount;
+    return 0;
+  }
+  return transaction.walletId === walletId ? transactionValue(transaction) : 0;
 }
 
 function isOnOrBefore(transaction: Transaction, endDate: Date): boolean {
@@ -77,7 +88,8 @@ export function calculateWalletTotals(
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
   return wallets.map((wallet) => {
-    const walletTransactions = transactions.filter((transaction) => transaction.walletId === wallet.id);
+    const walletTransactions = transactions.filter((transaction) =>
+      transaction.walletId === wallet.id || transaction.destinationWalletId === wallet.id);
     const earliest = walletTransactions.length > 0
       ? Math.min(...walletTransactions.map((transaction) => parseStoredDate(transaction.dueDate ?? transaction.date).getTime()))
       : todayEnd.getTime();
@@ -88,7 +100,7 @@ export function calculateWalletTotals(
     );
     const total = occurrences.reduce((balance, transaction) => {
       if (isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid') return balance;
-      return balance + transactionValue(transaction);
+      return balance + walletTransactionValue(transaction, wallet.id);
     }, wallet.initialBalance);
 
     return { wallet, total };
@@ -105,7 +117,7 @@ export function calculateMonthlyTotals(
       if (transaction.type === 'income') {
         totals.income += transaction.amount;
         if (transaction.paymentStatus === 'unpaid') totals.receivable += transaction.amount;
-      } else {
+      } else if (transaction.type === 'expense') {
         totals.expense += transaction.amount;
         if (transaction.paymentStatus === 'unpaid') totals.payable += transaction.amount;
       }

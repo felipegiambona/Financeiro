@@ -6,6 +6,7 @@ export const transactionsTable = pgTable("finance_transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
   walletId: uuid("wallet_id"),
+  destinationWalletId: uuid("destination_wallet_id"),
   type: text("type").notNull(),
   amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
   description: text("description").notNull(),

@@ -12,4 +12,5 @@ export type TransactionInputType = typeof TransactionInputType[keyof typeof Tran
 export const TransactionInputType = {
   income: 'income',
   expense: 'expense',
+  transfer: 'transfer',
 } as const;

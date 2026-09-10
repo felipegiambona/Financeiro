@@ -85,6 +85,7 @@ function ClassicTabLayout() {
           borderTopWidth: isWeb ? 1 : 0,
           borderTopColor: colors.border,
           elevation: 0,
+          overflow: 'visible',
           ...(isWeb ? { height: 84 } : {}),
         },
         tabBarBackground: () =>
@@ -172,16 +173,18 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   newTabButton: {
-    width: 84,
-    height: 72,
+    position: 'absolute',
+    alignSelf: 'center',
+    top: -28,
+    width: 76,
+    height: 76,
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateY: -8 }],
   },
   newTabIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',

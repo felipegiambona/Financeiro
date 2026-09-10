@@ -26,7 +26,8 @@ export const listTransactionsResponseAmountExclusiveMin = 0;
 export const ListTransactionsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
-  "type": zod.enum(['income', 'expense']),
+  "destinationWalletId": zod.string().uuid().nullable(),
+  "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(listTransactionsResponseAmountExclusiveMin),
   "description": zod.string(),
   "date": zod.coerce.date(),
@@ -56,7 +57,8 @@ export const createTransactionBodyAmountExclusiveMin = 0;
 
 export const CreateTransactionBody = zod.object({
   "walletId": zod.string().uuid().optional(),
-  "type": zod.enum(['income', 'expense']),
+  "destinationWalletId": zod.string().uuid().nullish(),
+  "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(createTransactionBodyAmountExclusiveMin),
   "description": zod.string().min(1),
   "date": zod.coerce.date(),
@@ -82,7 +84,8 @@ export const createTransactionResponseAmountExclusiveMin = 0;
 export const CreateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
-  "type": zod.enum(['income', 'expense']),
+  "destinationWalletId": zod.string().uuid().nullable(),
+  "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(createTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
   "date": zod.coerce.date(),
@@ -118,7 +121,8 @@ export const updateTransactionBodyAmountExclusiveMin = 0;
 
 export const UpdateTransactionBody = zod.object({
   "walletId": zod.string().uuid().optional(),
-  "type": zod.enum(['income', 'expense']).optional(),
+  "destinationWalletId": zod.string().uuid().nullish(),
+  "type": zod.enum(['income', 'expense', 'transfer']).optional(),
   "amount": zod.number().gt(updateTransactionBodyAmountExclusiveMin).optional(),
   "description": zod.string().min(1).optional(),
   "date": zod.coerce.date().optional(),
@@ -145,7 +149,8 @@ export const updateTransactionResponseAmountExclusiveMin = 0;
 export const UpdateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
-  "type": zod.enum(['income', 'expense']),
+  "destinationWalletId": zod.string().uuid().nullable(),
+  "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(updateTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
   "date": zod.coerce.date(),
@@ -190,7 +195,8 @@ export const updateTransactionOccurrencePaymentStatusResponseAmountExclusiveMin 
 export const UpdateTransactionOccurrencePaymentStatusResponse = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
-  "type": zod.enum(['income', 'expense']),
+  "destinationWalletId": zod.string().uuid().nullable(),
+  "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(updateTransactionOccurrencePaymentStatusResponseAmountExclusiveMin),
   "description": zod.string(),
   "date": zod.coerce.date(),

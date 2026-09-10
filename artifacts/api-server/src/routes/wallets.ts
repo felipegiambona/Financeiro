@@ -149,6 +149,9 @@ router.delete("/wallets/:id", async (req, res): Promise<void> => {
   await db.update(transactionsTable)
     .set({ walletId: replacement.id })
     .where(and(eq(transactionsTable.userId, userId), eq(transactionsTable.walletId, wallet.id)));
+  await db.update(transactionsTable)
+    .set({ destinationWalletId: replacement.id })
+    .where(and(eq(transactionsTable.userId, userId), eq(transactionsTable.destinationWalletId, wallet.id)));
   await db.delete(walletsTable)
     .where(and(eq(walletsTable.id, wallet.id), eq(walletsTable.userId, userId)));
   res.sendStatus(204);

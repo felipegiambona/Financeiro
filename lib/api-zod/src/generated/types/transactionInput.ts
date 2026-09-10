@@ -11,6 +11,7 @@ import type { TransactionInputType } from './transactionInputType';
 
 export interface TransactionInput {
   walletId?: string;
+  destinationWalletId?: string | null;
   type: TransactionInputType;
   /** @exclusiveMinimum 0 */
   amount: number;

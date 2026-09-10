@@ -29,8 +29,9 @@ export function TransactionRow({
 }: TransactionRowProps) {
   const colors = useColors();
   const isIncome = transaction.type === 'income';
-  const tone = isIncome ? colors.income : colors.expense;
-  const softTone = isIncome ? colors.incomeSoft : colors.expenseSoft;
+  const isTransfer = transaction.type === 'transfer';
+  const tone = isTransfer ? colors.primary : isIncome ? colors.income : colors.expense;
+  const softTone = isTransfer ? colors.secondary : isIncome ? colors.incomeSoft : colors.expenseSoft;
   const isPaid = transaction.paymentStatus === 'paid';
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -56,7 +57,7 @@ export function TransactionRow({
         style={({ pressed }) => [styles.editArea, pressed && styles.pressed]}
       >
         <View style={[styles.typeIcon, { backgroundColor: softTone }]}>
-          <Feather name={isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={18} color={tone} />
+          <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={18} color={tone} />
         </View>
         <View style={styles.details}>
           <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
@@ -74,7 +75,7 @@ export function TransactionRow({
         </View>
       </Pressable>
       <View style={styles.trailing}>
-        <Text style={[styles.amount, { color: tone }]}>{isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}</Text>
+        <Text style={[styles.amount, { color: tone }]}>{isTransfer ? '' : isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Marcar ${transaction.description} como ${isPaid ? 'não pago' : 'pago'}`}

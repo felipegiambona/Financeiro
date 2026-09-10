@@ -22,13 +22,14 @@ interface DeleteConfirmation {
   onConfirm: () => Promise<void>;
 }
 
-type TypeFilter = 'all' | 'income' | 'expense';
+type TypeFilter = 'all' | 'income' | 'expense' | 'transfer';
 type StatusFilter = 'all' | 'paid' | 'unpaid';
 
 const TYPE_FILTERS: Array<{ value: TypeFilter; label: string }> = [
   { value: 'all', label: 'Todos' },
   { value: 'income', label: 'Receitas' },
   { value: 'expense', label: 'Despesas' },
+  { value: 'transfer', label: 'Transferências' },
 ];
 
 const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
@@ -90,7 +91,7 @@ export default function TransactionsScreen() {
       (summary, transaction) => {
         if (transaction.type === 'income') {
           summary.income += transaction.amount;
-        } else {
+        } else if (transaction.type === 'expense') {
           summary.expense += transaction.amount;
         }
         return summary;

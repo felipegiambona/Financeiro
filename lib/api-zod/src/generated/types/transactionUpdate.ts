@@ -12,6 +12,7 @@ import type { TransactionUpdateType } from './transactionUpdateType';
 
 export interface TransactionUpdate {
   walletId?: string;
+  destinationWalletId?: string | null;
   type?: TransactionUpdateType;
   /** @exclusiveMinimum 0 */
   amount?: number;

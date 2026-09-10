@@ -54,6 +54,7 @@ export type TransactionType = typeof TransactionType[keyof typeof TransactionTyp
 export const TransactionType = {
   income: 'income',
   expense: 'expense',
+  transfer: 'transfer',
 } as const;
 
 export type TransactionPaymentStatus = typeof TransactionPaymentStatus[keyof typeof TransactionPaymentStatus];
@@ -69,6 +70,7 @@ export type TransactionPaymentStatusOverrides = {[key: string]: 'paid' | 'unpaid
 export interface Transaction {
   id: string;
   walletId: string;
+  destinationWalletId: string | null;
   type: TransactionType;
   /** @exclusiveMinimum 0 */
   amount: number;
@@ -87,6 +89,7 @@ export type TransactionInputType = typeof TransactionInputType[keyof typeof Tran
 export const TransactionInputType = {
   income: 'income',
   expense: 'expense',
+  transfer: 'transfer',
 } as const;
 
 export type TransactionInputPaymentStatus = typeof TransactionInputPaymentStatus[keyof typeof TransactionInputPaymentStatus];
@@ -99,6 +102,7 @@ export const TransactionInputPaymentStatus = {
 
 export interface TransactionInput {
   walletId?: string;
+  destinationWalletId?: string | null;
   type: TransactionInputType;
   /** @exclusiveMinimum 0 */
   amount: number;
@@ -116,6 +120,7 @@ export type TransactionUpdateType = typeof TransactionUpdateType[keyof typeof Tr
 export const TransactionUpdateType = {
   income: 'income',
   expense: 'expense',
+  transfer: 'transfer',
 } as const;
 
 export type TransactionUpdatePaymentStatus = typeof TransactionUpdatePaymentStatus[keyof typeof TransactionUpdatePaymentStatus];
@@ -130,6 +135,7 @@ export type TransactionUpdatePaymentStatusOverrides = {[key: string]: 'paid' | '
 
 export interface TransactionUpdate {
   walletId?: string;
+  destinationWalletId?: string | null;
   type?: TransactionUpdateType;
   /** @exclusiveMinimum 0 */
   amount?: number;

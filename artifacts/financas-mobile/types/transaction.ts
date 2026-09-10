@@ -1,4 +1,4 @@
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = 'income' | 'expense' | 'transfer';
 
 export type RecurrenceKind = 'none' | 'recurring';
 export type RecurrenceUnit = 'day' | 'week' | 'month' | 'year';
@@ -18,6 +18,7 @@ export interface Recurrence {
 export interface Transaction {
   id: string;
   walletId: string;
+  destinationWalletId?: string | null;
   type: TransactionType;
   amount: number;
   description: string;
@@ -31,6 +32,7 @@ export interface Transaction {
 
 export interface NewTransactionInput {
   walletId?: string;
+  destinationWalletId?: string | null;
   type: TransactionType;
   amount: number;
   description: string;
