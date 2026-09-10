@@ -4,8 +4,10 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, EmptyState, LoadingState } from '@/components/StateView';
+import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
 import { useWallets } from '@/context/WalletContext';
+import { calculateWalletTotals } from '@/services/financialRules';
 import {
   WALLET_ICON_OPTIONS,
   type Wallet,
@@ -37,6 +39,7 @@ export default function WalletsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { wallets, loading, error, refresh, createWallet, updateWallet, deleteWallet } = useWallets();
+  const { transactions, loading: transactionsLoading } = useFinance();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingWalletId, setEditingWalletId] = useState<string | null>(null);
   const [form, setForm] = useState<WalletForm>(EMPTY_FORM);
@@ -45,6 +48,10 @@ export default function WalletsScreen() {
   const editingWallet = useMemo(
     () => wallets.find((wallet) => wallet.id === editingWalletId),
     [editingWalletId, wallets],
+  );
+  const walletTotals = useMemo(
+    () => calculateWalletTotals(wallets, transactions),
+    [transactions, wallets],
   );
 
   const openCreate = () => {
@@ -134,11 +141,11 @@ export default function WalletsScreen() {
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>
           Organize suas contas e acompanhe de onde vem cada saldo.
         </Text>
-        {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : wallets.length === 0 ? (
+        {loading || transactionsLoading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : wallets.length === 0 ? (
           <EmptyState message="Nenhuma carteira cadastrada." />
         ) : (
           <View style={styles.walletList}>
-            {wallets.map((wallet) => (
+            {walletTotals.map(({ wallet, total }) => (
               <View key={wallet.id} style={[styles.walletCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.walletIcon, { backgroundColor: colors.secondary }]}>
                   <WalletIconView icon={wallet.icon} color={colors.foreground} />
@@ -146,7 +153,7 @@ export default function WalletsScreen() {
                 <View style={styles.walletCopy}>
                   <Text numberOfLines={1} style={[styles.walletTitle, { color: colors.foreground }]}>{wallet.title}</Text>
                   <Text style={[styles.walletType, { color: colors.mutedForeground }]}>{iconLabel(wallet.icon)}</Text>
-                  <Text style={[styles.walletBalance, { color: colors.foreground }]}>{formatCurrency(wallet.initialBalance)}</Text>
+                  <Text style={[styles.walletBalance, { color: total >= 0 ? colors.income : colors.expense }]}>{formatCurrency(total)}</Text>
                 </View>
                 <View style={styles.walletActions}>
                   <Pressable
