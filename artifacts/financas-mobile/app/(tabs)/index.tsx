@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateMonthlyTotals, calculateWalletTotals } from '@/services/financialRules';
+import { getPendingTransactionOccurrences } from '@/services/pendingNotifications';
 import { formatCurrency } from '@/utils/currency';
 
 export default function DashboardScreen() {
@@ -22,6 +23,7 @@ export default function DashboardScreen() {
   const monthlyTotals = useMemo(() => calculateMonthlyTotals(transactions, new Date()), [transactions]);
   const walletTotals = useMemo(() => calculateWalletTotals(wallets, transactions), [transactions, wallets]);
   const balance = calculateCurrentBalance(wallets, transactions);
+  const pendingNotifications = useMemo(() => getPendingTransactionOccurrences(transactions), [transactions]);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -29,7 +31,15 @@ export default function DashboardScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenHeader eyebrow="Visão geral" title="Seu dinheiro, no controle." actionLabel="Sair" actionIcon="log-out" onAction={() => void signOut()} />
+        <ScreenHeader
+          eyebrow="Visão geral"
+          title="Seu dinheiro, no controle."
+          notificationCount={pendingNotifications.length}
+          onNotificationPress={() => router.push('/notifications')}
+          actionLabel="Sair"
+          actionIcon="log-out"
+          onAction={() => void signOut()}
+        />
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
           <>
             <View style={[styles.balanceCard, { backgroundColor: colors.primary }]}>

@@ -47,6 +47,7 @@ function RootLayoutNav() {
         <Stack.Screen name="transaction/new" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/profile" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="wallets" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />
       </Stack.Protected>
     </Stack>
   );
