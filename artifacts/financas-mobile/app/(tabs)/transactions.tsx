@@ -79,8 +79,10 @@ export default function TransactionsScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [walletFilter, setWalletFilter] = useState('all');
   const [searchText, setSearchText] = useState('');
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
+  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
   const [deleting, setDeleting] = useState(false);
   useEffect(() => {
@@ -111,8 +113,13 @@ export default function TransactionsScreen() {
       &&
       (typeFilter === 'all' || transaction.type === typeFilter)
       && (statusFilter === 'all' || transaction.paymentStatus === statusFilter)
+      && (
+        walletFilter === 'all'
+        || transaction.walletId === walletFilter
+        || transaction.destinationWalletId === walletFilter
+      )
     )),
-    [searchQuery, selectedTransactions, statusFilter, typeFilter],
+    [searchQuery, selectedTransactions, statusFilter, typeFilter, walletFilter],
   );
   const transactionGroups = useMemo(() => {
     const groups = new Map<string, TransactionOccurrence[]>();
@@ -250,8 +257,10 @@ export default function TransactionsScreen() {
   const clearFilters = () => {
     setTypeFilter('all');
     setStatusFilter('all');
+    setWalletFilter('all');
     setSearchText('');
     setMoreFiltersOpen(false);
+    setWalletPickerOpen(false);
     leaveSelectionMode();
     router.setParams({ typeFilter: undefined, statusFilter: undefined });
   };
@@ -325,7 +334,7 @@ export default function TransactionsScreen() {
           >
             <View style={styles.moreFiltersControl}>
               <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
-              {(typeFilter !== 'all' || statusFilter !== 'all') ? (
+              {(typeFilter !== 'all' || statusFilter !== 'all' || walletFilter !== 'all') ? (
                 <View style={[styles.activeFiltersDot, { backgroundColor: colors.primary }]} />
               ) : null}
               <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
