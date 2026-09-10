@@ -89,21 +89,20 @@ function ClassicTabLayout() {
           overflow: 'visible',
           ...(isWeb ? { height: 84 } : {}),
         },
-        tabBarBackground: () =>
-          isIOS ? (
+          tabBarBackground: () => isIOS ? (
             <BlurView
               intensity={100}
               tint={isDark ? 'dark' : 'light'}
               style={StyleSheet.absoluteFill}
             />
-          ) : isWeb ? (
+          ) : (
             <View
               style={[
                 StyleSheet.absoluteFill,
                 { backgroundColor: colors.background },
               ]}
             />
-          ) : null,
+          ),
       }}
     >
       <Tabs.Screen

@@ -82,19 +82,24 @@ function ThemedApp() {
   useEffect(() => {
     NativeStatusBar.setBarStyle(nativeBarStyle, true);
     if (Platform.OS === 'android') {
+      NativeStatusBar.setTranslucent(false);
       NativeStatusBar.setBackgroundColor(colors.background, true);
       NavigationBar.setStyle(resolvedColorScheme === 'dark' ? 'dark' : 'light');
     }
   }, [colors.background, nativeBarStyle, resolvedColorScheme]);
 
   return (
-    <>
+    <View style={[styles.appShell, { backgroundColor: colors.background }]}>
       <NativeStatusBar
+        key={`status-bar-${resolvedColorScheme}`}
         barStyle={nativeBarStyle}
         backgroundColor={colors.background}
         translucent={false}
       />
-      <NavigationBar style={resolvedColorScheme === 'dark' ? 'dark' : 'light'} />
+      <NavigationBar
+        key={`navigation-bar-${resolvedColorScheme}`}
+        style={resolvedColorScheme === 'dark' ? 'dark' : 'light'}
+      />
       <ErrorBoundary>
         <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
           <ClerkLoaded>
@@ -110,7 +115,7 @@ function ThemedApp() {
           </ClerkLoaded>
         </ClerkProvider>
       </ErrorBoundary>
-    </>
+    </View>
   );
 }
 
@@ -140,6 +145,9 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  appShell: {
+    flex: 1,
+  },
   root: {
     flex: 1,
   },
