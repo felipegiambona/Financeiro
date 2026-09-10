@@ -3,7 +3,6 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { TransactionOccurrence } from '@/types/transaction';
-import { formatTime } from '@/utils/date';
 import { formatCurrency } from '@/utils/currency';
 
 interface TransactionRowProps {
@@ -62,9 +61,6 @@ export function TransactionRow({
         <View style={styles.details}>
           <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
           <View style={styles.meta}>
-            <Text style={[styles.date, { color: colors.mutedForeground }]}>
-              {formatTime(transaction.createdAt)}
-            </Text>
             {transaction.recurrence.kind === 'recurring' ? (
               <View style={[styles.recurrence, { backgroundColor: colors.secondary }]}>
                 <Feather name="repeat" size={10} color={colors.secondaryForeground} />
@@ -116,7 +112,6 @@ const styles = StyleSheet.create({
   details: { flex: 1, minWidth: 0, gap: 3 },
   description: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  date: { fontSize: 10, fontFamily: 'Inter_400Regular' },
   recurrence: { borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1, flexDirection: 'row', alignItems: 'center', gap: 2 },
   recurrenceText: { fontSize: 8, fontFamily: 'Inter_500Medium' },
   status: { borderRadius: 4, paddingHorizontal: 4, paddingVertical: 1 },
