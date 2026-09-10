@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   confirmationCancelLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   confirmationDelete: { flex: 1.35, minHeight: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   confirmationDeleteLabel: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'center' },
-  monthSummary: { marginTop: 6, paddingTop: 14, flexDirection: 'row', justifyContent: 'space-between' },
+  monthSummary: { paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between' },
   summaryLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   summaryValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },
 });
