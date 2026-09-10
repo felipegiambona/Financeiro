@@ -16,7 +16,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: React.PropsWithChildren) {
-  const deviceColorScheme = useColorScheme() ?? 'dark';
+  const deviceColorScheme = useColorScheme() === 'light' ? 'light' : 'dark';
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
 
   useEffect(() => {

@@ -19,16 +19,16 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ClerkLoaded, ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setBaseUrl } from '@workspace/api-client-react';
-import colors from '@/constants/colors';
 import { FinanceProvider } from '@/context/FinanceContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { WalletProvider } from '@/context/WalletContext';
+import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
-const SYSTEM_BACKGROUND = colors.dark.background;
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
@@ -36,9 +36,10 @@ const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 if (!publishableKey) throw new Error('A autenticação não foi configurada.');
 
 function RootLayoutNav() {
+  const colors = useColors();
   const { session } = useAuth();
   return (
-    <Stack screenOptions={{ headerBackTitle: 'Voltar', contentStyle: { backgroundColor: SYSTEM_BACKGROUND } }}>
+    <Stack screenOptions={{ headerBackTitle: 'Voltar', contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
       </Stack.Protected>
@@ -46,6 +47,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="transaction/new" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/profile" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="more/settings" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="wallets" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />
       </Stack.Protected>
@@ -54,11 +56,12 @@ function RootLayoutNav() {
 }
 
 function AuthenticatedApp() {
+  const colors = useColors();
   const { session, loading } = useAuth();
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.dark.foreground} />
+      <View style={[styles.loading, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.foreground} />
       </View>
     );
   }
@@ -70,6 +73,33 @@ function AuthenticatedApp() {
       </WalletProvider>
     </FinanceProvider>
   ) : <RootLayoutNav />;
+}
+
+function ThemedApp() {
+  const colors = useColors();
+  const { resolvedColorScheme } = useTheme();
+
+  return (
+    <>
+      <StatusBar style={resolvedColorScheme === 'dark' ? 'light' : 'dark'} />
+      <NavigationBar style={resolvedColorScheme === 'dark' ? 'light' : 'dark'} />
+      <ErrorBoundary>
+        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
+          <ClerkLoaded>
+            <QueryClientProvider client={queryClient}>
+              <GestureHandlerRootView style={[styles.root, { backgroundColor: colors.background }]}>
+                <KeyboardProvider>
+                  <AuthProvider>
+                    <AuthenticatedApp />
+                  </AuthProvider>
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </QueryClientProvider>
+          </ClerkLoaded>
+        </ClerkProvider>
+      </ErrorBoundary>
+    </>
+  );
 }
 
 export default function RootLayout() {
@@ -90,23 +120,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      <NavigationBar style="light" />
-      <ErrorBoundary>
-        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
-          <ClerkLoaded>
-            <QueryClientProvider client={queryClient}>
-              <GestureHandlerRootView style={styles.root}>
-                <KeyboardProvider>
-                  <AuthProvider>
-                    <AuthenticatedApp />
-                  </AuthProvider>
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </QueryClientProvider>
-          </ClerkLoaded>
-        </ClerkProvider>
-      </ErrorBoundary>
+      <ThemeProvider>
+        <ThemedApp />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
@@ -114,7 +130,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: SYSTEM_BACKGROUND,
   },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: SYSTEM_BACKGROUND },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
