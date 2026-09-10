@@ -4,6 +4,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, EmptyState, LoadingState } from '@/components/StateView';
+import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { WalletIconView } from '@/components/WalletIconView';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
@@ -187,7 +188,7 @@ export default function WalletsScreen() {
       </ScrollView>
 
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent
         visible={modalVisible}
         onRequestClose={closeModal}
@@ -195,7 +196,7 @@ export default function WalletsScreen() {
         <View style={styles.modalRoot}>
           <Pressable accessibilityLabel="Fechar formulário" onPress={closeModal} style={StyleSheet.absoluteFill} />
           <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <ScrollView
+            <KeyboardAwareScrollViewCompat
               style={styles.modalFormScroll}
               contentContainerStyle={styles.modalFormContent}
               showsVerticalScrollIndicator={false}
@@ -259,7 +260,7 @@ export default function WalletsScreen() {
                   <Text style={[styles.saveLabel, { color: colors.accentForeground }]}>{saving ? 'Salvando...' : 'Salvar carteira'}</Text>
                 </Pressable>
               </View>
-            </ScrollView>
+            </KeyboardAwareScrollViewCompat>
           </View>
         </View>
       </Modal>
@@ -280,8 +281,8 @@ const styles = StyleSheet.create({
   walletBalance: { fontSize: 13, fontFamily: 'Inter_700Bold', marginTop: 5 },
   walletActions: { flexDirection: 'row', gap: 6 },
   iconButton: { width: 30, height: 30, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.76)', justifyContent: 'flex-end' },
-  modalCard: { maxHeight: '92%', borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: 1, paddingHorizontal: 18, paddingTop: 17, paddingBottom: 28 },
+  modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.72)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
+  modalCard: { width: '100%', maxWidth: 340, maxHeight: '82%', borderRadius: 10, borderWidth: 1, padding: 14, flexShrink: 1 },
   modalFormScroll: { flexShrink: 1 },
   modalFormContent: { paddingBottom: 1 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
