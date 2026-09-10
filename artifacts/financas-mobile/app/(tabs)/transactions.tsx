@@ -67,6 +67,7 @@ export default function TransactionsScreen() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchText, setSearchText] = useState('');
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
   const [deleting, setDeleting] = useState(false);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
@@ -251,62 +252,79 @@ export default function TransactionsScreen() {
               </Pressable>
             ) : null}
           </View>
-          <View style={styles.filterGroup}>
-            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Tipo</Text>
-            <View style={styles.filterOptions}>
-              {TYPE_FILTERS.map((option) => {
-                const active = typeFilter === option.value;
-                return (
-                  <Pressable
-                    key={option.value}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Filtrar por ${option.label.toLowerCase()}`}
-                    onPress={() => {
-                      setTypeFilter(option.value);
-                      leaveSelectionMode();
-                    }}
-                    style={[
-                      styles.filterChip,
-                      { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
-                    ]}
-                  >
-                    <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: moreFiltersOpen }}
+            accessibilityLabel={moreFiltersOpen ? 'Ocultar mais filtros' : 'Exibir mais filtros'}
+            onPress={() => setMoreFiltersOpen((open) => !open)}
+            style={({ pressed }) => [styles.moreFiltersToggle, { borderColor: colors.border }, pressed && styles.pressed]}
+          >
+            <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
+            {(typeFilter !== 'all' || statusFilter !== 'all') ? (
+              <View style={[styles.activeFiltersDot, { backgroundColor: colors.primary }]} />
+            ) : null}
+            <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+          </Pressable>
+          {moreFiltersOpen ? (
+            <View style={styles.moreFiltersContent}>
+              <View style={styles.filterGroup}>
+                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Tipo</Text>
+                <View style={styles.filterOptions}>
+                  {TYPE_FILTERS.map((option) => {
+                    const active = typeFilter === option.value;
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={`Filtrar por ${option.label.toLowerCase()}`}
+                        onPress={() => {
+                          setTypeFilter(option.value);
+                          leaveSelectionMode();
+                        }}
+                        style={[
+                          styles.filterChip,
+                          { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+                        ]}
+                      >
+                        <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+              <View style={styles.filterGroup}>
+                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Status</Text>
+                <View style={styles.filterOptions}>
+                  {STATUS_FILTERS.map((option) => {
+                    const active = statusFilter === option.value;
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={`Filtrar por ${option.label.toLowerCase()}`}
+                        onPress={() => {
+                          setStatusFilter(option.value);
+                          leaveSelectionMode();
+                        }}
+                        style={[
+                          styles.filterChip,
+                          { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+                        ]}
+                      >
+                        <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
             </View>
-          </View>
-          <View style={styles.filterGroup}>
-            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Status</Text>
-            <View style={styles.filterOptions}>
-              {STATUS_FILTERS.map((option) => {
-                const active = statusFilter === option.value;
-                return (
-                  <Pressable
-                    key={option.value}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Filtrar por ${option.label.toLowerCase()}`}
-                    onPress={() => {
-                      setStatusFilter(option.value);
-                      leaveSelectionMode();
-                    }}
-                    style={[
-                      styles.filterChip,
-                      { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
-                    ]}
-                  >
-                    <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+          ) : null}
         </View>
         <View style={styles.metrics}>
           <View style={[styles.metric, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -462,6 +480,10 @@ const styles = StyleSheet.create({
   searchField: { minHeight: 36, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
   searchInput: { flex: 1, minWidth: 0, paddingVertical: 0, fontSize: 11, fontFamily: 'Inter_400Regular' },
   clearSearchButton: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
+  moreFiltersToggle: { minHeight: 34, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', paddingTop: 5, gap: 7 },
+  moreFiltersLabel: { flex: 1, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  activeFiltersDot: { width: 6, height: 6, borderRadius: 3 },
+  moreFiltersContent: { gap: 7, paddingTop: 1 },
   filterGroup: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
   filterLabel: { width: 43, fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
