@@ -6,6 +6,7 @@ import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { LoadingState } from '@/components/StateView';
+import { WalletIconView } from '@/components/WalletIconView';
 import { useFinance } from '@/context/FinanceContext';
 import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
@@ -277,8 +278,8 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             pressed && styles.pressed,
           ]}
         >
-          <MaterialCommunityIcons
-            name={(wallets.find((wallet) => wallet.id === walletId) ?? defaultWallet)?.icon ?? 'wallet-outline'}
+          <WalletIconView
+            icon={(wallets.find((wallet) => wallet.id === walletId) ?? defaultWallet)?.icon ?? 'wallet-outline'}
             size={17}
             color={colors.mutedForeground}
           />
@@ -309,8 +310,8 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 pressed && styles.pressed,
               ]}
             >
-              <MaterialCommunityIcons
-                name={(wallets.find((wallet) => wallet.id === destinationWalletId))?.icon ?? 'wallet-outline'}
+              <WalletIconView
+                icon={(wallets.find((wallet) => wallet.id === destinationWalletId))?.icon ?? 'wallet-outline'}
                 size={17}
                 color={colors.mutedForeground}
               />

@@ -4,6 +4,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, EmptyState, LoadingState } from '@/components/StateView';
+import { WalletIconView } from '@/components/WalletIconView';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
 import { useWallets } from '@/context/WalletContext';
@@ -29,10 +30,6 @@ const EMPTY_FORM: WalletForm = {
 
 function iconLabel(icon: WalletIcon): string {
   return WALLET_ICON_OPTIONS.find((option) => option.icon === icon)?.label ?? 'Carteira';
-}
-
-function WalletIconView({ icon, size = 21, color }: { icon: WalletIcon; size?: number; color: string }) {
-  return <MaterialCommunityIcons name={icon} size={size} color={color} />;
 }
 
 export default function WalletsScreen() {

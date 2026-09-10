@@ -1,2 +1,3 @@
 - [Expo SDK 57 with pnpm](expo-sdk57-pnpm.md) — keep app-local React peers aligned and distinguish optional DevTools shell failures from Metro failures.
 - [Authenticated integration environment](authenticated-integration-environment.md) — keep Clerk test email locals short and provide artifact env vars for workspace builds.
+- [Wallet brand assets](wallet-brand-assets.md) — use local official SVG/PNG logos while preserving the existing wallet icon enum.
