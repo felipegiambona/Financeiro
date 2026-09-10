@@ -113,11 +113,7 @@ export default function DashboardScreen() {
                   >
                     <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Gerenciar</Text>
                   </Pressable>
-                  <WalletIconView
-                    icon={walletTotals[0]?.wallet.icon ?? 'wallet-outline'}
-                    size={18}
-                    color={colors.mutedForeground}
-                  />
+                  <MaterialCommunityIcons name="wallet-outline" size={18} color={colors.mutedForeground} />
                 </View>
               </View>
               {walletsLoading ? (
