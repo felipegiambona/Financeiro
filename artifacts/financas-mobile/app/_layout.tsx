@@ -81,8 +81,15 @@ function ThemedApp() {
 
   return (
     <>
-      <StatusBar style={resolvedColorScheme === 'dark' ? 'light' : 'dark'} />
-      <NavigationBar style={resolvedColorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar
+        style={resolvedColorScheme === 'dark' ? 'light' : 'dark'}
+        backgroundColor={colors.background}
+        translucent={false}
+      />
+      <NavigationBar
+        style={resolvedColorScheme === 'dark' ? 'light' : 'dark'}
+        backgroundColor={colors.background}
+      />
       <ErrorBoundary>
         <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
           <ClerkLoaded>

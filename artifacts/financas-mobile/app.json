@@ -6,8 +6,8 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "financas-mobile",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#090909",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F5F7F4",
     "ios": {
       "supportsTablet": false
     },
