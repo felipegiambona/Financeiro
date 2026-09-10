@@ -65,19 +65,12 @@ function calculateBalanceAtDate(
 }
 
 export function calculateCurrentBalance(
+  wallets: Wallet[],
   transactions: Transaction[],
   now = new Date(),
 ): number {
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const occurrences = getTransactionOccurrencesInRange(
-    transactions,
-    getRangeStart(transactions, now),
-    todayEnd,
-  );
-  return occurrences.reduce((total, transaction) => {
-    if (isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid') return total;
-    return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
-  }, 0);
+  return calculateWalletTotals(wallets, transactions, now)
+    .reduce((total, walletTotal) => total + walletTotal.total, 0);
 }
 
 export function calculateWalletTotals(

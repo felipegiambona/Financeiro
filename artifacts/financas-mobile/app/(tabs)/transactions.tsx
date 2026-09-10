@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { TransactionRow } from '@/components/TransactionRow';
 import { useFinance } from '@/context/FinanceContext';
+import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateForecast } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
@@ -58,6 +59,7 @@ export default function TransactionsScreen() {
     deleteTransactions,
     clearTransactions,
   } = useFinance();
+  const { wallets } = useWallets();
   const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -93,14 +95,16 @@ export default function TransactionsScreen() {
           summary.income += transaction.amount;
         } else if (transaction.type === 'expense') {
           summary.expense += transaction.amount;
+        } else if (transaction.type === 'transfer') {
+          summary.transfer += transaction.amount;
         }
         return summary;
       },
-      { income: 0, expense: 0 },
+      { income: 0, expense: 0, transfer: 0 },
     ),
     [filteredTransactions],
   );
-  const currentBalance = calculateCurrentBalance(transactions);
+  const currentBalance = calculateCurrentBalance(wallets, transactions);
   const forecast = calculateForecast(transactions, selectedMonth);
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
@@ -388,8 +392,12 @@ export default function TransactionsScreen() {
             )}
             {filteredTransactions.length > 0 ? (
               <View style={styles.monthSummary}>
-                <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>No mês selecionado</Text>
-                <Text style={[styles.summaryValue, { color: colors.foreground }]}>{formatCurrency(filteredSummary.income - filteredSummary.expense)}</Text>
+                <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
+                  {typeFilter === 'transfer' ? 'Total transferido' : 'No mês selecionado'}
+                </Text>
+                <Text style={[styles.summaryValue, { color: colors.foreground }]}>
+                  {formatCurrency(typeFilter === 'transfer' ? filteredSummary.transfer : filteredSummary.income - filteredSummary.expense)}
+                </Text>
               </View>
             ) : null}
           </>
@@ -454,9 +462,9 @@ const styles = StyleSheet.create({
   searchField: { minHeight: 36, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
   searchInput: { flex: 1, minWidth: 0, paddingVertical: 0, fontSize: 11, fontFamily: 'Inter_400Regular' },
   clearSearchButton: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
-  filterGroup: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  filterGroup: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
   filterLabel: { width: 43, fontSize: 10, fontFamily: 'Inter_600SemiBold' },
-  filterOptions: { flex: 1, flexDirection: 'row', gap: 5 },
+  filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   filterChip: { minHeight: 28, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   metrics: { flexDirection: 'row', gap: 7, marginBottom: 16 },

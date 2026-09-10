@@ -17,9 +17,9 @@ export default function DashboardScreen() {
   const { transactions, loading, error, refresh } = useFinance();
   const { wallets, loading: walletsLoading } = useWallets();
   const { signOut } = useAuth();
-  const balance = calculateCurrentBalance(transactions);
   const monthlyTotals = useMemo(() => calculateMonthlyTotals(transactions, new Date()), [transactions]);
   const walletTotals = useMemo(() => calculateWalletTotals(wallets, transactions), [transactions, wallets]);
+  const balance = calculateCurrentBalance(wallets, transactions);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>

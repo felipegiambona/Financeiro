@@ -214,7 +214,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 style={[styles.segment, active && { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={16} color={active ? (isTransfer ? colors.foreground : isIncome ? colors.income : colors.expense) : colors.mutedForeground} />
-                <Text style={[styles.segmentText, { color: active ? colors.foreground : colors.mutedForeground }]}>{isTransfer ? 'Transferência' : isIncome ? 'Receita' : 'Despesa'}</Text>
+                <Text numberOfLines={1} style={[styles.segmentText, { color: active ? colors.foreground : colors.mutedForeground }]}>{isTransfer ? 'Transferência' : isIncome ? 'Receita' : 'Despesa'}</Text>
               </Pressable>
             );
           })}
@@ -552,9 +552,9 @@ const styles = StyleSheet.create({
   topTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   intro: { fontSize: 13, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: 10, marginBottom: 18 },
   label: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 6, marginTop: 14 },
-  segmented: { borderRadius: 8, padding: 3, flexDirection: 'row', gap: 3 },
-  segment: { flex: 1, minHeight: 38, borderRadius: 6, borderWidth: 1, borderColor: 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
-  segmentText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  segmented: { borderRadius: 8, padding: 3, flexDirection: 'row', gap: 2 },
+  segment: { flex: 1, minWidth: 0, minHeight: 48, borderRadius: 6, borderWidth: 1, borderColor: 'transparent', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 2 },
+  segmentText: { flexShrink: 1, fontSize: 11, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
   inputShell: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
   currencyPrefix: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginRight: 6 },
   amountInput: { flex: 1, fontSize: 21, fontFamily: 'Inter_700Bold', paddingVertical: 0 },
