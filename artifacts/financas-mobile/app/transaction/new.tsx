@@ -442,10 +442,14 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                     pressed && styles.pressed,
                   ]}
                 >
-                  <MaterialCommunityIcons name={wallet.icon} size={18} color={active ? colors.primary : colors.mutedForeground} />
-                  <Text style={[styles.unitMenuOptionText, { color: colors.foreground }]}>{wallet.title}</Text>
-                  {wallet.isDefault ? <Text style={[styles.defaultWalletLabel, { color: colors.mutedForeground }]}>Padrão</Text> : null}
-                  {active ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+                  <View style={styles.walletMenuIcon}>
+                    <MaterialCommunityIcons name={wallet.icon} size={18} color={active ? colors.primary : colors.mutedForeground} />
+                  </View>
+                  <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: colors.foreground }]}>{wallet.title}</Text>
+                  <View style={styles.walletMenuTrailing}>
+                    {wallet.isDefault ? <Text style={[styles.defaultWalletLabel, { color: colors.mutedForeground }]}>Padrão</Text> : null}
+                    {active ? <Feather name="check" size={16} color={colors.foreground} /> : null}
+                  </View>
                 </Pressable>
               );
             })}
@@ -507,6 +511,10 @@ const styles = StyleSheet.create({
   unitMenuTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', marginBottom: 3 },
   unitMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   unitMenuOptionText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
+  walletMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
+  walletMenuIcon: { width: 24, alignItems: 'flex-start' },
+  walletMenuOptionText: { flex: 1, minWidth: 0, fontSize: 13, fontFamily: 'Inter_500Medium', marginLeft: 7 },
+  walletMenuTrailing: { minWidth: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
   error: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 9 },
   saveButton: { minHeight: 48, borderRadius: 8, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   saveText: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter_700Bold' },

@@ -31,7 +31,6 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Icon
           sf={{ default: 'plus.circle', selected: 'plus.circle.fill' }}
         />
-        <NativeTabs.Trigger.Label>Novo</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="charts">
         <NativeTabs.Trigger.Icon
@@ -61,9 +60,8 @@ function NewTransactionTabButton() {
       style={({ pressed }) => [styles.newTabButton, pressed && styles.newTabPressed]}
     >
       <View style={[styles.newTabIcon, { backgroundColor: colors.accent, borderColor: colors.background }]}>
-        <Feather name="plus" size={23} color={colors.accentForeground} />
+        <Feather name="plus" size={25} color={colors.accentForeground} />
       </View>
-      <Text style={[styles.newTabLabel, { color: colors.mutedForeground }]}>Novo</Text>
     </Pressable>
   );
 }
@@ -174,23 +172,18 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   newTabButton: {
-    width: 72,
-    height: 58,
+    width: 78,
+    height: 64,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
   },
   newTabIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  newTabLabel: {
-    fontSize: 10,
-    fontFamily: 'Inter_600SemiBold',
   },
   newTabPressed: {
     opacity: 0.72,
