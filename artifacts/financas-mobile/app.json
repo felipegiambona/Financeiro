@@ -14,11 +14,6 @@
     "android": {
       "package": "com.financas.mobile"
     },
-    "androidStatusBar": {
-      "backgroundColor": "#090909",
-      "barStyle": "light-content",
-      "translucent": false
-    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -28,7 +23,7 @@
         "expo-navigation-bar",
         {
           "enforceContrast": false,
-          "style": "dark"
+          "style": "light"
         }
       ],
       "expo-secure-store",

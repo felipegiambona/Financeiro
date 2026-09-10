@@ -21,6 +21,12 @@ Expo SDK 57 uses edge-to-edge system bars. Configure icon contrast declaratively
 
 **How to apply:** Use a full-screen root with the app background color, `StatusBar` with light icons for a dark theme, and `NavigationBar` with `style="light"` for light system icons. Mirror that style plus disabled contrast enforcement in the plugin so Expo Go receives it through the manifest.
 
+Do not keep a fixed `androidStatusBar` background/style alongside a runtime theme. Use `expo-status-bar` for icon contrast and `expo-system-ui` to update the native root background when the theme changes.
+
+**Why:** A fixed dark status-bar config left Android with a black system-bar surface after switching the app to light mode, even though the React Native theme had changed.
+
+**How to apply:** Remove the static `androidStatusBar` block, use the resolved theme for both `StatusBar` and `NavigationBar`, and fully close/reopen Expo Go after changing the manifest/plugin configuration.
+
 Changes to system-bar settings delivered through the Expo Go manifest require closing the project and reopening it; Fast Refresh alone can preserve the previous colors.
 
 **Why:** The corrected dark system bars were confirmed on a physical Android device only after reopening the project in Expo Go.

@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Platform, StatusBar as NativeStatusBar, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationBar } from 'expo-navigation-bar';
+import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
   Inter_400Regular,
@@ -77,28 +79,22 @@ function AuthenticatedApp() {
 function ThemedApp() {
   const colors = useColors();
   const { resolvedColorScheme } = useTheme();
-  const nativeBarStyle = resolvedColorScheme === 'dark' ? 'light-content' : 'dark-content';
+  const statusBarStyle = resolvedColorScheme === 'dark' ? 'light' : 'dark';
+  const navigationBarStyle = resolvedColorScheme === 'dark' ? 'dark' : 'light';
 
   useEffect(() => {
-    NativeStatusBar.setBarStyle(nativeBarStyle, true);
+    void SystemUI.setBackgroundColorAsync(colors.background);
     if (Platform.OS === 'android') {
-      NativeStatusBar.setTranslucent(false);
-      NativeStatusBar.setBackgroundColor(colors.background, true);
-      NavigationBar.setStyle(resolvedColorScheme === 'dark' ? 'dark' : 'light');
+      NavigationBar.setStyle(navigationBarStyle);
     }
-  }, [colors.background, nativeBarStyle, resolvedColorScheme]);
+  }, [colors.background, navigationBarStyle]);
 
   return (
     <View style={[styles.appShell, { backgroundColor: colors.background }]}>
-      <NativeStatusBar
-        key={`status-bar-${resolvedColorScheme}`}
-        barStyle={nativeBarStyle}
-        backgroundColor={colors.background}
-        translucent={false}
-      />
+      <StatusBar key={`status-bar-${resolvedColorScheme}`} style={statusBarStyle} animated />
       <NavigationBar
         key={`navigation-bar-${resolvedColorScheme}`}
-        style={resolvedColorScheme === 'dark' ? 'dark' : 'light'}
+        style={navigationBarStyle}
       />
       <ErrorBoundary>
         <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
