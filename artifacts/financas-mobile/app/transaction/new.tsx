@@ -398,7 +398,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               <Pressable key={option} onPress={() => setRecurrence(option)} style={[styles.recurrenceTypeOption, option === 'none' && styles.recurrenceTypeOptionWide, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.secondary : colors.card }]}>
                 <View style={[styles.radio, { borderColor: active ? colors.primary : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.primary }]} /> : null}</View>
                 <Text style={[styles.recurrenceText, { color: colors.foreground }]}>
-                  {option === 'none' ? 'Não recorrente' : option === 'recurring' ? 'Recorrente' : 'Parcelado'}
+                  {option === 'none' ? 'Única' : option === 'recurring' ? 'Recorrente' : 'Parcelado'}
                 </Text>
               </Pressable>
             );
