@@ -500,7 +500,7 @@ export default function TransactionsScreen() {
             {filteredTransactions.length > 0 ? (
               <View style={styles.monthSummary}>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
-                  {walletFilter !== 'all' ? 'Impacto na carteira' : typeFilter === 'transfer' ? 'Total transferido' : 'No mês selecionado'}
+                  Total
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.foreground }]}>
                   {formatCurrency(filteredSummary.income - filteredSummary.expense + filteredSummary.transfer)}
