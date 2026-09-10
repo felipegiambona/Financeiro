@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
   compactLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   amountModeOptions: { flexDirection: 'row', gap: 8 },
   amountModeOption: { flex: 1, minHeight: 38, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  intervalInputShell: { width: 76, minHeight: 42, borderRadius: 7, borderWidth: 1, justifyContent: 'center' },
+  intervalInputShell: { width: '100%', minHeight: 42, borderRadius: 7, borderWidth: 1, justifyContent: 'center' },
   intervalInput: { paddingHorizontal: 12, paddingVertical: 0, fontSize: 14, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
   unitSelect: { flex: 1, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   unitSelectText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
