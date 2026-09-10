@@ -22,6 +22,7 @@ import { setBaseUrl } from '@workspace/api-client-react';
 import colors from '@/constants/colors';
 import { FinanceProvider } from '@/context/FinanceContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { WalletProvider } from '@/context/WalletContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -44,6 +45,8 @@ function RootLayoutNav() {
       <Stack.Protected guard={Boolean(session)}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="transaction/new" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="more/profile" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="wallets" options={{ headerShown: false, presentation: 'card' }} />
       </Stack.Protected>
     </Stack>
   );
@@ -61,7 +64,9 @@ function AuthenticatedApp() {
 
   return session ? (
     <FinanceProvider>
-      <RootLayoutNav />
+      <WalletProvider>
+        <RootLayoutNav />
+      </WalletProvider>
     </FinanceProvider>
   ) : <RootLayoutNav />;
 }

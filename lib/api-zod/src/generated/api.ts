@@ -214,3 +214,76 @@ export const DeleteTransactionsBody = zod.object({
 export const DeleteTransactionsResponse = zod.void()
 
 
+export const listWalletsResponseInitialBalanceMin = 0;
+
+
+
+export const ListWalletsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "title": zod.string(),
+  "initialBalance": zod.number().min(listWalletsResponseInitialBalanceMin),
+  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline']),
+  "createdAt": zod.coerce.date()
+})
+export const ListWalletsResponse = zod.array(ListWalletsResponseItem)
+
+
+
+export const createWalletBodyInitialBalanceMin = 0;
+
+
+
+export const CreateWalletBody = zod.object({
+  "title": zod.string().min(1),
+  "initialBalance": zod.number().min(createWalletBodyInitialBalanceMin),
+  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline'])
+})
+
+export const createWalletResponseInitialBalanceMin = 0;
+
+
+
+export const CreateWalletResponse = zod.object({
+  "id": zod.string().uuid(),
+  "title": zod.string(),
+  "initialBalance": zod.number().min(createWalletResponseInitialBalanceMin),
+  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline']),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const UpdateWalletParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+export const updateWalletBodyInitialBalanceMin = 0;
+
+
+
+export const UpdateWalletBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "initialBalance": zod.number().min(updateWalletBodyInitialBalanceMin).optional(),
+  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline']).optional()
+})
+
+export const updateWalletResponseInitialBalanceMin = 0;
+
+
+
+export const UpdateWalletResponse = zod.object({
+  "id": zod.string().uuid(),
+  "title": zod.string(),
+  "initialBalance": zod.number().min(updateWalletResponseInitialBalanceMin),
+  "icon": zod.enum(['wallet-outline', 'bank-outline', 'credit-card-outline', 'cash', 'safe-square-outline', 'wallet', 'briefcase-outline', 'bank-transfer', 'finance', 'card-account-details-outline']),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const DeleteWalletParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteWalletResponse = zod.void()
+
+

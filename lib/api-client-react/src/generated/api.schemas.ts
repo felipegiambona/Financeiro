@@ -156,3 +156,76 @@ export interface TransactionBatchDelete {
   ids: string[];
 }
 
+export type WalletIcon = typeof WalletIcon[keyof typeof WalletIcon];
+
+
+export const WalletIcon = {
+  'wallet-outline': 'wallet-outline',
+  'bank-outline': 'bank-outline',
+  'credit-card-outline': 'credit-card-outline',
+  cash: 'cash',
+  'safe-square-outline': 'safe-square-outline',
+  wallet: 'wallet',
+  'briefcase-outline': 'briefcase-outline',
+  'bank-transfer': 'bank-transfer',
+  finance: 'finance',
+  'card-account-details-outline': 'card-account-details-outline',
+} as const;
+
+export interface Wallet {
+  id: string;
+  title: string;
+  /** @minimum 0 */
+  initialBalance: number;
+  icon: WalletIcon;
+  createdAt: string;
+}
+
+export type WalletInputIcon = typeof WalletInputIcon[keyof typeof WalletInputIcon];
+
+
+export const WalletInputIcon = {
+  'wallet-outline': 'wallet-outline',
+  'bank-outline': 'bank-outline',
+  'credit-card-outline': 'credit-card-outline',
+  cash: 'cash',
+  'safe-square-outline': 'safe-square-outline',
+  wallet: 'wallet',
+  'briefcase-outline': 'briefcase-outline',
+  'bank-transfer': 'bank-transfer',
+  finance: 'finance',
+  'card-account-details-outline': 'card-account-details-outline',
+} as const;
+
+export interface WalletInput {
+  /** @minLength 1 */
+  title: string;
+  /** @minimum 0 */
+  initialBalance: number;
+  icon: WalletInputIcon;
+}
+
+export type WalletUpdateIcon = typeof WalletUpdateIcon[keyof typeof WalletUpdateIcon];
+
+
+export const WalletUpdateIcon = {
+  'wallet-outline': 'wallet-outline',
+  'bank-outline': 'bank-outline',
+  'credit-card-outline': 'credit-card-outline',
+  cash: 'cash',
+  'safe-square-outline': 'safe-square-outline',
+  wallet: 'wallet',
+  'briefcase-outline': 'briefcase-outline',
+  'bank-transfer': 'bank-transfer',
+  finance: 'finance',
+  'card-account-details-outline': 'card-account-details-outline',
+} as const;
+
+export interface WalletUpdate {
+  /** @minLength 1 */
+  title?: string;
+  /** @minimum 0 */
+  initialBalance?: number;
+  icon?: WalletUpdateIcon;
+}
+

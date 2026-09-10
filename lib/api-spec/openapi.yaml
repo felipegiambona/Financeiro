@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: transactions
     description: Authenticated financial transaction operations
+  - name: wallets
+    description: Authenticated wallet management operations
 paths:
   /healthz:
     get:
@@ -132,9 +134,76 @@ paths:
       responses:
         "204":
           description: Transactions removed
+  /wallets:
+    get:
+      operationId: listWallets
+      tags: [wallets]
+      responses:
+        "200":
+          description: User wallets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Wallet"
+    post:
+      operationId: createWallet
+      tags: [wallets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletInput"
+      responses:
+        "201":
+          description: Created wallet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+  /wallets/{id}:
+    patch:
+      operationId: updateWallet
+      tags: [wallets]
+      parameters:
+        - $ref: "#/components/parameters/WalletId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletUpdate"
+      responses:
+        "200":
+          description: Updated wallet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteWallet
+      tags: [wallets]
+      parameters:
+        - $ref: "#/components/parameters/WalletId"
+      responses:
+        "204":
+          description: Wallet removed
+        "404":
+          description: Not found
 components:
   parameters:
     TransactionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    WalletId:
       name: id
       in: path
       required: true
@@ -234,4 +303,32 @@ components:
           type: array
           minItems: 1
           items: { type: string, format: uuid }
+    Wallet:
+      type: object
+      required: [id, title, initialBalance, icon, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        initialBalance: { type: number, minimum: 0 }
+        icon:
+          type: string
+          enum: [wallet-outline, bank-outline, credit-card-outline, cash, safe-square-outline, wallet, briefcase-outline, bank-transfer, finance, card-account-details-outline]
+        createdAt: { type: string, format: date-time }
+    WalletInput:
+      type: object
+      required: [title, initialBalance, icon]
+      properties:
+        title: { type: string, minLength: 1 }
+        initialBalance: { type: number, minimum: 0 }
+        icon:
+          type: string
+          enum: [wallet-outline, bank-outline, credit-card-outline, cash, safe-square-outline, wallet, briefcase-outline, bank-transfer, finance, card-account-details-outline]
+    WalletUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        initialBalance: { type: number, minimum: 0 }
+        icon:
+          type: string
+          enum: [wallet-outline, bank-outline, credit-card-outline, cash, safe-square-outline, wallet, briefcase-outline, bank-transfer, finance, card-account-details-outline]
 
