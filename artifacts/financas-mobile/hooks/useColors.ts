@@ -1,4 +1,5 @@
 import colors from '@/constants/colors';
+import { useTheme } from '@/context/ThemeContext';
 
 /**
  * Returns the design tokens for the current color scheme.
@@ -13,5 +14,6 @@ import colors from '@/constants/colors';
  * device's appearance setting.
  */
 export function useColors() {
-  return { ...colors.dark, radius: colors.radius };
+  const { resolvedColorScheme } = useTheme();
+  return { ...colors[resolvedColorScheme], radius: colors.radius };
 }

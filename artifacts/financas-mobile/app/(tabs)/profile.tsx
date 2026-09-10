@@ -19,6 +19,12 @@ const MENU_ITEMS = [
     description: 'Contas, bancos e saldos iniciais',
     icon: 'briefcase',
   },
+  {
+    key: 'settings',
+    title: 'Configurações',
+    description: 'Aparência e preferências do app',
+    icon: 'sliders',
+  },
 ] as const;
 
 export default function MoreScreen() {
@@ -43,7 +49,9 @@ export default function MoreScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Abrir ${item.title}`}
                 testID={`more-menu-${item.key}`}
-                onPress={() => router.push(item.key === 'profile' ? '/more/profile' : '/wallets')}
+                onPress={() => router.push(
+                  item.key === 'profile' ? '/more/profile' : item.key === 'wallets' ? '/wallets' : '/more/settings',
+                )}
                 style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}
               >
                 <View style={[styles.menuIcon, { backgroundColor: colors.secondary }]}>
