@@ -57,20 +57,38 @@ export default function DashboardScreen() {
               </View>
             </View>
             <View style={styles.monthMetrics}>
-              <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ver receitas não pagas"
+                onPress={() => router.push('/transactions?typeFilter=income&statusFilter=unpaid')}
+                style={({ pressed }) => [
+                  styles.monthMetric,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  pressed && styles.pressed,
+                ]}
+              >
                 <View style={[styles.metricIcon, { backgroundColor: colors.incomeSoft }]}>
                   <Feather name="clock" size={16} color={colors.income} />
                 </View>
                 <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>A Receber</Text>
                 <Text style={[styles.metricValue, { color: colors.income }]}>{formatCurrency(monthlyTotals.receivable)}</Text>
-              </View>
-              <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ver despesas não pagas"
+                onPress={() => router.push('/transactions?typeFilter=expense&statusFilter=unpaid')}
+                style={({ pressed }) => [
+                  styles.monthMetric,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  pressed && styles.pressed,
+                ]}
+              >
                 <View style={[styles.metricIcon, { backgroundColor: colors.expenseSoft }]}>
                   <Feather name="credit-card" size={16} color={colors.expense} />
                 </View>
                 <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>A Pagar</Text>
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.payable)}</Text>
-              </View>
+              </Pressable>
             </View>
             <View style={[styles.walletCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.walletHeader}>

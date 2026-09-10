@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -48,6 +48,10 @@ const normalizeSearchText = (value: string) => value
 export default function TransactionsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { typeFilter: typeFilterParam, statusFilter: statusFilterParam } = useLocalSearchParams<{
+    typeFilter?: string;
+    statusFilter?: string;
+  }>();
   const {
     transactions,
     loading,
@@ -59,6 +63,8 @@ export default function TransactionsScreen() {
     deleteTransactions,
   } = useFinance();
   const { wallets } = useWallets();
+  const routeTypeFilter = Array.isArray(typeFilterParam) ? typeFilterParam[0] : typeFilterParam;
+  const routeStatusFilter = Array.isArray(statusFilterParam) ? statusFilterParam[0] : statusFilterParam;
   const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -69,6 +75,18 @@ export default function TransactionsScreen() {
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
   const [deleting, setDeleting] = useState(false);
+  useEffect(() => {
+    const validTypeFilter = TYPE_FILTERS.some((option) => option.value === routeTypeFilter)
+      ? routeTypeFilter as TypeFilter
+      : null;
+    const validStatusFilter = STATUS_FILTERS.some((option) => option.value === routeStatusFilter)
+      ? routeStatusFilter as StatusFilter
+      : null;
+
+    if (validTypeFilter) setTypeFilter(validTypeFilter);
+    if (validStatusFilter) setStatusFilter(validStatusFilter);
+    if (validTypeFilter || validStatusFilter) setMoreFiltersOpen(true);
+  }, [routeStatusFilter, routeTypeFilter]);
   const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
   const selectedTransactions = useMemo(
     () => getTransactionOccurrencesForMonth(transactions, selectedMonth).sort((a, b) => {
