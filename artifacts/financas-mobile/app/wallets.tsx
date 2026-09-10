@@ -14,13 +14,22 @@ import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput 
 
 interface WalletForm {
   title: string;
-  initialBalance: string;
+  balance: string;
 }
 
 const EMPTY_FORM: WalletForm = {
   title: '',
-  initialBalance: '0,00',
+  balance: '0,00',
 };
+
+function formatBalanceInput(value: string): string {
+  const isNegative = value.trim().startsWith('-');
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return isNegative ? '-' : '';
+
+  const amount = Number(digits) / 100;
+  return `${isNegative ? '-' : ''}${amount.toFixed(2).replace('.', ',')}`;
+}
 
 export default function WalletsScreen() {
   const colors = useColors();
@@ -51,7 +60,9 @@ export default function WalletsScreen() {
     setEditingWalletId(wallet.id);
     setForm({
       title: wallet.title,
-      initialBalance: formatAmountValue(wallet.initialBalance),
+      balance: formatAmountValue(
+        walletTotals.find(({ wallet: currentWallet }) => currentWallet.id === wallet.id)?.total ?? wallet.initialBalance,
+      ),
     });
     setModalVisible(true);
   };
@@ -64,19 +75,27 @@ export default function WalletsScreen() {
 
   const handleSave = async () => {
     const title = form.title.trim();
-    const initialBalance = form.initialBalance.trim() ? parseAmountInput(form.initialBalance) : 0;
+    const balance = form.balance.trim() ? parseAmountInput(form.balance) : 0;
     if (!title) {
       Alert.alert('Título obrigatório', 'Informe um título para a carteira.');
       return;
     }
-    if (!Number.isFinite(initialBalance) || initialBalance < 0) {
-      Alert.alert('Saldo inválido', 'Informe um saldo inicial igual ou maior que zero.');
+    if (!Number.isFinite(balance)) {
+      Alert.alert('Saldo inválido', 'Informe um valor válido.');
       return;
     }
 
     try {
       setSaving(true);
+      let initialBalance = balance;
       if (editingWalletId) {
+        const walletTotal = walletTotals.find(({ wallet: currentWallet }) => currentWallet.id === editingWalletId);
+        if (!walletTotal) {
+          Alert.alert('Carteira não encontrada', 'Atualize a tela e tente novamente.');
+          return;
+        }
+        const paidMovement = walletTotal.total - walletTotal.wallet.initialBalance;
+        initialBalance = balance - paidMovement;
         await updateWallet(editingWalletId, { title, initialBalance });
       } else {
         await createWallet({ title, initialBalance });
@@ -206,17 +225,17 @@ export default function WalletsScreen() {
                 style={[styles.input, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
               />
 
-              <Text style={[styles.label, { color: colors.foreground }]}>Saldo inicial</Text>
+              <Text style={[styles.label, { color: colors.foreground }]}>Saldo</Text>
               <View style={[styles.amountShell, { backgroundColor: colors.background, borderColor: colors.input }]}>
                 <Text style={[styles.currencyPrefix, { color: colors.mutedForeground }]}>R$</Text>
                 <TextInput
-                  accessibilityLabel="Saldo inicial"
+                  accessibilityLabel="Saldo"
                   testID="wallet-balance-input"
-                  keyboardType="decimal-pad"
+                  keyboardType="numbers-and-punctuation"
                   placeholder="0,00"
                   placeholderTextColor={colors.mutedForeground}
-                  value={form.initialBalance}
-                  onChangeText={(value) => setForm((current) => ({ ...current, initialBalance: formatAmountInput(value) }))}
+                  value={form.balance}
+                  onChangeText={(value) => setForm((current) => ({ ...current, balance: formatBalanceInput(value) }))}
                   style={[styles.amountInput, { color: colors.foreground }]}
                 />
               </View>

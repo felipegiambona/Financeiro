@@ -315,7 +315,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
-        initialBalance: { type: number, minimum: 0 }
+         initialBalance: { type: number }
         icon:
           type: string
           enum: [wallet-outline]
@@ -326,7 +326,7 @@ components:
       required: [title, initialBalance]
       properties:
         title: { type: string, minLength: 1 }
-        initialBalance: { type: number, minimum: 0 }
+         initialBalance: { type: number }
         icon:
           type: string
           enum: [wallet-outline]
@@ -334,7 +334,7 @@ components:
       type: object
       properties:
         title: { type: string, minLength: 1 }
-        initialBalance: { type: number, minimum: 0 }
+         initialBalance: { type: number }
         icon:
           type: string
           enum: [wallet-outline]
