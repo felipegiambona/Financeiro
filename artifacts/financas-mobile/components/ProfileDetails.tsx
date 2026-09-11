@@ -1,7 +1,9 @@
 import { Feather } from '@expo/vector-icons';
+import { useUser } from '@clerk/expo';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/context/AuthContext';
@@ -19,6 +21,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { session, signOut, deleteAccount } = useAuth();
+  const { user } = useUser();
   const {
     clearPendingNotifications,
     notificationAccessEnabled,
@@ -32,6 +35,9 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const email = session?.email || 'E-mail não informado';
   const initials = useMemo(() => getInitials(name, email), [email, name]);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileName, setProfileName] = useState(name);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useFocusEffect(useCallback(() => {
     void refreshNotificationAccess();
@@ -66,6 +72,49 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
     }
   };
 
+  const handlePickProfileImage = async () => {
+    if (!user) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]?.uri) return;
+
+    try {
+      setSavingProfile(true);
+      await user.setProfileImage({ file: result.assets[0].uri });
+    } catch {
+      Alert.alert('Não foi possível alterar a foto', 'Tente novamente.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    const trimmedName = profileName.trim();
+    if (!trimmedName) {
+      Alert.alert('Nome obrigatório', 'Informe um nome para o perfil.');
+      return;
+    }
+
+    const nameParts = trimmedName.split(/\s+/);
+    const firstName = nameParts.shift() ?? trimmedName;
+    const lastName = nameParts.join(' ');
+
+    try {
+      setSavingProfile(true);
+      await user.update({ firstName, lastName: lastName || null });
+      setEditingProfile(false);
+    } catch {
+      Alert.alert('Não foi possível salvar o perfil', 'Tente novamente.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -75,11 +124,38 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         <ScreenHeader eyebrow="Conta" title="Perfil" showBack={showBack} />
 
         <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
-            <Text style={[styles.avatarText, { color: colors.accentForeground }]}>{initials}</Text>
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Alterar foto do perfil"
+            disabled={savingProfile}
+            onPress={() => void handlePickProfileImage()}
+            style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}
+          >
+            {user?.imageUrl ? (
+              <Image source={{ uri: user.imageUrl }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
+                <Text style={[styles.avatarText, { color: colors.accentForeground }]}>{initials}</Text>
+              </View>
+            )}
+            <View style={[styles.avatarEditBadge, { backgroundColor: colors.primary, borderColor: colors.card }]}>
+              <Feather name="camera" size={11} color={colors.primaryForeground} />
+            </View>
+          </Pressable>
           <View style={styles.profileCopy}>
-            <Text style={[styles.name, { color: colors.foreground }]}>{name}</Text>
+            {editingProfile ? (
+              <TextInput
+                accessibilityLabel="Nome do perfil"
+                testID="profile-name-input"
+                value={profileName}
+                onChangeText={setProfileName}
+                placeholder="Nome do perfil"
+                placeholderTextColor={colors.mutedForeground}
+                style={[styles.profileNameInput, { color: colors.foreground, borderColor: colors.input }]}
+              />
+            ) : (
+              <Text style={[styles.name, { color: colors.foreground }]}>{name}</Text>
+            )}
             <Text style={[styles.email, { color: colors.mutedForeground }]}>{email}</Text>
             <View style={[styles.status, { backgroundColor: colors.paidSoft }]}>
               <View style={[styles.statusDot, { backgroundColor: colors.paid }]} />
@@ -87,6 +163,46 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
             </View>
           </View>
         </View>
+        {editingProfile ? (
+          <View style={styles.profileActions}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={savingProfile}
+              onPress={() => {
+                setProfileName(name);
+                setEditingProfile(false);
+              }}
+              style={({ pressed }) => [styles.profileCancelButton, { borderColor: colors.border }, savingProfile && styles.disabled, pressed && styles.pressed]}
+            >
+              <Text style={[styles.profileCancelText, { color: colors.foreground }]}>Cancelar</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              testID="profile-save-button"
+              disabled={savingProfile}
+              onPress={() => void handleSaveProfile()}
+              style={({ pressed }) => [styles.profileSaveButton, { backgroundColor: colors.primary }, savingProfile && styles.disabled, pressed && styles.pressed]}
+            >
+              <Text style={[styles.profileSaveText, { color: colors.primaryForeground }]}>
+                {savingProfile ? 'Salvando...' : 'Salvar perfil'}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Editar perfil"
+            testID="profile-edit-button"
+            onPress={() => {
+              setProfileName(name);
+              setEditingProfile(true);
+            }}
+            style={({ pressed }) => [styles.editProfileButton, { borderColor: colors.border }, pressed && styles.pressed]}
+          >
+            <Feather name="edit-2" size={15} color={colors.foreground} />
+            <Text style={[styles.editProfileText, { color: colors.foreground }]}>Editar perfil</Text>
+          </Pressable>
+        )}
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Informações da conta</Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -97,16 +213,6 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
             <View style={styles.infoCopy}>
               <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>E-mail</Text>
               <Text style={[styles.infoValue, { color: colors.foreground }]}>{email}</Text>
-            </View>
-          </View>
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <View style={styles.infoRow}>
-            <View style={[styles.infoIcon, { backgroundColor: colors.secondary }]}>
-              <Feather name="shield" size={16} color={colors.foreground} />
-            </View>
-            <View style={styles.infoCopy}>
-              <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Identificador da conta</Text>
-              <Text numberOfLines={1} style={[styles.infoValue, { color: colors.foreground }]}>{session?.userId || 'Não disponível'}</Text>
             </View>
           </View>
         </View>
@@ -223,10 +329,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: 16 },
   profileCard: { borderWidth: 1, borderRadius: 9, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 13 },
+  avatarButton: { width: 58, height: 58, position: 'relative' },
   avatar: { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 20, fontFamily: 'Inter_700Bold' },
+  avatarEditBadge: { position: 'absolute', right: -2, bottom: -2, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   profileCopy: { flex: 1, minWidth: 0 },
   name: { fontSize: 17, fontFamily: 'Inter_700Bold' },
+  profileNameInput: { minHeight: 36, borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 0, fontSize: 15, fontFamily: 'Inter_600SemiBold' },
   email: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 3 },
   status: { alignSelf: 'flex-start', borderRadius: 5, flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 9, paddingHorizontal: 7, paddingVertical: 4 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
@@ -239,6 +348,13 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 10, fontFamily: 'Inter_500Medium', marginBottom: 3 },
   infoValue: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   divider: { height: 1 },
+  editProfileButton: { minHeight: 42, borderWidth: 1, borderRadius: 7, marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  editProfileText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  profileActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  profileCancelButton: { flex: 1, minHeight: 42, borderWidth: 1, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  profileSaveButton: { flex: 1, minHeight: 42, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  profileCancelText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  profileSaveText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   automationCard: { borderWidth: 1, borderRadius: 9, padding: 13 },
   automationHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   automationCopy: { flex: 1, minWidth: 0 },

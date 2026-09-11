@@ -957,7 +957,7 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   walletFilterCombo: { minHeight: 34, flex: 1, borderRadius: 6, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
   walletFilterText: { flex: 1, minWidth: 0, fontSize: 10, fontFamily: 'Inter_500Medium' },
-  clearFiltersAction: { alignSelf: 'flex-start', marginLeft: 53, minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 3 },
+  clearFiltersAction: { alignSelf: 'flex-end', minHeight: 28, flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 3 },
   clearFiltersLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   metrics: { flexDirection: 'row', gap: 7, marginBottom: 16 },
   metric: { flex: 1, minHeight: 64, borderRadius: 8, borderWidth: 1, padding: 10, justifyContent: 'space-between' },

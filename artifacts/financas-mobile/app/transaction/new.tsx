@@ -606,6 +606,24 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         </View>
 
         {error ? <Text style={[styles.error, { color: colors.expense }]}>{error}</Text> : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={saving ? 'Salvando lançamento' : isEditing ? 'Salvar alterações' : 'Salvar lançamento'}
+          testID="save-transaction-bottom-button"
+          disabled={saving}
+          onPress={() => void handleSave()}
+          style={({ pressed }) => [
+            styles.bottomSaveButton,
+            { backgroundColor: colors.primary },
+            saving && styles.disabled,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text style={[styles.bottomSaveText, { color: colors.primaryForeground }]}>
+            {saving ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Salvar lançamento'}
+          </Text>
+          {!saving ? <Feather name="check" size={17} color={colors.primaryForeground} /> : null}
+        </Pressable>
       </KeyboardAwareScrollViewCompat>
       <DatePickerModal
         visible={datePickerOpen}
@@ -713,7 +731,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               testID="new-category-name-input"
               autoFocus
               placeholder="Ex.: Alimentação"
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={colors.foreground}
               value={newCategoryName}
               onChangeText={setNewCategoryName}
               style={[styles.categoryInput, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
@@ -873,6 +891,8 @@ const styles = StyleSheet.create({
   topTitle: { flex: 1, minWidth: 0, fontSize: 16, fontFamily: 'Inter_700Bold', textAlign: 'center' },
   topSaveButton: { minHeight: 34, maxWidth: 154, borderRadius: 7, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   topSaveText: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_700Bold', flexShrink: 1 },
+  bottomSaveButton: { minHeight: 46, borderRadius: 8, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  bottomSaveText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   intro: { fontSize: 13, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: 10, marginBottom: 18 },
   label: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 6, marginTop: 14 },
   segmented: { borderRadius: 8, padding: 3, flexDirection: 'row', gap: 2 },
