@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { TransactionRow } from '@/components/TransactionRow';
 import { useFinance } from '@/context/FinanceContext';
+import { useCategories } from '@/context/CategoryContext';
 import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateForecast } from '@/services/financialRules';
@@ -42,6 +43,7 @@ type TypeFilter = 'all' | 'income' | 'expense' | 'transfer';
 type StatusFilter = 'all' | 'paid' | 'unpaid';
 type RecurrenceFilter = 'all' | 'recurring' | 'nonRecurring';
 type DateFilterTarget = 'start' | 'end';
+type CategoryFilter = 'all' | 'uncategorized' | string;
 
 const TYPE_FILTERS: Array<{ value: TypeFilter; label: string }> = [
   { value: 'all', label: 'Todos' },
@@ -94,6 +96,7 @@ export default function TransactionsScreen() {
     deleteTransactions,
   } = useFinance();
   const { wallets } = useWallets();
+  const { categories } = useCategories();
   const routeTypeFilter = Array.isArray(typeFilterParam) ? typeFilterParam[0] : typeFilterParam;
   const routeStatusFilter = Array.isArray(statusFilterParam) ? statusFilterParam[0] : statusFilterParam;
   const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
@@ -104,12 +107,14 @@ export default function TransactionsScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [recurrenceFilter, setRecurrenceFilter] = useState<RecurrenceFilter>('all');
   const [walletFilter, setWalletFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [searchText, setSearchText] = useState('');
   const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
   const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
   const [datePickerTarget, setDatePickerTarget] = useState<DateFilterTarget | null>(null);
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
   const [deleting, setDeleting] = useState(false);
   useEffect(() => {
@@ -163,8 +168,13 @@ export default function TransactionsScreen() {
         || transaction.walletId === walletFilter
         || transaction.destinationWalletId === walletFilter
       )
+      && (
+        categoryFilter === 'all'
+        || (categoryFilter === 'uncategorized' && !transaction.categoryId)
+        || transaction.categoryId === categoryFilter
+      )
     )),
-    [recurrenceFilter, searchQuery, selectedTransactions, statusFilter, typeFilter, walletFilter],
+    [categoryFilter, recurrenceFilter, searchQuery, selectedTransactions, statusFilter, typeFilter, walletFilter],
   );
   const transactionGroups = useMemo(() => {
     const groups = new Map<string, TransactionOccurrence[]>();
@@ -339,12 +349,14 @@ export default function TransactionsScreen() {
     setStatusFilter('all');
     setRecurrenceFilter('all');
     setWalletFilter('all');
+    setCategoryFilter('all');
     setSearchText('');
     setDateRangeStart(null);
     setDateRangeEnd(null);
     setDatePickerTarget(null);
     setMoreFiltersOpen(false);
     setWalletPickerOpen(false);
+    setCategoryPickerOpen(false);
     leaveSelectionMode();
     router.setParams({ typeFilter: undefined, statusFilter: undefined });
   };
@@ -418,7 +430,7 @@ export default function TransactionsScreen() {
           >
             <View style={styles.moreFiltersControl}>
               <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
-              {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter !== 'all' || dateRangeStart !== null || dateRangeEnd !== null) ? (
+              {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter !== 'all' || categoryFilter !== 'all' || dateRangeStart !== null || dateRangeEnd !== null) ? (
                 <View style={[styles.activeFiltersDot, { backgroundColor: colors.primary }]} />
               ) : null}
               <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
@@ -481,6 +493,30 @@ export default function TransactionsScreen() {
                   <Feather name="briefcase" size={14} color={colors.mutedForeground} />
                   <Text numberOfLines={1} style={[styles.walletFilterText, { color: colors.foreground }]}>
                     {walletFilter === 'all' ? 'Todas as carteiras' : wallets.find((wallet) => wallet.id === walletFilter)?.title ?? 'Carteira selecionada'}
+                  </Text>
+                  <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
+                </Pressable>
+              </View>
+              <View style={styles.filterGroup}>
+                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Categoria</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Selecionar categoria, ${categoryFilter === 'all' ? 'todas as categorias' : categoryFilter === 'uncategorized' ? 'sem categoria' : categories.find((category) => category.id === categoryFilter)?.name ?? 'categoria selecionada'}`}
+                  testID="category-filter-picker"
+                  onPress={() => setCategoryPickerOpen(true)}
+                  style={({ pressed }) => [
+                    styles.walletFilterCombo,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Feather name="tag" size={14} color={colors.mutedForeground} />
+                  <Text numberOfLines={1} style={[styles.walletFilterText, { color: colors.foreground }]}>
+                    {categoryFilter === 'all'
+                      ? 'Todas as categorias'
+                      : categoryFilter === 'uncategorized'
+                        ? 'Sem categoria'
+                        : categories.find((category) => category.id === categoryFilter)?.name ?? 'Categoria selecionada'}
                   </Text>
                   <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
                 </Pressable>
@@ -723,6 +759,80 @@ export default function TransactionsScreen() {
                 >
                   <Feather name="briefcase" size={17} color={active ? colors.primaryForeground : colors.mutedForeground} />
                   <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{wallet.title}</Text>
+                  {active ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={categoryPickerOpen}
+        onRequestClose={() => setCategoryPickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Fechar seletor de categoria"
+            onPress={() => setCategoryPickerOpen(false)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={[styles.walletMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por categoria</Text>
+            <Pressable
+              testID="category-filter-option-all"
+              onPress={() => {
+                setCategoryFilter('all');
+                setCategoryPickerOpen(false);
+                leaveSelectionMode();
+              }}
+              style={({ pressed }) => [
+                styles.walletMenuOption,
+                { backgroundColor: categoryFilter === 'all' ? colors.primary : colors.card, borderColor: categoryFilter === 'all' ? colors.primary : colors.border },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Feather name="layers" size={17} color={categoryFilter === 'all' ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[styles.walletMenuOptionText, { color: categoryFilter === 'all' ? colors.primaryForeground : colors.foreground }]}>Todas as categorias</Text>
+              {categoryFilter === 'all' ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+            </Pressable>
+            <Pressable
+              testID="category-filter-option-uncategorized"
+              onPress={() => {
+                setCategoryFilter('uncategorized');
+                setCategoryPickerOpen(false);
+                leaveSelectionMode();
+              }}
+              style={({ pressed }) => [
+                styles.walletMenuOption,
+                { backgroundColor: categoryFilter === 'uncategorized' ? colors.primary : colors.card, borderColor: categoryFilter === 'uncategorized' ? colors.primary : colors.border },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Feather name="tag" size={17} color={categoryFilter === 'uncategorized' ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[styles.walletMenuOptionText, { color: categoryFilter === 'uncategorized' ? colors.primaryForeground : colors.foreground }]}>Sem categoria</Text>
+              {categoryFilter === 'uncategorized' ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+            </Pressable>
+            {categories.map((category) => {
+              const active = categoryFilter === category.id;
+              return (
+                <Pressable
+                  key={category.id}
+                  testID={`category-filter-option-${category.id}`}
+                  onPress={() => {
+                    setCategoryFilter(category.id);
+                    setCategoryPickerOpen(false);
+                    leaveSelectionMode();
+                  }}
+                  style={({ pressed }) => [
+                    styles.walletMenuOption,
+                    { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={[styles.categoryFilterDot, { backgroundColor: category.color }]} />
+                  <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{category.name}</Text>
                   {active ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
                 </Pressable>
               );
