@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +11,7 @@ import { useColors } from '@/hooks/useColors';
 import { calculateTotalsByMonth } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
-import { formatMonthLabel, formatShortMonthLabel } from '@/utils/date';
+import { formatMonthLabel, formatShortMonthLabel, shiftMonth } from '@/utils/date';
 
 export default function ChartsScreen() {
   const colors = useColors();
@@ -21,12 +22,12 @@ export default function ChartsScreen() {
   const hasData = totals.some((month) => month.income > 0 || month.expense > 0);
   const maxValue = Math.max(...totals.flatMap((month) => [month.income, month.expense]), 1);
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
+  const [categoryMonth, setCategoryMonth] = useState(() => shiftMonth(new Date(), 0));
   const [chartWidth, setChartWidth] = useState(0);
   const selectedMonth = totals.find((month) => month.key === selectedMonthKey) ?? totals[totals.length - 1];
   const categoryTotals = useMemo(() => {
-    if (!selectedMonth) return [];
     const totalsByCategory = new Map<string, number>();
-    for (const transaction of getTransactionOccurrencesForMonth(transactions, selectedMonth.date)) {
+    for (const transaction of getTransactionOccurrencesForMonth(transactions, categoryMonth)) {
       if (transaction.type !== 'expense') continue;
       const key = transaction.categoryId ?? 'uncategorized';
       totalsByCategory.set(key, (totalsByCategory.get(key) ?? 0) + transaction.amount);
@@ -40,7 +41,7 @@ export default function ChartsScreen() {
         color: key === 'uncategorized' ? colors.mutedForeground : categoryById.get(key)?.color ?? colors.mutedForeground,
       }))
       .sort((a, b) => b.amount - a.amount);
-  }, [categories, colors.mutedForeground, selectedMonth, transactions]);
+  }, [categories, categoryMonth, colors.mutedForeground, transactions]);
   const categoryTotal = categoryTotals.reduce((total, item) => total + item.amount, 0);
 
   return (
@@ -153,10 +154,37 @@ export default function ChartsScreen() {
               </View>
             )}
             <View style={[styles.categoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.chartTitle, { color: colors.foreground }]}>Gastos por categoria</Text>
-              <Text style={[styles.chartDescription, { color: colors.mutedForeground }]}>
-                {selectedMonth ? `Distribuição de ${formatMonthLabel(selectedMonth.date)}` : 'Distribuição dos seus gastos'}
-              </Text>
+              <View style={styles.categoryTitleRow}>
+                <View style={styles.categoryTitleCopy}>
+                  <Text style={[styles.chartTitle, { color: colors.foreground }]}>Gastos por categoria</Text>
+                  <Text style={[styles.chartDescription, { color: colors.mutedForeground }]}>
+                    Veja como os gastos se distribuem entre as categorias
+                  </Text>
+                </View>
+                <View style={styles.categoryMonthSelector}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Mês anterior nos gastos por categoria"
+                    hitSlop={8}
+                    onPress={() => setCategoryMonth((month) => shiftMonth(month, -1))}
+                    style={({ pressed }) => [styles.categoryMonthButton, { borderColor: colors.border }, pressed && styles.pressed]}
+                  >
+                    <Feather name="chevron-left" size={15} color={colors.foreground} />
+                  </Pressable>
+                  <Text style={[styles.categoryMonth, { color: colors.foreground }]} numberOfLines={1}>
+                    {formatMonthLabel(categoryMonth)}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Próximo mês nos gastos por categoria"
+                    hitSlop={8}
+                    onPress={() => setCategoryMonth((month) => shiftMonth(month, 1))}
+                    style={({ pressed }) => [styles.categoryMonthButton, { borderColor: colors.border }, pressed && styles.pressed]}
+                  >
+                    <Feather name="chevron-right" size={15} color={colors.foreground} />
+                  </Pressable>
+                </View>
+              </View>
               {categoryTotals.length === 0 ? (
                 <Text style={[styles.categoryEmpty, { color: colors.mutedForeground }]}>
                   Não há despesas para analisar neste mês.
@@ -199,6 +227,11 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: 16 },
   chartCard: { borderRadius: 8, borderWidth: 1, padding: 16 },
   categoryCard: { borderRadius: 8, borderWidth: 1, padding: 16, marginTop: 12 },
+  categoryTitleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+  categoryTitleCopy: { flex: 1, minWidth: 0 },
+  categoryMonthSelector: { flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+  categoryMonthButton: { width: 25, height: 25, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  categoryMonth: { maxWidth: 90, fontSize: 10, fontFamily: 'Inter_700Bold', textAlign: 'center', textTransform: 'capitalize' },
   chartTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   chartDescription: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 4 },
   legend: { flexDirection: 'row', gap: 14, marginTop: 15 },
@@ -230,4 +263,5 @@ const styles = StyleSheet.create({
   categoryTrack: { height: 7, borderRadius: 4, overflow: 'hidden' },
   categoryBar: { height: '100%', borderRadius: 4 },
   categoryPercentage: { fontSize: 10, fontFamily: 'Inter_400Regular' },
+  pressed: { opacity: 0.6 },
 });
