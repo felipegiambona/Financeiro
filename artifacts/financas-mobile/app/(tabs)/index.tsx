@@ -50,11 +50,13 @@ export default function DashboardScreen() {
               style={styles.balanceCard}
             >
               <View style={styles.balanceTop}>
-                <Text style={[styles.balanceLabel, { color: colors.primaryForeground }]}>Saldo atual</Text>
-                <View style={styles.balanceMark}><Feather name="bar-chart-2" size={17} color={colors.primaryForeground} /></View>
+                <Text style={[styles.balanceLabel, { color: colors.accentForeground }]}>Saldo atual</Text>
+                <View style={[styles.balanceMark, { backgroundColor: 'rgba(18,32,51,0.10)' }]}>
+                  <Feather name="bar-chart-2" size={17} color={colors.accentForeground} />
+                </View>
               </View>
-              <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.balanceValue, { color: colors.primaryForeground }]}>{formatCurrency(balance)}</Text>
-              <Text style={[styles.balanceHint, { color: colors.primaryForeground }]}>Receitas menos despesas</Text>
+              <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.balanceValue, { color: colors.accentForeground }]}>{formatCurrency(balance)}</Text>
+              <Text style={[styles.balanceHint, { color: colors.accentForeground }]}>Receitas menos despesas</Text>
             </LinearGradient>
             <View style={styles.monthMetrics}>
               <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -170,7 +172,7 @@ const styles = StyleSheet.create({
   balanceCard: { minHeight: 164, borderRadius: 9, padding: 17, overflow: 'hidden', justifyContent: 'space-between', marginBottom: 10 },
   balanceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   balanceLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  balanceMark: { width: 30, height: 30, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  balanceMark: { width: 30, height: 30, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   balanceValue: { fontSize: 30, lineHeight: 36, fontFamily: 'Inter_700Bold', letterSpacing: -0.8, marginTop: 17 },
   balanceHint: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 3, opacity: 0.82 },
   monthMetrics: { flexDirection: 'row', gap: 10, marginBottom: 10 },
