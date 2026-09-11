@@ -26,6 +26,12 @@ import {
 } from '@/utils/date';
 import { TransactionOccurrence } from '@/types/transaction';
 import { DatePickerModal } from '@/components/DatePickerModal';
+import {
+  exportTransactions,
+  getExportPeriodLabel,
+  type TransactionExportFormat,
+  type TransactionExportItem,
+} from '@/services/transactionExport';
 
 interface DeleteConfirmation {
   title: string;
@@ -128,6 +134,8 @@ export default function TransactionsScreen() {
   const [batchCategoryId, setBatchCategoryId] = useState<BatchCategory>('unchanged');
   const [batchDueDate, setBatchDueDate] = useState<BatchDueDate>('unchanged');
   const [batchDueDatePickerOpen, setBatchDueDatePickerOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState<TransactionExportFormat | null>(null);
   useEffect(() => {
     const validTypeFilter = TYPE_FILTERS.some((option) => option.value === routeTypeFilter)
       ? routeTypeFilter as TypeFilter
@@ -186,6 +194,30 @@ export default function TransactionsScreen() {
       )
     )),
     [categoryFilter, recurrenceFilter, searchQuery, selectedTransactions, statusFilter, typeFilter, walletFilter],
+  );
+  const exportItems = useMemo<TransactionExportItem[]>(
+    () => filteredTransactions.map((transaction) => ({
+      date: transaction.date,
+      type: transaction.type,
+      description: transaction.description,
+      category: categories.find((category) => category.id === transaction.categoryId)?.name ?? 'Sem categoria',
+      wallet: wallets.find((wallet) => wallet.id === transaction.walletId)?.title ?? 'Carteira não encontrada',
+      destinationWallet: transaction.destinationWalletId
+        ? wallets.find((wallet) => wallet.id === transaction.destinationWalletId)?.title ?? 'Carteira não encontrada'
+        : '',
+      status: transaction.paymentStatus,
+      amount: transaction.amount,
+      recurrence: transaction.recurrence.kind === 'installment'
+        ? 'Parcelado'
+        : transaction.recurrence.kind === 'recurring'
+          ? 'Recorrente'
+          : 'none',
+    })),
+    [categories, filteredTransactions, wallets],
+  );
+  const exportPeriodLabel = useMemo(
+    () => getExportPeriodLabel(selectedMonth, dateRangeStart, dateRangeEnd),
+    [dateRangeEnd, dateRangeStart, selectedMonth],
   );
   const transactionGroups = useMemo(() => {
     const groups = new Map<string, TransactionOccurrence[]>();
@@ -409,6 +441,22 @@ export default function TransactionsScreen() {
     setCategoryPickerOpen(false);
     leaveSelectionMode();
     router.setParams({ typeFilter: undefined, statusFilter: undefined });
+  };
+
+  const handleExport = async (format: TransactionExportFormat) => {
+    setExportMenuOpen(false);
+    setExportingFormat(format);
+    try {
+      await exportTransactions(exportItems, exportPeriodLabel, format);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (exportError) {
+      Alert.alert(
+        'Não foi possível exportar',
+        exportError instanceof Error ? exportError.message : 'Tente novamente.',
+      );
+    } finally {
+      setExportingFormat(null);
+    }
   };
 
   return (
@@ -665,13 +713,26 @@ export default function TransactionsScreen() {
                   {selectionMode ? `${selectedIds.length} selecionados` : `${filteredTransactions.length} ${filteredTransactions.length === 1 ? 'item' : 'itens'}`}
                 </Text>
                 {filteredTransactions.length > 0 ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => selectionMode ? leaveSelectionMode() : setSelectionMode(true)}
-                    style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}
-                  >
-                    <Text style={[styles.textActionLabel, { color: colors.foreground }]}>{selectionMode ? 'Cancelar' : 'Selecionar'}</Text>
-                  </Pressable>
+                  <>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Exportar lançamentos exibidos"
+                      testID="export-transactions-button"
+                      disabled={exportingFormat !== null}
+                      onPress={() => setExportMenuOpen(true)}
+                      style={({ pressed }) => [styles.exportAction, exportingFormat !== null && styles.disabled, pressed && styles.pressed]}
+                    >
+                      <Feather name="download" size={13} color={colors.foreground} />
+                      <Text style={[styles.exportActionLabel, { color: colors.foreground }]}>Exportar</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => selectionMode ? leaveSelectionMode() : setSelectionMode(true)}
+                      style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}
+                    >
+                      <Text style={[styles.textActionLabel, { color: colors.foreground }]}>{selectionMode ? 'Cancelar' : 'Selecionar'}</Text>
+                    </Pressable>
+                  </>
                 ) : null}
               </View>
             </View>
@@ -760,6 +821,78 @@ export default function TransactionsScreen() {
           </>
         )}
       </ScrollView>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={exportMenuOpen}
+        onRequestClose={() => setExportMenuOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Fechar opções de exportação"
+            onPress={() => setExportMenuOpen(false)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={[styles.exportMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.exportMenuHeader}>
+              <View style={styles.exportMenuTitleBlock}>
+                <Text style={[styles.exportMenuEyebrow, { color: colors.mutedForeground }]}>Extrato de lançamentos</Text>
+                <Text style={[styles.exportMenuTitle, { color: colors.foreground }]}>Exportar</Text>
+              </View>
+              <Pressable
+                accessibilityLabel="Fechar opções de exportação"
+                onPress={() => setExportMenuOpen(false)}
+                style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
+              >
+                <Feather name="x" size={18} color={colors.foreground} />
+              </Pressable>
+            </View>
+            <Text style={[styles.exportMenuDescription, { color: colors.mutedForeground }]}>
+              Serão exportados os {exportItems.length} {exportItems.length === 1 ? 'lançamento' : 'lançamentos'} exibidos na listagem.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Exportar extrato em CSV"
+              disabled={exportingFormat !== null}
+              onPress={() => void handleExport('csv')}
+              style={({ pressed }) => [styles.exportOption, { borderColor: colors.border }, exportingFormat !== null && styles.disabled, pressed && styles.pressed]}
+            >
+              <View style={[styles.exportOptionIcon, { backgroundColor: colors.incomeSoft }]}>
+                <Feather name="file-text" size={17} color={colors.income} />
+              </View>
+              <View style={styles.exportOptionCopy}>
+                <Text style={[styles.exportOptionTitle, { color: colors.foreground }]}>
+                  {exportingFormat === 'csv' ? 'Gerando CSV...' : 'Arquivo CSV'}
+                </Text>
+                <Text style={[styles.exportOptionDescription, { color: colors.mutedForeground }]}>
+                  Compatível com planilhas e outros sistemas.
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={17} color={colors.mutedForeground} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Exportar extrato em PDF"
+              disabled={exportingFormat !== null}
+              onPress={() => void handleExport('pdf')}
+              style={({ pressed }) => [styles.exportOption, { borderColor: colors.border }, exportingFormat !== null && styles.disabled, pressed && styles.pressed]}
+            >
+              <View style={[styles.exportOptionIcon, { backgroundColor: colors.expenseSoft }]}>
+                <Feather name="file" size={17} color={colors.expense} />
+              </View>
+              <View style={styles.exportOptionCopy}>
+                <Text style={[styles.exportOptionTitle, { color: colors.foreground }]}>
+                  {exportingFormat === 'pdf' ? 'Gerando PDF...' : 'Arquivo PDF'}
+                </Text>
+                <Text style={[styles.exportOptionDescription, { color: colors.mutedForeground }]}>
+                  Formato pronto para visualizar ou imprimir.
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={17} color={colors.mutedForeground} />
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <DatePickerModal
         visible={datePickerTarget !== null}
         value={
@@ -1180,6 +1313,8 @@ const styles = StyleSheet.create({
   listActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   sectionTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   count: { fontSize: 11, fontFamily: 'Inter_500Medium' },
+  exportAction: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 5 },
+  exportActionLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   textAction: { paddingVertical: 5 },
   textActionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   selectionActions: { gap: 7, marginBottom: 9 },
@@ -1208,6 +1343,18 @@ const styles = StyleSheet.create({
   walletMenuOptionText: { flex: 1, minWidth: 0, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   categoryFilterDot: { width: 11, height: 11, borderRadius: 6 },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.76)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
+  exportMenu: { width: '100%', maxWidth: 360, borderRadius: 12, borderWidth: 1, padding: 16, gap: 9 },
+  exportMenuHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  exportMenuTitleBlock: { flex: 1, minWidth: 0 },
+  exportMenuEyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.1, textTransform: 'uppercase' },
+  exportMenuTitle: { fontSize: 19, fontFamily: 'Inter_700Bold', marginTop: 4 },
+  closeButton: { width: 32, height: 32, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  exportMenuDescription: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', marginBottom: 3 },
+  exportOption: { minHeight: 62, borderRadius: 9, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  exportOptionIcon: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  exportOptionCopy: { flex: 1, minWidth: 0 },
+  exportOptionTitle: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  exportOptionDescription: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular', marginTop: 3 },
   confirmationCard: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 18, alignItems: 'center' },
   confirmationIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   confirmationTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', textAlign: 'center' },
