@@ -105,20 +105,22 @@ export default function ChartsScreen() {
                 </Pressable>
                 {selectedMonth && (
                   <View style={[styles.chartFooter, { borderTopColor: colors.border }]}>
-                    <MonthSelector
-                      month={selectedMonth.date}
-                      onPrevious={() => {
-                        if (selectedMonthIndex > 0) setSelectedMonthKey(totals[selectedMonthIndex - 1].key);
-                      }}
-                      onNext={() => {
-                        if (selectedMonthIndex >= 0 && selectedMonthIndex < totals.length - 1) {
-                          setSelectedMonthKey(totals[selectedMonthIndex + 1].key);
-                        }
-                      }}
-                      previousDisabled={selectedMonthIndex <= 0}
-                      nextDisabled={selectedMonthIndex < 0 || selectedMonthIndex >= totals.length - 1}
-                      accessibilityPrefix="Receitas e despesas"
-                    />
+                    <View style={styles.chartMonthSelectorRow}>
+                      <MonthSelector
+                        month={selectedMonth.date}
+                        onPrevious={() => {
+                          if (selectedMonthIndex > 0) setSelectedMonthKey(totals[selectedMonthIndex - 1].key);
+                        }}
+                        onNext={() => {
+                          if (selectedMonthIndex >= 0 && selectedMonthIndex < totals.length - 1) {
+                            setSelectedMonthKey(totals[selectedMonthIndex + 1].key);
+                          }
+                        }}
+                        previousDisabled={selectedMonthIndex <= 0}
+                        nextDisabled={selectedMonthIndex < 0 || selectedMonthIndex >= totals.length - 1}
+                        accessibilityPrefix="Receitas e despesas"
+                      />
+                    </View>
                     <View style={styles.movementRows}>
                       <View style={styles.movementRow}>
                         <View style={styles.movementLabel}>
@@ -215,6 +217,7 @@ const styles = StyleSheet.create({
   bar: { width: 7, minHeight: 0, borderRadius: 2 },
   monthLabel: { fontSize: 9, fontFamily: 'Inter_600SemiBold' },
   chartFooter: { borderTopWidth: 1, paddingTop: 12, marginTop: 14 },
+  chartMonthSelectorRow: { alignItems: 'flex-end' },
   footerLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
   footerValue: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   monthSelector: { flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
