@@ -7,6 +7,7 @@ import {
   DeleteTransactionParams,
   DeleteTransactionsBody,
   ListTransactionsResponse,
+  UpdateTransactionsBody,
   UpdateTransactionBody,
   UpdateTransactionOccurrencePaymentStatusBody,
   UpdateTransactionParams,
@@ -232,6 +233,39 @@ router.post("/transactions/batch-delete", async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
   await db.delete(transactionsTable)
     .where(and(eq(transactionsTable.userId, userId), inArray(transactionsTable.id, body.data.ids)));
+  res.sendStatus(204);
+});
+
+router.post("/transactions/batch-update", async (req, res): Promise<void> => {
+  const body = UpdateTransactionsBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid transaction update" });
+    return;
+  }
+  const userId = userIdFrom(req);
+  const { ids, walletId, categoryId, dueDate, paymentStatus } = body.data;
+
+  if (walletId !== undefined && !(await getUserWallet(userId, walletId))) {
+    res.status(400).json({ error: "Wallet not found" });
+    return;
+  }
+  if (categoryId !== undefined && categoryId !== null) {
+    const [category] = await db.select().from(categoriesTable)
+      .where(and(eq(categoriesTable.id, categoryId), eq(categoriesTable.userId, userId)));
+    if (!category) {
+      res.status(400).json({ error: "Category not found" });
+      return;
+    }
+  }
+
+  await db.update(transactionsTable)
+    .set({
+      ...(walletId === undefined ? {} : { walletId }),
+      ...(categoryId === undefined ? {} : { categoryId }),
+      ...(dueDate === undefined ? {} : { dueDate: dateOnly(dueDate) }),
+      ...(paymentStatus === undefined ? {} : { paymentStatus }),
+    })
+    .where(and(eq(transactionsTable.userId, userId), inArray(transactionsTable.id, ids)));
   res.sendStatus(204);
 });
 

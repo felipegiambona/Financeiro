@@ -138,6 +138,19 @@ paths:
       responses:
         "204":
           description: Transactions removed
+  /transactions/batch-update:
+    post:
+      operationId: updateTransactions
+      tags: [transactions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionBatchUpdate"
+      responses:
+        "204":
+          description: Transactions updated
   /wallets:
     get:
       operationId: listWallets
@@ -463,6 +476,18 @@ components:
           type: array
           minItems: 1
           items: { type: string, format: uuid }
+    TransactionBatchUpdate:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+        walletId: { type: string, format: uuid }
+        categoryId: { type: string, format: uuid, nullable: true }
+        dueDate: { type: string, format: date, nullable: true }
+        paymentStatus: { type: string, enum: [paid, unpaid] }
     Wallet:
       type: object
       required: [id, title, initialBalance, icon, isDefault, createdAt]

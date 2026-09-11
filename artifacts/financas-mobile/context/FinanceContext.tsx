@@ -7,6 +7,7 @@ import {
   deleteTransaction as removePersistedTransaction,
   deleteTransactions as removePersistedTransactions,
   getTransactions,
+  updateTransactions as updatePersistedTransactions,
   updateTransaction as updatePersistedTransaction,
   updateTransactionOccurrencePaymentStatus as updatePersistedOccurrencePaymentStatus,
 } from '@/services/transactionRepository';
@@ -37,6 +38,12 @@ interface FinanceContextValue {
   updateTransactionOccurrencePaymentStatus: (id: string, occurrenceDate: string, paymentStatus: PaymentStatus) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   deleteTransactions: (ids: string[]) => Promise<void>;
+  updateTransactions: (ids: string[], updates: {
+    walletId?: string;
+    categoryId?: string | null;
+    dueDate?: string | null;
+    paymentStatus?: PaymentStatus;
+  }) => Promise<void>;
   clearTransactions: () => Promise<void>;
   notificationListenerAvailable: boolean;
   notificationAccessEnabled: boolean;
@@ -138,6 +145,19 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
 
   const deleteTransactions = useCallback(async (ids: string[]) => {
     await removePersistedTransactions(ids);
+    await reloadTransactions();
+  }, [reloadTransactions]);
+
+  const updateTransactions = useCallback(async (
+    ids: string[],
+    updates: {
+      walletId?: string;
+      categoryId?: string | null;
+      dueDate?: string | null;
+      paymentStatus?: PaymentStatus;
+    },
+  ) => {
+    await updatePersistedTransactions(ids, updates);
     await reloadTransactions();
   }, [reloadTransactions]);
 
@@ -248,6 +268,7 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
       updateTransactionOccurrencePaymentStatus,
       deleteTransaction,
       deleteTransactions,
+      updateTransactions,
       clearTransactions,
       notificationListenerAvailable,
       notificationAccessEnabled,
@@ -267,6 +288,7 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
       updateTransactionOccurrencePaymentStatus,
       deleteTransaction,
       deleteTransactions,
+      updateTransactions,
       clearTransactions,
       notificationListenerAvailable,
       notificationAccessEnabled,
