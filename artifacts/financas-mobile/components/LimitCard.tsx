@@ -41,8 +41,8 @@ export function LimitCard({ limit, categoryName, usage, onPress, onEdit, onDelet
                 {limit.description ? `${limit.description} · ` : ''}{periodLabel}
               </Text>
             </View>
+            </View>
           </Pressable>
-        </View>
         <View style={styles.actions}>
           {onEdit ? (
             <Pressable accessibilityLabel={`Editar limite de ${categoryName}`} testID={`edit-limit-${limit.id}`} onPress={onEdit} style={({ pressed }) => [styles.action, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
