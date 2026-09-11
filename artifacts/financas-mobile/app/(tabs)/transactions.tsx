@@ -113,6 +113,7 @@ export default function TransactionsScreen() {
   const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [paymentCelebration, setPaymentCelebration] = useState<string | null>(null);
+  const [openSwipeKey, setOpenSwipeKey] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
@@ -275,6 +276,7 @@ export default function TransactionsScreen() {
   const leaveSelectionMode = () => {
     setSelectionMode(false);
     setSelectedIds([]);
+    setOpenSwipeKey(null);
   };
 
   const toggleSelection = (sourceId: string) => {
@@ -806,6 +808,9 @@ export default function TransactionsScreen() {
                       selectionMode={selectionMode}
                       selected={selectedIdSet.has(transaction.sourceId)}
                       onToggleSelection={() => toggleSelection(transaction.sourceId)}
+                      swipeOpen={openSwipeKey === transaction.occurrenceKey}
+                      onSwipeOpen={() => setOpenSwipeKey(transaction.occurrenceKey)}
+                      onSwipeClose={() => setOpenSwipeKey(null)}
                     />
                   ))}
                 </View>

@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { TransactionOccurrence } from '@/types/transaction';
 import { formatCurrency } from '@/utils/currency';
@@ -14,7 +14,12 @@ interface TransactionRowProps {
   selected?: boolean;
   onToggleSelection?: () => void;
   paymentStatusUpdating?: boolean;
+  swipeOpen?: boolean;
+  onSwipeOpen?: () => void;
+  onSwipeClose?: () => void;
 }
+
+const SWIPE_ACTION_WIDTH = 168;
 
 export function TransactionRow({
   transaction,
@@ -25,6 +30,9 @@ export function TransactionRow({
   selected = false,
   onToggleSelection,
   paymentStatusUpdating = false,
+  swipeOpen = false,
+  onSwipeOpen,
+  onSwipeClose,
 }: TransactionRowProps) {
   const colors = useColors();
   const isIncome = transaction.type === 'income';
@@ -32,83 +40,200 @@ export function TransactionRow({
   const tone = isTransfer ? colors.transfer : isIncome ? colors.income : colors.expense;
   const softTone = isTransfer ? colors.transferSoft : isIncome ? colors.incomeSoft : colors.expenseSoft;
   const isPaid = transaction.paymentStatus === 'paid';
+  const translateX = useRef(new Animated.Value(0)).current;
+  const position = useRef(0);
+  const panStart = useRef(0);
+
+  useEffect(() => {
+    const target = swipeOpen ? -SWIPE_ACTION_WIDTH : 0;
+    position.current = target;
+    Animated.spring(translateX, {
+      toValue: target,
+      friction: 8,
+      tension: 70,
+      useNativeDriver: true,
+    }).start();
+  }, [swipeOpen, translateX]);
+
+  const closeSwipe = () => {
+    onSwipeClose?.();
+  };
+
+  const panResponder = useMemo(
+    () => PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => (
+        !selectionMode
+        && Math.abs(gestureState.dx) > 8
+        && Math.abs(gestureState.dx) > Math.abs(gestureState.dy)
+      ),
+      onPanResponderGrant: () => {
+        panStart.current = position.current;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const nextPosition = Math.max(
+          -SWIPE_ACTION_WIDTH,
+          Math.min(0, panStart.current + gestureState.dx),
+        );
+        position.current = nextPosition;
+        translateX.setValue(nextPosition);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const shouldOpen = position.current < -(SWIPE_ACTION_WIDTH * 0.42) || gestureState.vx < -0.5;
+        if (shouldOpen) {
+          onSwipeOpen?.();
+        } else {
+          onSwipeClose?.();
+        }
+      },
+      onPanResponderTerminate: () => {
+        if (position.current < -(SWIPE_ACTION_WIDTH * 0.42)) {
+          onSwipeOpen?.();
+        } else {
+          onSwipeClose?.();
+        }
+      },
+    }),
+    [onSwipeClose, onSwipeOpen, selectionMode, translateX],
+  );
+
+  const handleEdit = () => {
+    if (swipeOpen) {
+      closeSwipe();
+      return;
+    }
+    onPress?.();
+  };
+
+  const handlePaymentStatus = () => {
+    closeSwipe();
+    onTogglePaymentStatus?.();
+  };
+
+  const handleDelete = () => {
+    closeSwipe();
+    onDelete?.();
+  };
+
   return (
-    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      {selectionMode ? (
-        <Pressable
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: selected }}
-          accessibilityLabel={`${selected ? 'Desmarcar' : 'Selecionar'} ${transaction.description}`}
-          onPress={onToggleSelection}
-          style={[
-            styles.checkbox,
-            { borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.primary : colors.card },
-          ]}
+    <View {...panResponder.panHandlers} style={styles.swipeContainer}>
+      {!selectionMode ? (
+        <View
+          pointerEvents={swipeOpen ? 'auto' : 'none'}
+          style={[styles.swipeActions, { backgroundColor: colors.card }]}
         >
-          {selected ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
-        </Pressable>
-      ) : null}
-      <Pressable
-        accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={selectionMode ? `${selected ? 'Desmarcar' : 'Selecionar'} ${transaction.description}` : onPress ? `Editar ${transaction.description}` : undefined}
-        disabled={selectionMode ? !onToggleSelection : !onPress}
-        onPress={selectionMode ? onToggleSelection : onPress}
-        style={({ pressed }) => [styles.editArea, pressed && styles.pressed]}
-      >
-        <View style={[styles.typeIcon, { backgroundColor: softTone }]}>
-          <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={18} color={tone} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${isPaid ? 'Marcar' : 'Marcar'} ${transaction.description} como ${isPaid ? 'não pago' : 'pago'}`}
+            testID={`swipe-toggle-payment-${transaction.occurrenceKey}`}
+            disabled={!onTogglePaymentStatus || paymentStatusUpdating}
+            onPress={handlePaymentStatus}
+            style={({ pressed }) => [styles.swipeAction, { backgroundColor: colors.muted }, pressed && styles.pressed]}
+          >
+            <Feather name={isPaid ? 'x-circle' : 'check-circle'} size={21} color={colors.foreground} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Editar ${transaction.description}`}
+            testID={`swipe-edit-${transaction.occurrenceKey}`}
+            disabled={!onPress}
+            onPress={handleEdit}
+            style={({ pressed }) => [styles.swipeAction, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
+          >
+            <Feather name="edit-2" size={20} color={colors.foreground} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Excluir ${transaction.description}`}
+            testID={`swipe-delete-${transaction.occurrenceKey}`}
+            disabled={!onDelete}
+            onPress={handleDelete}
+            style={({ pressed }) => [styles.swipeAction, { backgroundColor: colors.expense }, pressed && styles.pressed]}
+          >
+            <Feather name="trash-2" size={20} color={colors.primaryForeground} />
+          </Pressable>
         </View>
-        <View style={styles.details}>
-          <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
-          <View style={styles.meta}>
-            {transaction.recurrence.kind !== 'none' ? (
-              <View style={[styles.recurrence, { backgroundColor: colors.secondary }]}>
-                <Feather name="repeat" size={10} color={colors.secondaryForeground} />
-                <Text style={[styles.recurrenceText, { color: colors.secondaryForeground }]}>
-                  {transaction.recurrence.kind === 'installment' ? 'Parcelado' : 'Recorrente'}
-                </Text>
-              </View>
-            ) : null}
+      ) : null}
+      <Animated.View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }, { transform: [{ translateX }] }]}>
+        {selectionMode ? (
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: selected }}
+            accessibilityLabel={`${selected ? 'Desmarcar' : 'Selecionar'} ${transaction.description}`}
+            onPress={onToggleSelection}
+            style={[
+              styles.checkbox,
+              { borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? colors.primary : colors.card },
+            ]}
+          >
+            {selected ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
+          </Pressable>
+        ) : null}
+        <Pressable
+          accessibilityRole={onPress ? 'button' : undefined}
+          accessibilityLabel={selectionMode ? `${selected ? 'Desmarcar' : 'Selecionar'} ${transaction.description}` : onPress ? `Editar ${transaction.description}` : undefined}
+          disabled={selectionMode ? !onToggleSelection : !onPress}
+          onPress={selectionMode ? onToggleSelection : handleEdit}
+          style={({ pressed }) => [styles.editArea, pressed && styles.pressed]}
+        >
+          <View style={[styles.typeIcon, { backgroundColor: softTone }]}>
+            <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={18} color={tone} />
           </View>
+          <View style={styles.details}>
+            <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
+            <View style={styles.meta}>
+              {transaction.recurrence.kind !== 'none' ? (
+                <View style={[styles.recurrence, { backgroundColor: colors.secondary }]}>
+                  <Feather name="repeat" size={10} color={colors.secondaryForeground} />
+                  <Text style={[styles.recurrenceText, { color: colors.secondaryForeground }]}>
+                    {transaction.recurrence.kind === 'installment' ? 'Parcelado' : 'Recorrente'}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </Pressable>
+        <View style={styles.trailing}>
+          <Text style={[styles.amount, { color: tone }]}>{isTransfer ? '' : isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Marcar ${transaction.description} como ${isPaid ? 'não pago' : 'pago'}`}
+            testID={`toggle-payment-status-${transaction.occurrenceKey}`}
+            disabled={!onTogglePaymentStatus || paymentStatusUpdating}
+            onPress={handlePaymentStatus}
+            style={({ pressed }) => [
+              styles.status,
+              { backgroundColor: isPaid ? colors.paidSoft : colors.pendingSoft },
+              paymentStatusUpdating && styles.updating,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.statusText, { color: isPaid ? colors.paid : colors.pending }]}>
+              {paymentStatusUpdating ? 'Salvando...' : isPaid ? 'Pago' : 'Não pago'}
+            </Text>
+          </Pressable>
         </View>
-      </Pressable>
-      <View style={styles.trailing}>
-        <Text style={[styles.amount, { color: tone }]}>{isTransfer ? '' : isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Marcar ${transaction.description} como ${isPaid ? 'não pago' : 'pago'}`}
-          testID={`toggle-payment-status-${transaction.occurrenceKey}`}
-          disabled={!onTogglePaymentStatus || paymentStatusUpdating}
-          onPress={onTogglePaymentStatus}
-          style={({ pressed }) => [
-            styles.status,
-            { backgroundColor: isPaid ? colors.paidSoft : colors.pendingSoft },
-            paymentStatusUpdating && styles.updating,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={[styles.statusText, { color: isPaid ? colors.paid : colors.pending }]}>
-            {paymentStatusUpdating ? 'Salvando...' : isPaid ? 'Pago' : 'Não pago'}
-          </Text>
-        </Pressable>
-      </View>
-      {!selectionMode && onDelete ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Excluir ${transaction.description}`}
-          hitSlop={6}
-          onPress={onDelete}
-          style={({ pressed }) => [styles.deleteButton, { borderColor: colors.border }, pressed && styles.pressed]}
-        >
-          <Feather name="trash-2" size={14} color={colors.expense} />
-        </Pressable>
-      ) : null}
+        {!selectionMode && onDelete ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Excluir ${transaction.description}`}
+            hitSlop={6}
+            onPress={handleDelete}
+            style={({ pressed }) => [styles.deleteButton, { borderColor: colors.border }, pressed && styles.pressed]}
+          >
+            <Feather name="trash-2" size={14} color={colors.expense} />
+          </Pressable>
+        ) : null}
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { minHeight: 52, borderRadius: 8, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 7, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 5 },
+  swipeContainer: { position: 'relative', overflow: 'hidden', borderRadius: 8, marginBottom: 5 },
+  swipeActions: { ...StyleSheet.absoluteFill, flexDirection: 'row', justifyContent: 'flex-end' },
+  swipeAction: { width: SWIPE_ACTION_WIDTH / 3, alignItems: 'center', justifyContent: 'center' },
+  row: { minHeight: 52, borderRadius: 8, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 7, flexDirection: 'row', alignItems: 'center', gap: 8 },
   editArea: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeIcon: { width: 29, height: 29, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   details: { flex: 1, minWidth: 0, gap: 3 },
