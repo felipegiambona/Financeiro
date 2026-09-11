@@ -142,11 +142,13 @@ export default function LimitsScreen() {
       <Modal animationType="fade" transparent visible={editorOpen} onRequestClose={closeEditor}>
         <View style={styles.editorModalRoot}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closeEditor} />
-          <KeyboardAwareScrollViewCompat
-            contentContainerStyle={styles.modalScrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <KeyboardAwareScrollViewCompat
+              style={styles.modalFormScroll}
+              contentContainerStyle={styles.modalFormContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.modalHeader}>
                 <View>
                   <Text style={[styles.modalEyebrow, { color: colors.mutedForeground }]}>Limite de gastos</Text>
@@ -218,8 +220,8 @@ export default function LimitsScreen() {
                   <Text style={[styles.saveText, { color: colors.primaryForeground }]}>{saving ? 'Salvando...' : 'Salvar'}</Text>
                 </Pressable>
               </View>
-            </View>
-          </KeyboardAwareScrollViewCompat>
+            </KeyboardAwareScrollViewCompat>
+          </View>
         </View>
       </Modal>
 
@@ -306,8 +308,9 @@ const styles = StyleSheet.create({
   intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 22 },
   editorModalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 10 },
-  modalScrollContent: { flexGrow: 1, width: '100%', alignItems: 'stretch', justifyContent: 'center', paddingVertical: 18 },
   modalCard: { width: '100%', maxWidth: 340, maxHeight: '82%', borderRadius: 10, borderWidth: 1, padding: 14, flexShrink: 1 },
+  modalFormScroll: { flexShrink: 1 },
+  modalFormContent: { paddingBottom: 1 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
   modalEyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.1, textTransform: 'uppercase' },
   modalTitle: { fontSize: 19, fontFamily: 'Inter_700Bold', marginTop: 4 },
