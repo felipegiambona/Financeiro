@@ -1,6 +1,6 @@
 import { Transaction } from '@/types/transaction';
 import { Wallet } from '@/types/wallet';
-import { getDateKey, isFutureDate, parseStoredDate } from '@/utils/date';
+import { getDateKey, parseStoredDate } from '@/utils/date';
 import {
   getTransactionOccurrencesForMonth,
   getTransactionOccurrencesInRange,
@@ -49,6 +49,24 @@ function getRangeStart(transactions: Transaction[], fallback: Date): Date {
   return new Date(earliest);
 }
 
+function getBalanceRangeEnd(transactions: Transaction[], fallback: Date): Date {
+  let latest = fallback.getTime();
+
+  for (const transaction of transactions) {
+    const dates = [
+      transaction.dueDate ?? transaction.date,
+      ...Object.keys(transaction.paymentStatusOverrides ?? {}),
+    ];
+
+    for (const date of dates) {
+      const time = parseStoredDate(date).getTime();
+      if (Number.isFinite(time)) latest = Math.max(latest, time);
+    }
+  }
+
+  return new Date(latest);
+}
+
 function calculateBalanceAtDate(
   transactions: Transaction[],
   endDate: Date,
@@ -79,6 +97,7 @@ export function calculateWalletTotals(
   now = new Date(),
 ): WalletTotal[] {
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const balanceRangeEnd = getBalanceRangeEnd(transactions, todayEnd);
 
   return wallets.map((wallet) => {
     const walletTransactions = transactions.filter((transaction) =>
@@ -89,10 +108,10 @@ export function calculateWalletTotals(
     const occurrences = getTransactionOccurrencesInRange(
       walletTransactions,
       new Date(earliest),
-      todayEnd,
+      balanceRangeEnd,
     );
     const total = occurrences.reduce((balance, transaction) => {
-      if (isFutureDate(transaction.date, now) || transaction.paymentStatus === 'unpaid') return balance;
+      if (transaction.paymentStatus === 'unpaid') return balance;
       return balance + walletTransactionValue(transaction, wallet.id);
     }, wallet.initialBalance);
 
