@@ -62,7 +62,10 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   }, [user]);
 
   const updateProfileImage = useCallback(async (imageBase64: string, mimeType: string) => {
-    await updateAccountProfileImage({ data: imageBase64, mimeType });
+    const normalizedMimeType = mimeType === 'image/png' || mimeType === 'image/webp'
+      ? mimeType
+      : 'image/jpeg';
+    await updateAccountProfileImage({ data: imageBase64, mimeType: normalizedMimeType });
     try {
       await user?.reload();
     } catch {
