@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import { File } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
@@ -176,7 +177,10 @@ async function shareNativeFile(uri: string, format: TransactionExportFormat): Pr
   if (!(await Sharing.isAvailableAsync())) {
     throw new Error('O compartilhamento de arquivos não está disponível neste dispositivo.');
   }
-  await Sharing.shareAsync(uri, {
+  // Android does not allow another app to read the private file:// URI directly.
+  // Expo FileSystem exposes a temporary content:// URI with the required grant.
+  const shareUri = Platform.OS === 'android' ? new File(uri).contentUri : uri;
+  await Sharing.shareAsync(shareUri, {
     dialogTitle: `Salvar ou compartilhar ${format.toUpperCase()}`,
     mimeType: format === 'csv' ? 'text/csv' : 'application/pdf',
     UTI: format === 'csv' ? 'public.comma-separated-values-text' : 'com.adobe.pdf',

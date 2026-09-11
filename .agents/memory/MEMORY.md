@@ -1,3 +1,4 @@
 - [Expo SDK 57 with pnpm](expo-sdk57-pnpm.md) — keep app-local React peers aligned and distinguish optional DevTools shell failures from Metro failures.
 - [Authenticated integration environment](authenticated-integration-environment.md) — keep Clerk test email locals short and provide artifact env vars for workspace builds.
 - [Clerk profile updates in Expo](clerk-profile-updates.md) — convert local image-picker URIs to Blob before Clerk uploads and omit empty name fields.
+- [Android Expo file sharing](expo-sharing-android.md) — convert private file URIs to content URIs before sharing from Expo Go.
