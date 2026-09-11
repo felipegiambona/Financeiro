@@ -20,6 +20,18 @@ const MENU_ITEMS = [
     icon: 'briefcase',
   },
   {
+    key: 'categories',
+    title: 'Categorias',
+    description: 'Organize seus lançamentos por tipo de gasto',
+    icon: 'tag',
+  },
+  {
+    key: 'limits',
+    title: 'Meus limites',
+    description: 'Acompanhe seus gastos por categoria e lançamento',
+    icon: 'target',
+  },
+  {
     key: 'settings',
     title: 'Configurações',
     description: 'Aparência e preferências do app',
@@ -50,7 +62,15 @@ export default function MoreScreen() {
                 accessibilityLabel={`Abrir ${item.title}`}
                 testID={`more-menu-${item.key}`}
                 onPress={() => router.push(
-                  item.key === 'profile' ? '/more/profile' : item.key === 'wallets' ? '/wallets' : '/more/settings',
+                  item.key === 'profile'
+                    ? '/more/profile'
+                    : item.key === 'wallets'
+                      ? '/wallets'
+                      : item.key === 'categories'
+                        ? '/more/categories'
+                        : item.key === 'limits'
+                          ? '/more/limits'
+                          : '/more/settings',
                 )}
                 style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}
               >
