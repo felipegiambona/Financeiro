@@ -140,7 +140,7 @@ export default function LimitsScreen() {
       </KeyboardAwareScrollViewCompat>
 
       <Modal animationType="fade" transparent visible={editorOpen} onRequestClose={closeEditor}>
-        <View style={styles.modalRoot}>
+        <View style={styles.editorModalRoot}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closeEditor} />
           <KeyboardAwareScrollViewCompat
             contentContainerStyle={styles.modalScrollContent}
@@ -304,9 +304,10 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: 16 },
   intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 22 },
+  editorModalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 10 },
   modalScrollContent: { flexGrow: 1, width: '100%', alignItems: 'stretch', justifyContent: 'center', paddingVertical: 18 },
-  modalCard: { width: '100%', alignSelf: 'stretch', maxWidth: 520, borderRadius: 12, borderWidth: 1, padding: 18 },
+  modalCard: { width: '100%', maxWidth: 340, maxHeight: '82%', borderRadius: 10, borderWidth: 1, padding: 14, flexShrink: 1 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
   modalEyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.1, textTransform: 'uppercase' },
   modalTitle: { fontSize: 19, fontFamily: 'Inter_700Bold', marginTop: 4 },
