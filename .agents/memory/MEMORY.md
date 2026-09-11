@@ -2,3 +2,4 @@
 - [Authenticated integration environment](authenticated-integration-environment.md) — keep Clerk test email locals short and provide artifact env vars for workspace builds.
 - [Clerk profile updates in Expo](clerk-profile-updates.md) — convert local image-picker URIs to Blob before Clerk uploads and omit empty name fields.
 - [Android Expo file sharing](expo-sharing-android.md) — convert private file URIs to content URIs before sharing from Expo Go.
+- [PanResponder and Animated events](pan-responder-animated-event.md) — RN 0.86 native Animated events are not callable PanResponder callbacks; use an explicit move handler.

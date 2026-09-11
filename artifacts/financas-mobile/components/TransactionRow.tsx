@@ -84,14 +84,17 @@ export function TransactionRow({
           const current = Math.max(-SWIPE_ACTION_WIDTH, Math.min(0, currentValue));
           panStart.current = current;
           position.current = current;
-          translateX.setOffset(current);
-          translateX.setValue(0);
+          translateX.setValue(current);
         });
       },
-      onPanResponderMove: Animated.event(
-        [null, { dx: translateX }],
-        { useNativeDriver: true },
-      ),
+      onPanResponderMove: (_, gestureState) => {
+        const nextPosition = Math.max(
+          -SWIPE_ACTION_WIDTH,
+          Math.min(0, panStart.current + gestureState.dx),
+        );
+        position.current = nextPosition;
+        translateX.setValue(nextPosition);
+      },
       onPanResponderRelease: (_, gestureState) => {
         const current = Math.max(
           -SWIPE_ACTION_WIDTH,
