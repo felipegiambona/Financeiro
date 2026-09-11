@@ -42,7 +42,7 @@ const colors = {
     pending: '#B87820',
     pendingSoft: '#FFF1D7',
     navySoft: '#243B53',
-    balanceGradientStart: '#C9C5B1',
+    balanceGradientStart: '#EDE8D0',
     balanceGradientEnd: '#C9C5B1',
   },
   dark: {
@@ -74,7 +74,7 @@ const colors = {
     pending: '#C8B07B',
     pendingSoft: '#2B271D',
     navySoft: '#252525',
-    balanceGradientStart: '#C9C5B1',
+    balanceGradientStart: '#EDE8D0',
     balanceGradientEnd: '#C9C5B1',
   },
   radius: 8,
