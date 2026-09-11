@@ -50,13 +50,13 @@ export default function DashboardScreen() {
               style={styles.balanceCard}
             >
               <View style={styles.balanceTop}>
-                <Text style={[styles.balanceLabel, { color: colors.accentForeground }]}>Saldo atual</Text>
-                <View style={[styles.balanceMark, { backgroundColor: 'rgba(18,32,51,0.10)' }]}>
-                  <Feather name="bar-chart-2" size={17} color={colors.accentForeground} />
+                <Text style={[styles.balanceLabel, { color: colors.primaryForeground }]}>Saldo atual</Text>
+                <View style={[styles.balanceMark, { backgroundColor: 'rgba(255,255,255,0.16)' }]}>
+                  <Feather name="bar-chart-2" size={17} color={colors.primaryForeground} />
                 </View>
               </View>
-              <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.balanceValue, { color: colors.accentForeground }]}>{formatCurrency(balance)}</Text>
-              <Text style={[styles.balanceHint, { color: colors.accentForeground }]}>Receitas menos despesas</Text>
+              <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.balanceValue, { color: colors.primaryForeground }]}>{formatCurrency(balance)}</Text>
+              <Text style={[styles.balanceHint, { color: colors.primaryForeground }]}>Receitas menos despesas</Text>
             </LinearGradient>
             <View style={styles.monthMetrics}>
               <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
