@@ -25,6 +25,7 @@ import {
 import { formatAmountInput, formatAmountValue, parseAmountInput } from '@/utils/currency';
 import { createLocalIsoDate, parseStoredDate } from '@/utils/date';
 import { DatePickerModal } from '@/components/DatePickerModal';
+import { CATEGORY_COLORS } from '@/types/category';
 
 function toDateInput(dateString?: string): string {
   const date = dateString ? parseStoredDate(dateString) : new Date();
@@ -92,7 +93,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { createTransaction, updateTransaction } = useFinance();
-  const { categories, loading: categoriesLoading } = useCategories();
+  const { categories, loading: categoriesLoading, createCategory } = useCategories();
   const { wallets, loading: walletsLoading } = useWallets();
   const isEditing = Boolean(transaction);
   const defaultWallet = wallets.find((wallet) => wallet.isDefault) ?? wallets[0];
@@ -120,6 +121,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [categoryId, setCategoryId] = useState<string | null>(transaction?.categoryId ?? null);
+  const [categoryCreationOpen, setCategoryCreationOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState<string>(CATEGORY_COLORS[0]);
+  const [categorySaving, setCategorySaving] = useState(false);
   const amountInputRef = useRef<TextInput>(null);
   const isFixedRecurrence = recurrence === 'recurring' && recurrenceLimitMode === 'fixed';
 

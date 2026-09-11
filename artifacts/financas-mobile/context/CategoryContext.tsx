@@ -12,7 +12,7 @@ interface CategoryContextValue {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  createCategory: (input: NewCategoryInput) => Promise<void>;
+  createCategory: (input: NewCategoryInput) => Promise<Category>;
   updateCategory: (id: string, updates: Partial<Omit<Category, 'id' | 'createdAt'>>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
 }
@@ -40,11 +40,12 @@ export function CategoryProvider({ children }: React.PropsWithChildren) {
     void refresh();
   }, [refresh]);
 
-  const createCategory = useCallback(async (input: NewCategoryInput) => {
+  const createCategory = useCallback(async (input: NewCategoryInput): Promise<Category> => {
     try {
       setError(null);
-      await persistCategory(input);
+      const category = await persistCategory(input);
       await refresh();
+      return category;
     } catch {
       setError('Não foi possível salvar a categoria.');
       throw new Error('Não foi possível salvar a categoria.');
