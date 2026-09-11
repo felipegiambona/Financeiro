@@ -9,7 +9,7 @@ import {
   updateTransactionOccurrencePaymentStatus as updateOccurrenceRequest,
 } from '@workspace/api-client-react';
 import type { NewTransactionInput, PaymentStatus, Transaction } from '@/types/transaction';
-import { createLocalIsoDate, getDateKey, parseStoredDate } from '@/utils/date';
+import { createLocalIsoDate, getDateKey, getDayKey, parseStoredDate } from '@/utils/date';
 import { getTransactionOccurrencesForMonth, normalizeRecurrence } from '@/services/recurrence';
 
 function normalizeTransaction(value: Transaction): Transaction {
@@ -54,7 +54,10 @@ export async function updateTransactionOccurrencePaymentStatus(
   occurrenceDate: string,
   paymentStatus: PaymentStatus,
 ): Promise<Transaction> {
-  const transaction = await updateOccurrenceRequest(id, occurrenceDate, { paymentStatus });
+  const normalizedOccurrenceDate = /^\d{4}-\d{2}-\d{2}$/.test(occurrenceDate)
+    ? occurrenceDate
+    : getDayKey(parseStoredDate(occurrenceDate));
+  const transaction = await updateOccurrenceRequest(id, normalizedOccurrenceDate, { paymentStatus });
   return normalizeTransaction(transaction as Transaction);
 }
 
