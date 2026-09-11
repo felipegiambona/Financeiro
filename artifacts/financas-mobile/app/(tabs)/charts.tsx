@@ -11,7 +11,7 @@ import { useColors } from '@/hooks/useColors';
 import { calculateTotalsByMonth } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
-import { formatMonthLabel, formatShortMonthLabel, shiftMonth } from '@/utils/date';
+import { formatMonthYearLabel, formatShortMonthLabel, shiftMonth } from '@/utils/date';
 
 export default function ChartsScreen() {
   const colors = useColors();
@@ -25,6 +25,7 @@ export default function ChartsScreen() {
   const [categoryMonth, setCategoryMonth] = useState(() => shiftMonth(new Date(), 0));
   const [chartWidth, setChartWidth] = useState(0);
   const selectedMonth = totals.find((month) => month.key === selectedMonthKey) ?? totals[totals.length - 1];
+  const selectedMonthIndex = selectedMonth ? totals.findIndex((month) => month.key === selectedMonth.key) : -1;
   const categoryTotals = useMemo(() => {
     const totalsByCategory = new Map<string, number>();
     for (const transaction of getTransactionOccurrencesForMonth(transactions, categoryMonth)) {

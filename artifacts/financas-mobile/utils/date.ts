@@ -30,6 +30,10 @@ export function formatMonthLabel(date: Date): string {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
+export function formatMonthYearLabel(date: Date): string {
+  return formatMonthLabel(date).replace(' de ', ' ');
+}
+
 export function formatShortMonthLabel(date: Date): string {
   const formatted = new Intl.DateTimeFormat('pt-BR', {
     month: 'short',
