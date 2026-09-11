@@ -74,17 +74,21 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
 
   const handlePickProfileImage = async () => {
     if (!user) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (result.canceled || !result.assets[0]?.uri) return;
-
     try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      const imageUri = result.assets?.[0]?.uri;
+      if (result.canceled || !imageUri) return;
+
       setSavingProfile(true);
-      await user.setProfileImage({ file: result.assets[0].uri });
+      const imageResponse = await fetch(imageUri);
+      if (!imageResponse.ok) throw new Error('Não foi possível ler a imagem selecionada.');
+      const imageBlob = await imageResponse.blob();
+      await user.setProfileImage({ file: imageBlob });
     } catch {
       Alert.alert('Não foi possível alterar a foto', 'Tente novamente.');
     } finally {
@@ -106,7 +110,10 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
 
     try {
       setSavingProfile(true);
-      await user.update({ firstName, lastName: lastName || null });
+      await user.update({
+        firstName,
+        ...(lastName ? { lastName } : {}),
+      });
       setEditingProfile(false);
     } catch {
       Alert.alert('Não foi possível salvar o perfil', 'Tente novamente.');

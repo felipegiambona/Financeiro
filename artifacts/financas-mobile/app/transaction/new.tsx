@@ -660,8 +660,8 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 pressed && styles.pressed,
               ]}
             >
-              <Feather name="plus" size={16} color={colors.primary} />
-              <Text style={[styles.createCategoryButtonText, { color: colors.primary }]}>Criar nova categoria</Text>
+              <Feather name="plus" size={16} color={colors.income} />
+              <Text style={[styles.createCategoryButtonText, { color: colors.income }]}>Criar nova categoria</Text>
             </Pressable>
             <Pressable
               testID="category-option-none"
@@ -731,7 +731,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               testID="new-category-name-input"
               autoFocus
               placeholder="Ex.: Alimentação"
-              placeholderTextColor={colors.foreground}
+              placeholderTextColor={colors.mutedForeground}
               value={newCategoryName}
               onChangeText={setNewCategoryName}
               style={[styles.categoryInput, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}

@@ -556,7 +556,7 @@ export default function TransactionsScreen() {
               </View>
               <View style={styles.filterGroup}>
                 <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Recorrência</Text>
-                <View style={styles.filterOptions}>
+                <View style={styles.recurrenceOptions}>
                   {RECURRENCE_FILTERS.map((option) => {
                     const active = recurrenceFilter === option.value;
                     return (
@@ -953,6 +953,7 @@ const styles = StyleSheet.create({
   filterRows: { flex: 1, gap: 5 },
   filterRow: { flexDirection: 'row', gap: 5 },
   filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  recurrenceOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 5 },
   filterChip: { minHeight: 28, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   walletFilterCombo: { minHeight: 34, flex: 1, borderRadius: 6, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
