@@ -124,7 +124,7 @@ export default function DashboardScreen() {
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.payable)}</Text>
               </Pressable>
             </View> : null}
-            {visibility.wallets ? <View style={[styles.walletCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {visibility.wallets ? <View style={styles.walletSection}>
               <View style={styles.walletHeader}>
                 <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Minhas carteiras</Text>
                 <Pressable
@@ -140,31 +140,33 @@ export default function DashboardScreen() {
                   <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Gerenciar</Text>
                 </Pressable>
               </View>
-              {walletsLoading ? (
-                <Text style={[styles.walletState, { color: colors.mutedForeground }]}>Carregando carteiras...</Text>
-              ) : walletTotals.length === 0 ? (
-                <Text style={[styles.walletState, { color: colors.mutedForeground }]}>Nenhuma carteira cadastrada.</Text>
-              ) : (
-                <View style={styles.walletRows}>
-                  {walletTotals.map(({ wallet, total }, index) => (
-                    <View
-                      key={wallet.id}
-                      style={[
-                        styles.walletRow,
-                        index < walletTotals.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
-                      ]}
-                    >
-                      <View style={styles.walletName}>
-                        <WalletIconView icon={wallet.icon} size={17} color={colors.mutedForeground} />
-                        <Text numberOfLines={1} style={[styles.walletNameText, { color: colors.foreground }]}>{wallet.title}</Text>
+              <View style={[styles.walletCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {walletsLoading ? (
+                  <Text style={[styles.walletState, { color: colors.mutedForeground }]}>Carregando carteiras...</Text>
+                ) : walletTotals.length === 0 ? (
+                  <Text style={[styles.walletState, { color: colors.mutedForeground }]}>Nenhuma carteira cadastrada.</Text>
+                ) : (
+                  <View style={styles.walletRows}>
+                    {walletTotals.map(({ wallet, total }, index) => (
+                      <View
+                        key={wallet.id}
+                        style={[
+                          styles.walletRow,
+                          index < walletTotals.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
+                        ]}
+                      >
+                        <View style={styles.walletName}>
+                          <WalletIconView icon={wallet.icon} size={17} color={colors.mutedForeground} />
+                          <Text numberOfLines={1} style={[styles.walletNameText, { color: colors.foreground }]}>{wallet.title}</Text>
+                        </View>
+                        <Text style={[styles.walletValue, { color: total >= 0 ? colors.income : colors.expense }]}>
+                          {formatCurrency(total)}
+                        </Text>
                       </View>
-                      <Text style={[styles.walletValue, { color: total >= 0 ? colors.income : colors.expense }]}>
-                        {formatCurrency(total)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
+                    ))}
+                  </View>
+                )}
+              </View>
             </View> : null}
             {visibility.limits ? <View style={styles.limitsSection}>
               <View style={styles.limitsHeader}>
@@ -247,8 +249,9 @@ const styles = StyleSheet.create({
   metricLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metricLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   metricValue: { fontSize: 16, fontFamily: 'Inter_700Bold', marginTop: 5 },
-  walletCard: { borderRadius: 9, borderWidth: 1, padding: 14, marginTop: 2 },
-  walletHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  walletSection: { marginTop: 2 },
+  walletCard: { borderRadius: 9, borderWidth: 1, padding: 14 },
+  walletHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   manageWalletButton: { minHeight: 27, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   manageWalletButtonText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   walletState: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 8 },

@@ -295,7 +295,7 @@ export default function LimitsScreen() {
                 style={({ pressed }) => [styles.categoryOption, { borderBottomColor: colors.border }, pressed && styles.pressed]}
               >
                 <Text style={[styles.categoryName, { color: colors.foreground }]}>{option.label}</Text>
-                {option.value === period ? <Feather name="check" size={17} color={colors.primary} /> : null}
+                {option.value === period ? <Feather name="check" size={17} color={colors.accent} /> : null}
               </Pressable>
             ))}
           </View>
@@ -309,9 +309,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: 16 },
   intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 22 },
-  modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', padding: 18 },
+  modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', padding: 10 },
   modalScrollContent: { flexGrow: 1, width: '100%', alignItems: 'center', justifyContent: 'center', paddingVertical: 18 },
-  modalCard: { width: '100%', maxWidth: 390, borderRadius: 12, borderWidth: 1, padding: 18 },
+  modalCard: { width: '100%', maxWidth: 420, borderRadius: 12, borderWidth: 1, padding: 18 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
   modalEyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.1, textTransform: 'uppercase' },
   modalTitle: { fontSize: 19, fontFamily: 'Inter_700Bold', marginTop: 4 },
