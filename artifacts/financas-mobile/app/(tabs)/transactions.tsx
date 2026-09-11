@@ -481,7 +481,7 @@ export default function TransactionsScreen() {
             <View style={styles.moreFiltersControl}>
               <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
               {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter !== 'all' || categoryFilter !== 'all' || dateRangeStart !== null || dateRangeEnd !== null) ? (
-                <View style={[styles.activeFiltersDot, { backgroundColor: colors.primary }]} />
+                <View style={[styles.activeFiltersDot, { backgroundColor: colors.radio }]} />
               ) : null}
               <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
             </View>
