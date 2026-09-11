@@ -5,7 +5,7 @@ import {
   Transaction,
   TransactionOccurrence,
 } from '@/types/transaction';
-import { createLocalIsoDate, parseStoredDate } from '@/utils/date';
+import { createLocalIsoDate, getDayKey, parseStoredDate } from '@/utils/date';
 
 const LEGACY_FREQUENCY_UNITS: Record<string, RecurrenceUnit> = {
   weekly: 'week',
@@ -138,6 +138,7 @@ export function getTransactionOccurrencesInRange(
       if (occurrenceTime < startTime) continue;
 
       const date = createLocalIsoDate(occurrenceDate);
+      const occurrenceDateKey = getDayKey(occurrenceDate);
       if (recurrence.excludedDates?.includes(date)) continue;
       occurrences.push({
         ...transaction,
@@ -151,7 +152,8 @@ export function getTransactionOccurrencesInRange(
           : transaction.amount,
         date,
         dueDate: date,
-        paymentStatus: transaction.paymentStatusOverrides?.[date]
+        paymentStatus: transaction.paymentStatusOverrides?.[occurrenceDateKey]
+          ?? transaction.paymentStatusOverrides?.[date]
           ?? (occurrenceIndex === 0 ? transaction.paymentStatus : 'unpaid'),
         recurrence,
         sourceId: transaction.id,
