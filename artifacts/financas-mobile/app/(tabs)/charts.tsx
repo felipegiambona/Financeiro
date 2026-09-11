@@ -105,31 +105,20 @@ export default function ChartsScreen() {
                 </Pressable>
                 {selectedMonth && (
                   <View style={[styles.chartFooter, { borderTopColor: colors.border }]}>
-                    <View style={styles.monthSelector} accessibilityLabel="Selecionar mês">
-                      {totals.map((month) => {
-                        const isSelected = month.key === selectedMonth.key;
-                        return (
-                          <Pressable
-                            key={month.key}
-                            onPress={() => setSelectedMonthKey(month.key)}
-                            style={[
-                              styles.monthChip,
-                              {
-                                backgroundColor: isSelected ? colors.primary : colors.card,
-                                borderColor: isSelected ? colors.primary : colors.border,
-                              },
-                            ]}
-                            accessibilityRole="button"
-                            accessibilityState={{ selected: isSelected }}
-                            accessibilityLabel={`Selecionar ${formatShortMonthLabel(month.date)}`}
-                          >
-                            <Text style={[styles.monthChipText, { color: isSelected ? colors.primaryForeground : colors.mutedForeground }]}>
-                              {formatShortMonthLabel(month.date)}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
+                    <MonthSelector
+                      month={selectedMonth.date}
+                      onPrevious={() => {
+                        if (selectedMonthIndex > 0) setSelectedMonthKey(totals[selectedMonthIndex - 1].key);
+                      }}
+                      onNext={() => {
+                        if (selectedMonthIndex >= 0 && selectedMonthIndex < totals.length - 1) {
+                          setSelectedMonthKey(totals[selectedMonthIndex + 1].key);
+                        }
+                      }}
+                      previousDisabled={selectedMonthIndex <= 0}
+                      nextDisabled={selectedMonthIndex < 0 || selectedMonthIndex >= totals.length - 1}
+                      accessibilityPrefix="Receitas e despesas"
+                    />
                     <View style={styles.movementRows}>
                       <View style={styles.movementRow}>
                         <View style={styles.movementLabel}>
@@ -162,29 +151,12 @@ export default function ChartsScreen() {
                     Veja como os gastos se distribuem entre as categorias
                   </Text>
                 </View>
-                <View style={styles.categoryMonthSelector}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Mês anterior nos gastos por categoria"
-                    hitSlop={8}
-                    onPress={() => setCategoryMonth((month) => shiftMonth(month, -1))}
-                    style={({ pressed }) => [styles.categoryMonthButton, { borderColor: colors.border }, pressed && styles.pressed]}
-                  >
-                    <Feather name="chevron-left" size={15} color={colors.foreground} />
-                  </Pressable>
-                  <Text style={[styles.categoryMonth, { color: colors.foreground }]} numberOfLines={1}>
-                    {formatMonthLabel(categoryMonth)}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Próximo mês nos gastos por categoria"
-                    hitSlop={8}
-                    onPress={() => setCategoryMonth((month) => shiftMonth(month, 1))}
-                    style={({ pressed }) => [styles.categoryMonthButton, { borderColor: colors.border }, pressed && styles.pressed]}
-                  >
-                    <Feather name="chevron-right" size={15} color={colors.foreground} />
-                  </Pressable>
-                </View>
+                <MonthSelector
+                  month={categoryMonth}
+                  onPrevious={() => setCategoryMonth((month) => shiftMonth(month, -1))}
+                  onNext={() => setCategoryMonth((month) => shiftMonth(month, 1))}
+                  accessibilityPrefix="Gastos por categoria"
+                />
               </View>
               {categoryTotals.length === 0 ? (
                 <Text style={[styles.categoryEmpty, { color: colors.mutedForeground }]}>
@@ -230,9 +202,6 @@ const styles = StyleSheet.create({
   categoryCard: { borderRadius: 8, borderWidth: 1, padding: 16, marginTop: 12 },
   categoryTitleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   categoryTitleCopy: { flex: 1, minWidth: 0 },
-  categoryMonthSelector: { flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
-  categoryMonthButton: { width: 25, height: 25, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  categoryMonth: { maxWidth: 90, fontSize: 10, fontFamily: 'Inter_700Bold', textAlign: 'center', textTransform: 'capitalize' },
   chartTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   chartDescription: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 4 },
   legend: { flexDirection: 'row', gap: 14, marginTop: 15 },
@@ -248,9 +217,9 @@ const styles = StyleSheet.create({
   chartFooter: { borderTopWidth: 1, paddingTop: 12, marginTop: 14 },
   footerLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
   footerValue: { fontSize: 12, fontFamily: 'Inter_700Bold' },
-  monthSelector: { flexDirection: 'row', gap: 5 },
-  monthChip: { minWidth: 35, borderRadius: 12, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 5, alignItems: 'center' },
-  monthChipText: { fontSize: 9, fontFamily: 'Inter_700Bold' },
+  monthSelector: { flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+  monthButton: { width: 25, height: 25, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  monthText: { maxWidth: 122, fontSize: 10, fontFamily: 'Inter_700Bold', textAlign: 'center', textTransform: 'capitalize' },
   movementRows: { gap: 9, marginTop: 12 },
   movementRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   movementLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -264,5 +233,64 @@ const styles = StyleSheet.create({
   categoryTrack: { height: 7, borderRadius: 4, overflow: 'hidden' },
   categoryBar: { height: '100%', borderRadius: 4 },
   categoryPercentage: { fontSize: 10, fontFamily: 'Inter_400Regular' },
+  disabled: { opacity: 0.4 },
   pressed: { opacity: 0.6 },
 });
+
+function MonthSelector({
+  month,
+  onPrevious,
+  onNext,
+  previousDisabled = false,
+  nextDisabled = false,
+  accessibilityPrefix,
+}: {
+  month: Date;
+  onPrevious: () => void;
+  onNext: () => void;
+  previousDisabled?: boolean;
+  nextDisabled?: boolean;
+  accessibilityPrefix: string;
+}) {
+  const colors = useColors();
+
+  return (
+    <View style={styles.monthSelector} accessibilityLabel={`Selecionar mês em ${accessibilityPrefix}`}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Mês anterior em ${accessibilityPrefix}`}
+        accessibilityState={{ disabled: previousDisabled }}
+        disabled={previousDisabled}
+        hitSlop={8}
+        onPress={onPrevious}
+        style={({ pressed }) => [
+          styles.monthButton,
+          { borderColor: colors.border },
+          previousDisabled && styles.disabled,
+          pressed && styles.pressed,
+        ]}
+      >
+        <Feather name="chevron-left" size={15} color={colors.foreground} />
+      </Pressable>
+      <Text style={[styles.monthText, { color: colors.foreground }]} numberOfLines={1}>
+        {formatMonthYearLabel(month)}
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Próximo mês em ${accessibilityPrefix}`}
+        accessibilityState={{ disabled: nextDisabled }}
+        disabled={nextDisabled}
+        hitSlop={8}
+        onPress={onNext}
+        style={({ pressed }) => [
+          styles.monthButton,
+          { borderColor: colors.border },
+          nextDisabled && styles.disabled,
+          pressed && styles.pressed,
+        ]}
+      >
+        <Feather name="chevron-right" size={15} color={colors.foreground} />
+      </Pressable>
+    </View>
+  );
+}
