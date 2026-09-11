@@ -250,6 +250,20 @@ export const DeleteTransactionsBody = zod.object({
 export const DeleteTransactionsResponse = zod.void()
 
 
+
+
+
+export const UpdateTransactionsBody = zod.object({
+  "ids": zod.array(zod.string().uuid()).min(1),
+  "walletId": zod.string().uuid().optional(),
+  "categoryId": zod.string().uuid().nullish(),
+  "dueDate": zod.coerce.date().nullish(),
+  "paymentStatus": zod.enum(['paid', 'unpaid']).optional()
+})
+
+export const UpdateTransactionsResponse = zod.void()
+
+
 export const ListWalletsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),

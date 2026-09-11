@@ -4,6 +4,7 @@ import {
   deleteTransaction as deleteTransactionRequest,
   deleteTransactions as deleteTransactionsRequest,
   listTransactions,
+  updateTransactions as updateTransactionsRequest,
   updateTransaction as updateTransactionRequest,
   updateTransactionOccurrencePaymentStatus as updateOccurrenceRequest,
 } from '@workspace/api-client-react';
@@ -63,6 +64,17 @@ export async function deleteTransaction(id: string): Promise<void> {
 
 export async function deleteTransactions(ids: string[]): Promise<void> {
   await deleteTransactionsRequest({ ids });
+}
+
+export interface BatchTransactionUpdate {
+  walletId?: string;
+  categoryId?: string | null;
+  dueDate?: string | null;
+  paymentStatus?: PaymentStatus;
+}
+
+export async function updateTransactions(ids: string[], updates: BatchTransactionUpdate): Promise<void> {
+  await updateTransactionsRequest({ ids, ...updates });
 }
 
 export async function clearTransactions(): Promise<void> {

@@ -44,6 +44,9 @@ type StatusFilter = 'all' | 'paid' | 'unpaid';
 type RecurrenceFilter = 'all' | 'recurring' | 'nonRecurring';
 type DateFilterTarget = 'start' | 'end';
 type CategoryFilter = 'all' | 'uncategorized' | string;
+type BatchPaymentStatus = 'unchanged' | 'paid' | 'unpaid';
+type BatchCategory = 'unchanged' | 'none' | string;
+type BatchDueDate = 'unchanged' | 'clear' | string;
 
 const TYPE_FILTERS: Array<{ value: TypeFilter; label: string }> = [
   { value: 'all', label: 'Todos' },
@@ -94,6 +97,7 @@ export default function TransactionsScreen() {
     updateTransactionOccurrencePaymentStatus,
     deleteTransaction,
     deleteTransactions,
+    updateTransactions,
   } = useFinance();
   const { wallets } = useWallets();
   const { categories } = useCategories();
@@ -117,6 +121,13 @@ export default function TransactionsScreen() {
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [batchEditOpen, setBatchEditOpen] = useState(false);
+  const [batchEditSaving, setBatchEditSaving] = useState(false);
+  const [batchPaymentStatus, setBatchPaymentStatus] = useState<BatchPaymentStatus>('unchanged');
+  const [batchWalletId, setBatchWalletId] = useState('unchanged');
+  const [batchCategoryId, setBatchCategoryId] = useState<BatchCategory>('unchanged');
+  const [batchDueDate, setBatchDueDate] = useState<BatchDueDate>('unchanged');
+  const [batchDueDatePickerOpen, setBatchDueDatePickerOpen] = useState(false);
   useEffect(() => {
     const validTypeFilter = TYPE_FILTERS.some((option) => option.value === routeTypeFilter)
       ? routeTypeFilter as TypeFilter
@@ -283,6 +294,45 @@ export default function TransactionsScreen() {
         leaveSelectionMode();
       },
     });
+  };
+
+  const openBatchEdit = () => {
+    if (selectedIds.length === 0) return;
+    setBatchPaymentStatus('unchanged');
+    setBatchWalletId('unchanged');
+    setBatchCategoryId('unchanged');
+    setBatchDueDate('unchanged');
+    setBatchEditOpen(true);
+  };
+
+  const applyBatchEdit = async () => {
+    const updates: {
+      walletId?: string;
+      categoryId?: string | null;
+      dueDate?: string | null;
+      paymentStatus?: 'paid' | 'unpaid';
+    } = {};
+    if (batchPaymentStatus !== 'unchanged') updates.paymentStatus = batchPaymentStatus;
+    if (batchWalletId !== 'unchanged') updates.walletId = batchWalletId;
+    if (batchCategoryId !== 'unchanged') updates.categoryId = batchCategoryId === 'none' ? null : batchCategoryId;
+    if (batchDueDate !== 'unchanged') updates.dueDate = batchDueDate === 'clear' ? null : batchDueDate;
+
+    if (Object.keys(updates).length === 0) {
+      Alert.alert('Nenhuma alteração', 'Escolha pelo menos um campo para aplicar aos lançamentos selecionados.');
+      return;
+    }
+
+    try {
+      setBatchEditSaving(true);
+      await updateTransactions([...selectedIds], updates);
+      setBatchEditOpen(false);
+      leaveSelectionMode();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert('Não foi possível editar', 'Tente aplicar as alterações novamente.');
+    } finally {
+      setBatchEditSaving(false);
+    }
   };
 
   const executeConfirmedDeletion = async () => {
@@ -627,13 +677,29 @@ export default function TransactionsScreen() {
             </View>
             {selectionMode ? (
               <View style={styles.selectionActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setSelectedIds(Array.from(new Set(filteredTransactions.map((item) => item.sourceId))))}
-                  style={({ pressed }) => [styles.secondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}
-                >
-                  <Text style={[styles.secondaryActionLabel, { color: colors.foreground }]}>Selecionar todos</Text>
-                </Pressable>
+                <View style={styles.selectionActionRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setSelectedIds(Array.from(new Set(filteredTransactions.map((item) => item.sourceId))))}
+                    style={({ pressed }) => [styles.secondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}
+                  >
+                    <Text style={[styles.secondaryActionLabel, { color: colors.foreground }]}>Selecionar todos</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={selectedIds.length === 0}
+                    onPress={openBatchEdit}
+                    style={({ pressed }) => [
+                      styles.editSelectedAction,
+                      { backgroundColor: colors.primary },
+                      selectedIds.length === 0 && styles.disabled,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Feather name="edit-3" size={14} color={colors.primaryForeground} />
+                    <Text style={[styles.editSelectedLabel, { color: colors.primaryForeground }]}>Editar selecionados</Text>
+                  </Pressable>
+                </View>
                 <Pressable
                   accessibilityRole="button"
                   disabled={selectedIds.length === 0}
@@ -843,6 +909,151 @@ export default function TransactionsScreen() {
       <Modal
         animationType="fade"
         transparent
+        visible={batchEditOpen}
+        onRequestClose={() => !batchEditSaving && setBatchEditOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Fechar edição em lote"
+            disabled={batchEditSaving}
+            onPress={() => setBatchEditOpen(false)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={[styles.batchEditCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.batchEditHeader}>
+              <View style={[styles.batchEditIcon, { backgroundColor: colors.secondary }]}>
+                <Feather name="edit-3" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.batchEditTitleBlock}>
+                <Text style={[styles.confirmationTitle, { color: colors.foreground }]}>Editar selecionados</Text>
+                <Text style={[styles.batchEditSubtitle, { color: colors.mutedForeground }]}>
+                  Aplicar alterações a {selectedIds.length} {selectedIds.length === 1 ? 'lançamento' : 'lançamentos'}
+                </Text>
+              </View>
+            </View>
+            <ScrollView
+              contentContainerStyle={styles.batchEditContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={[styles.batchEditLabel, { color: colors.foreground }]}>Status do pagamento</Text>
+              <View style={styles.batchEditOptions}>
+                {([
+                  ['unchanged', 'Não alterar'],
+                  ['paid', 'Pago'],
+                  ['unpaid', 'Não pago'],
+                ] as Array<[BatchPaymentStatus, string]>).map(([value, label]) => {
+                  const active = batchPaymentStatus === value;
+                  return (
+                    <Pressable
+                      key={value}
+                      testID={`batch-status-${value}`}
+                      onPress={() => setBatchPaymentStatus(value)}
+                      style={[styles.batchEditOption, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
+                    >
+                      <Text style={[styles.batchEditOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={[styles.batchEditLabel, { color: colors.foreground }]}>Carteira</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.batchEditHorizontalOptions}>
+                {[
+                  { value: 'unchanged', label: 'Não alterar' },
+                  ...wallets.map((wallet) => ({ value: wallet.id, label: wallet.title })),
+                ].map((option) => {
+                  const active = batchWalletId === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => setBatchWalletId(option.value)}
+                      style={[styles.batchEditOption, styles.batchEditWalletOption, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
+                    >
+                      <Text numberOfLines={1} style={[styles.batchEditOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{option.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={[styles.batchEditLabel, { color: colors.foreground }]}>Categoria</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.batchEditHorizontalOptions}>
+                {[
+                  { value: 'unchanged' as const, label: 'Não alterar' },
+                  { value: 'none' as const, label: 'Sem categoria' },
+                  ...categories.map((category) => ({ value: category.id, label: category.name })),
+                ].map((option) => {
+                  const active = batchCategoryId === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => setBatchCategoryId(option.value)}
+                      style={[styles.batchEditOption, styles.batchEditWalletOption, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
+                    >
+                      <Text numberOfLines={1} style={[styles.batchEditOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{option.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={[styles.batchEditLabel, { color: colors.foreground }]}>Vencimento</Text>
+              <View style={styles.batchEditOptions}>
+                {([
+                  ['unchanged', 'Não alterar'],
+                  ['clear', 'Limpar'],
+                ] as Array<[BatchDueDate, string]>).map(([value, label]) => {
+                  const active = batchDueDate === value;
+                  return (
+                    <Pressable
+                      key={value}
+                      onPress={() => setBatchDueDate(value)}
+                      style={[styles.batchEditOption, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
+                    >
+                      <Text style={[styles.batchEditOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{label}</Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  onPress={() => setBatchDueDatePickerOpen(true)}
+                  style={[styles.batchEditDateButton, { backgroundColor: batchDueDate !== 'unchanged' && batchDueDate !== 'clear' ? colors.primary : colors.card, borderColor: batchDueDate !== 'unchanged' && batchDueDate !== 'clear' ? colors.primary : colors.border }]}
+                >
+                  <Feather name="calendar" size={14} color={batchDueDate !== 'unchanged' && batchDueDate !== 'clear' ? colors.primaryForeground : colors.mutedForeground} />
+                  <Text style={[styles.batchEditOptionText, { color: batchDueDate !== 'unchanged' && batchDueDate !== 'clear' ? colors.primaryForeground : colors.foreground }]}>
+                    {batchDueDate !== 'unchanged' && batchDueDate !== 'clear' ? formatFilterDate(parseStoredDate(batchDueDate)) : 'Escolher data'}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+            <View style={styles.batchEditActions}>
+              <Pressable
+                disabled={batchEditSaving}
+                onPress={() => setBatchEditOpen(false)}
+                style={({ pressed }) => [styles.confirmationCancel, { borderColor: colors.border }, batchEditSaving && styles.disabled, pressed && styles.pressed]}
+              >
+                <Text style={[styles.confirmationCancelLabel, { color: colors.foreground }]}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                disabled={batchEditSaving}
+                onPress={() => void applyBatchEdit()}
+                style={({ pressed }) => [styles.confirmationDelete, { backgroundColor: colors.primary }, batchEditSaving && styles.disabled, pressed && styles.pressed]}
+              >
+                <Text style={styles.confirmationDeleteLabel}>{batchEditSaving ? 'Salvando...' : 'Aplicar alterações'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <DatePickerModal
+        visible={batchDueDatePickerOpen}
+        value={batchDueDate !== 'unchanged' && batchDueDate !== 'clear' ? parseStoredDate(batchDueDate) : new Date()}
+        onClose={() => setBatchDueDatePickerOpen(false)}
+        onConfirm={(date) => {
+          setBatchDueDate(createLocalIsoDate(date));
+          setBatchDueDatePickerOpen(false);
+        }}
+      />
+      <Modal
+        animationType="fade"
+        transparent
         visible={deleteConfirmation !== null}
         onRequestClose={() => !deleting && setDeleteConfirmation(null)}
       >
@@ -971,10 +1182,13 @@ const styles = StyleSheet.create({
   count: { fontSize: 11, fontFamily: 'Inter_500Medium' },
   textAction: { paddingVertical: 5 },
   textActionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-  selectionActions: { flexDirection: 'row', gap: 7, marginBottom: 9 },
+  selectionActions: { gap: 7, marginBottom: 9 },
+  selectionActionRow: { flexDirection: 'row', gap: 7 },
   secondaryAction: { minHeight: 34, borderRadius: 7, borderWidth: 1, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
   secondaryActionLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
-  deleteSelectedAction: { flex: 1, minHeight: 34, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
+  editSelectedAction: { flex: 1, minHeight: 34, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
+  editSelectedLabel: { fontSize: 10, fontFamily: 'Inter_700Bold' },
+  deleteSelectedAction: { minHeight: 34, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
   deleteSelectedLabel: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.72 },
@@ -1006,6 +1220,20 @@ const styles = StyleSheet.create({
   confirmationCancelLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   confirmationDelete: { flex: 1.35, minHeight: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   confirmationDeleteLabel: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+  batchEditCard: { width: '100%', maxWidth: 370, maxHeight: '88%', borderRadius: 12, borderWidth: 1, padding: 16 },
+  batchEditHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
+  batchEditIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  batchEditTitleBlock: { flex: 1, minWidth: 0 },
+  batchEditSubtitle: { marginTop: 3, fontSize: 10, fontFamily: 'Inter_400Regular' },
+  batchEditContent: { paddingTop: 5, paddingBottom: 4, gap: 8 },
+  batchEditLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', marginTop: 5 },
+  batchEditOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  batchEditHorizontalOptions: { gap: 6 },
+  batchEditOption: { minHeight: 36, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
+  batchEditWalletOption: { maxWidth: 170 },
+  batchEditOptionText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  batchEditDateButton: { minHeight: 36, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  batchEditActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
   monthSummary: { paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between' },
   summaryLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   summaryValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },

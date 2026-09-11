@@ -23,6 +23,8 @@ export * from './recurrencePeriod';
 export * from './recurrenceUnit';
 export * from './transaction';
 export * from './transactionBatchDelete';
+export * from './transactionBatchUpdate';
+export * from './transactionBatchUpdatePaymentStatus';
 export * from './transactionInput';
 export * from './transactionInputPaymentStatus';
 export * from './transactionInputType';

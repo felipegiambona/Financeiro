@@ -216,6 +216,23 @@ export interface TransactionBatchDelete {
   ids: string[];
 }
 
+export type TransactionBatchUpdatePaymentStatus = typeof TransactionBatchUpdatePaymentStatus[keyof typeof TransactionBatchUpdatePaymentStatus];
+
+
+export const TransactionBatchUpdatePaymentStatus = {
+  paid: 'paid',
+  unpaid: 'unpaid',
+} as const;
+
+export interface TransactionBatchUpdate {
+  /** @minItems 1 */
+  ids: string[];
+  walletId?: string;
+  categoryId?: string | null;
+  dueDate?: string | null;
+  paymentStatus?: TransactionBatchUpdatePaymentStatus;
+}
+
 export type WalletIcon = typeof WalletIcon[keyof typeof WalletIcon];
 
 

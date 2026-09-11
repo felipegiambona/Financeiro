@@ -29,6 +29,7 @@ import type {
   ProfileUpdate,
   Transaction,
   TransactionBatchDelete,
+  TransactionBatchUpdate,
   TransactionInput,
   TransactionUpdate,
   Wallet,
@@ -604,6 +605,71 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteTransactionsMutationOptions(options));
+    }
+
+export const getUpdateTransactionsUrl = () => {
+
+
+
+
+  return `/api/transactions/batch-update`
+}
+
+export const updateTransactions = async (transactionBatchUpdate: TransactionBatchUpdate, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getUpdateTransactionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(transactionBatchUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateTransactionsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTransactions>>, TError,{data: BodyType<TransactionBatchUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTransactions>>, TError,{data: BodyType<TransactionBatchUpdate>}, TContext> => {
+
+const mutationKey = ['updateTransactions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTransactions>>, {data: BodyType<TransactionBatchUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateTransactions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTransactionsMutationResult = NonNullable<Awaited<ReturnType<typeof updateTransactions>>>
+    export type UpdateTransactionsMutationBody = BodyType<TransactionBatchUpdate>
+    export type UpdateTransactionsMutationError = ErrorType<unknown>
+
+    export const useUpdateTransactions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTransactions>>, TError,{data: BodyType<TransactionBatchUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTransactions>>,
+        TError,
+        {data: BodyType<TransactionBatchUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTransactionsMutationOptions(options));
     }
 
 export const getListWalletsUrl = () => {
