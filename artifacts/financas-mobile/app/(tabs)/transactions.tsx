@@ -991,6 +991,7 @@ const styles = StyleSheet.create({
   walletMenuTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', marginBottom: 2 },
   walletMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
   walletMenuOptionText: { flex: 1, minWidth: 0, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  categoryFilterDot: { width: 11, height: 11, borderRadius: 6 },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.76)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
   confirmationCard: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 18, alignItems: 'center' },
   confirmationIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
