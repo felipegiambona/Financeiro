@@ -26,6 +26,7 @@ import {
 } from '@/utils/date';
 import { TransactionOccurrence } from '@/types/transaction';
 import { DatePickerModal } from '@/components/DatePickerModal';
+import { PaymentCelebration } from '@/components/PaymentCelebration';
 import {
   exportTransactions,
   getExportPeriodLabel,
@@ -111,6 +112,7 @@ export default function TransactionsScreen() {
   const routeStatusFilter = Array.isArray(statusFilterParam) ? statusFilterParam[0] : statusFilterParam;
   const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [paymentCelebration, setPaymentCelebration] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
@@ -394,7 +396,12 @@ export default function TransactionsScreen() {
       } else {
         await updateTransaction(transaction.sourceId, { paymentStatus: nextStatus });
       }
-      await Haptics.selectionAsync();
+      if (nextStatus === 'paid') {
+        setPaymentCelebration(transaction.description);
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        await Haptics.selectionAsync();
+      }
     } catch {
       Alert.alert('Não foi possível atualizar', 'Tente alterar o status novamente.');
     } finally {
@@ -1268,6 +1275,12 @@ export default function TransactionsScreen() {
           </View>
         </View>
       </Modal>
+      {paymentCelebration ? (
+        <PaymentCelebration
+          description={paymentCelebration}
+          onDone={() => setPaymentCelebration(null)}
+        />
+      ) : null}
     </View>
   );
 }
