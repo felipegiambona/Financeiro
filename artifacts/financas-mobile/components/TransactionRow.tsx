@@ -223,35 +223,19 @@ export function TransactionRow({
         </Pressable>
         <View style={styles.trailing}>
           <Text style={[styles.amount, { color: tone }]}>{isTransfer ? '' : isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Marcar ${transaction.description} como ${isPaid ? 'não pago' : 'pago'}`}
-            testID={`toggle-payment-status-${transaction.occurrenceKey}`}
-            disabled={!onTogglePaymentStatus || paymentStatusUpdating}
-            onPress={handlePaymentStatus}
-            style={({ pressed }) => [
+          <View
+            accessibilityLabel={`${transaction.description}: ${paymentStatusUpdating ? 'salvando' : isPaid ? 'pago' : 'não pago'}`}
+            style={[
               styles.status,
               { backgroundColor: isPaid ? colors.paidSoft : colors.pendingSoft },
               paymentStatusUpdating && styles.updating,
-              pressed && styles.pressed,
             ]}
           >
             <Text style={[styles.statusText, { color: isPaid ? colors.paid : colors.pending }]}>
               {paymentStatusUpdating ? 'Salvando...' : isPaid ? 'Pago' : 'Não pago'}
             </Text>
-          </Pressable>
+          </View>
         </View>
-        {!selectionMode && onDelete ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Excluir ${transaction.description}`}
-            hitSlop={6}
-            onPress={handleDelete}
-            style={({ pressed }) => [styles.deleteButton, { borderColor: colors.border }, pressed && styles.pressed]}
-          >
-            <Feather name="trash-2" size={14} color={colors.expense} />
-          </Pressable>
-        ) : null}
       </Animated.View>
     </View>
   );
@@ -276,5 +260,4 @@ const styles = StyleSheet.create({
   updating: { opacity: 0.55 },
   pressed: { opacity: 0.72 },
   checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  deleteButton: { width: 28, height: 28, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
