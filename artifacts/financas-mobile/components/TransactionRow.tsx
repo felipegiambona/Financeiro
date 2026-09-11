@@ -43,6 +43,14 @@ export function TransactionRow({
   const translateX = useRef(new Animated.Value(0)).current;
   const position = useRef(0);
   const panStart = useRef(0);
+  const clampedTranslateX = useMemo(
+    () => translateX.interpolate({
+      inputRange: [-SWIPE_ACTION_WIDTH, 0],
+      outputRange: [-SWIPE_ACTION_WIDTH, 0],
+      extrapolate: 'clamp',
+    }),
+    [translateX],
+  );
 
   const animateTo = (target: number) => {
     translateX.flattenOffset();
@@ -98,8 +106,14 @@ export function TransactionRow({
           onSwipeClose?.();
         }
       },
-      onPanResponderTerminate: () => {
-        if (position.current < -(SWIPE_ACTION_WIDTH * 0.42)) {
+      onPanResponderTerminate: (_, gestureState) => {
+        const current = Math.max(
+          -SWIPE_ACTION_WIDTH,
+          Math.min(0, panStart.current + gestureState.dx),
+        );
+        const shouldOpen = current < -(SWIPE_ACTION_WIDTH * 0.42);
+        animateTo(shouldOpen ? -SWIPE_ACTION_WIDTH : 0);
+        if (shouldOpen) {
           onSwipeOpen?.();
         } else {
           onSwipeClose?.();
@@ -165,7 +179,7 @@ export function TransactionRow({
           </Pressable>
         </View>
       ) : null}
-      <Animated.View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }, { transform: [{ translateX }] }]}>
+      <Animated.View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }, { transform: [{ translateX: clampedTranslateX }] }]}>
         {selectionMode ? (
           <Pressable
             accessibilityRole="checkbox"
