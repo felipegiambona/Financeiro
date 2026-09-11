@@ -148,7 +148,9 @@ export default function ChartsScreen() {
             <View style={[styles.categoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.categoryTitleRow}>
                 <View style={styles.categoryTitleCopy}>
-                  <Text style={[styles.chartTitle, { color: colors.foreground }]}>Gastos por categoria</Text>
+                  <Text style={[styles.chartTitle, styles.categoryTitle, { color: colors.foreground }]}>
+                    Gastos por{'\n'}categoria
+                  </Text>
                   <Text style={[styles.chartDescription, { color: colors.mutedForeground }]}>
                     Veja como os gastos se distribuem entre as categorias
                   </Text>
@@ -205,6 +207,7 @@ const styles = StyleSheet.create({
   categoryTitleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   categoryTitleCopy: { flex: 1, minWidth: 0 },
   chartTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
+  categoryTitle: { lineHeight: 19 },
   chartDescription: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 4 },
   legend: { flexDirection: 'row', gap: 14, marginTop: 15 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
