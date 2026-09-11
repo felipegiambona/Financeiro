@@ -105,21 +105,24 @@ export default function ChartsScreen() {
                 </Pressable>
                 {selectedMonth && (
                   <View style={[styles.chartFooter, { borderTopColor: colors.border }]}>
-                    <View style={styles.chartMonthSelectorRow}>
-                      <MonthSelector
-                        month={selectedMonth.date}
-                        onPrevious={() => {
-                          if (selectedMonthIndex > 0) setSelectedMonthKey(totals[selectedMonthIndex - 1].key);
-                        }}
-                        onNext={() => {
-                          if (selectedMonthIndex >= 0 && selectedMonthIndex < totals.length - 1) {
-                            setSelectedMonthKey(totals[selectedMonthIndex + 1].key);
-                          }
-                        }}
-                        previousDisabled={selectedMonthIndex <= 0}
-                        nextDisabled={selectedMonthIndex < 0 || selectedMonthIndex >= totals.length - 1}
-                        accessibilityPrefix="Receitas e despesas"
-                      />
+                    <View style={styles.totalsHeader}>
+                      <Text style={[styles.totalsTitle, { color: colors.foreground }]}>Totais</Text>
+                      <View style={styles.chartMonthSelectorRow}>
+                        <MonthSelector
+                          month={selectedMonth.date}
+                          onPrevious={() => {
+                            if (selectedMonthIndex > 0) setSelectedMonthKey(totals[selectedMonthIndex - 1].key);
+                          }}
+                          onNext={() => {
+                            if (selectedMonthIndex >= 0 && selectedMonthIndex < totals.length - 1) {
+                              setSelectedMonthKey(totals[selectedMonthIndex + 1].key);
+                            }
+                          }}
+                          previousDisabled={selectedMonthIndex <= 0}
+                          nextDisabled={selectedMonthIndex < 0 || selectedMonthIndex >= totals.length - 1}
+                          accessibilityPrefix="Receitas e despesas"
+                        />
+                      </View>
                     </View>
                     <View style={styles.movementRows}>
                       <View style={styles.movementRow}>
@@ -220,6 +223,8 @@ const styles = StyleSheet.create({
   bar: { width: 7, minHeight: 0, borderRadius: 2 },
   monthLabel: { fontSize: 9, fontFamily: 'Inter_600SemiBold' },
   chartFooter: { borderTopWidth: 1, paddingTop: 12, marginTop: 14 },
+  totalsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 },
+  totalsTitle: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   chartMonthSelectorRow: { alignItems: 'flex-end' },
   footerLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
   footerValue: { fontSize: 12, fontFamily: 'Inter_700Bold' },
