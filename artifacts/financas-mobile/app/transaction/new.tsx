@@ -2,7 +2,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { LoadingState } from '@/components/StateView';
@@ -226,6 +226,27 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
       setError('Não foi possível salvar. Tente novamente.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) {
+      Alert.alert('Nome obrigatório', 'Informe um nome para a categoria.');
+      return;
+    }
+
+    try {
+      setCategorySaving(true);
+      const category = await createCategory({ name: trimmedName, color: newCategoryColor });
+      setCategoryId(category.id);
+      setNewCategoryName('');
+      setNewCategoryColor(CATEGORY_COLORS[0]);
+      setCategoryCreationOpen(false);
+    } catch {
+      Alert.alert('Não foi possível salvar', 'Verifique se já existe uma categoria com esse nome.');
+    } finally {
+      setCategorySaving(false);
     }
   };
 
@@ -606,6 +627,25 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Categoria</Text>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Criar nova categoria"
+              testID="create-category-from-transaction"
+              onPress={() => {
+                setCategoryPickerOpen(false);
+                setNewCategoryName('');
+                setNewCategoryColor(CATEGORY_COLORS[0]);
+                setCategoryCreationOpen(true);
+              }}
+              style={({ pressed }) => [
+                styles.createCategoryButton,
+                { borderColor: colors.primary, backgroundColor: colors.card },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Feather name="plus" size={16} color={colors.primary} />
+              <Text style={[styles.createCategoryButtonText, { color: colors.primary }]}>Criar nova categoria</Text>
+            </Pressable>
+            <Pressable
               testID="category-option-none"
               onPress={() => {
                 setCategoryId(null);
@@ -647,6 +687,76 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             {categories.length === 0 ? (
               <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>Crie categorias em Configurações para usá-las aqui.</Text>
             ) : null}
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={categoryCreationOpen}
+        onRequestClose={() => {
+          if (!categorySaving) setCategoryCreationOpen(false);
+        }}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Fechar criação de categoria"
+            onPress={() => {
+              if (!categorySaving) setCategoryCreationOpen(false);
+            }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Nova categoria</Text>
+            <TextInput
+              accessibilityLabel="Nome da nova categoria"
+              testID="new-category-name-input"
+              autoFocus
+              placeholder="Ex.: Alimentação"
+              placeholderTextColor={colors.mutedForeground}
+              value={newCategoryName}
+              onChangeText={setNewCategoryName}
+              style={[styles.categoryInput, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
+            />
+            <Text style={[styles.categoryColorLabel, { color: colors.foreground }]}>Cor</Text>
+            <View style={styles.categoryColorOptions}>
+              {CATEGORY_COLORS.map((option) => {
+                const selected = newCategoryColor === option;
+                return (
+                  <Pressable
+                    key={option}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`Selecionar cor ${option}`}
+                    onPress={() => setNewCategoryColor(option)}
+                    style={[styles.categoryColorOption, { backgroundColor: option, borderColor: selected ? colors.foreground : 'transparent' }]}
+                  >
+                    {selected ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+            <View style={styles.categoryModalActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={categorySaving}
+                onPress={() => setCategoryCreationOpen(false)}
+                style={({ pressed }) => [styles.categoryCancelButton, { borderColor: colors.border }, categorySaving && styles.disabled, pressed && styles.pressed]}
+              >
+                <Text style={[styles.categoryCancelText, { color: colors.foreground }]}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                testID="save-new-category"
+                disabled={categorySaving}
+                onPress={() => void handleCreateCategory()}
+                style={({ pressed }) => [styles.categorySaveButton, { backgroundColor: colors.primary }, categorySaving && styles.disabled, pressed && styles.pressed]}
+              >
+                <Text style={[styles.categorySaveText, { color: colors.primaryForeground }]}>
+                  {categorySaving ? 'Salvando...' : 'Salvar'}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -799,6 +909,8 @@ const styles = StyleSheet.create({
   modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.72)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
   unitMenu: { width: '100%', maxWidth: 340, borderRadius: 10, borderWidth: 1, padding: 14, gap: 7 },
   unitMenuTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', marginBottom: 3 },
+  createCategoryButton: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  createCategoryButtonText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   unitMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   unitMenuOptionText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
   walletMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
@@ -808,6 +920,15 @@ const styles = StyleSheet.create({
   categoryMenuLabel: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 9 },
   categoryMenuDot: { width: 10, height: 10, borderRadius: 5 },
   categoryMenuText: { flex: 1, minWidth: 0 },
+  categoryInput: { minHeight: 46, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
+  categoryColorLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 9 },
+  categoryColorOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 7, marginBottom: 8 },
+  categoryColorOption: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  categoryModalActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  categoryCancelButton: { flex: 1, minHeight: 40, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  categorySaveButton: { flex: 1, minHeight: 40, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  categoryCancelText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  categorySaveText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   error: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 9 },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.72 },
