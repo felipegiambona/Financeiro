@@ -1281,3 +1281,74 @@ export const useUpdateAccountProfile = <TError = ErrorType<void>,
       return useMutation(getUpdateAccountProfileMutationOptions(options));
     }
 
+export const getUpdateAccountProfileImageUrl = () => {
+
+
+
+
+  return `/api/account/profile-image`
+}
+
+/**
+ * @summary Update the authenticated user's profile image
+ */
+export const updateAccountProfileImage = async (updateAccountProfileImageBody: Blob, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getUpdateAccountProfileImageUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'image/jpeg', ...options?.headers },
+    body: updateAccountProfileImageBody
+  }
+);}
+
+
+
+
+
+export const getUpdateAccountProfileImageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAccountProfileImage>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAccountProfileImage>>, TError,{data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['updateAccountProfileImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAccountProfileImage>>, {data: BodyType<Blob>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAccountProfileImage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAccountProfileImageMutationResult = NonNullable<Awaited<ReturnType<typeof updateAccountProfileImage>>>
+    export type UpdateAccountProfileImageMutationBody = BodyType<Blob>
+    export type UpdateAccountProfileImageMutationError = ErrorType<void>
+
+    /**
+ * @summary Update the authenticated user's profile image
+ */
+export const useUpdateAccountProfileImage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAccountProfileImage>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAccountProfileImage>>,
+        TError,
+        {data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getUpdateAccountProfileImageMutationOptions(options));
+    }
+

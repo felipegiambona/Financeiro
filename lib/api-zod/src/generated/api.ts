@@ -383,3 +383,9 @@ export const UpdateAccountProfileBody = zod.object({
 export const UpdateAccountProfileResponse = zod.void()
 
 
+/**
+ * @summary Update the authenticated user's profile image
+ */
+export const UpdateAccountProfileImageResponse = zod.void()
+
+

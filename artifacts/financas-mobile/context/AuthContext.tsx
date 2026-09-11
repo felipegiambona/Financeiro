@@ -4,6 +4,7 @@ import {
   deleteAccount as deleteAccountRequest,
   setAuthTokenGetter,
   updateAccountProfile,
+  updateAccountProfileImage,
 } from '@workspace/api-client-react';
 
 interface AuthSession {
@@ -18,6 +19,7 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   updateProfile: (firstName: string, lastName?: string) => Promise<void>;
+  updateProfileImage: (imageUri: string, mimeType: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -59,6 +61,23 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     }
   }, [user]);
 
+  const updateProfileImage = useCallback(async (imageUri: string, mimeType: string) => {
+    const imageResponse = await fetch(imageUri);
+    if (!imageResponse.ok) {
+      throw new Error('Não foi possível ler a imagem selecionada.');
+    }
+
+    const imageBlob = await imageResponse.blob();
+    await updateAccountProfileImage(imageBlob, {
+      headers: { 'Content-Type': mimeType },
+    });
+    try {
+      await user?.reload();
+    } catch {
+      // The profile image was already updated on the server; refresh is best effort.
+    }
+  }, [user]);
+
   const session = isSignedIn && userId
     ? {
         userId,
@@ -67,8 +86,8 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
       }
     : null;
   const value = useMemo(
-    () => ({ session, loading: !isLoaded, signOut, deleteAccount, updateProfile }),
-    [deleteAccount, isLoaded, session?.email, session?.name, session?.userId, signOut, updateProfile],
+    () => ({ session, loading: !isLoaded, signOut, deleteAccount, updateProfile, updateProfileImage }),
+    [deleteAccount, isLoaded, session?.email, session?.name, session?.userId, signOut, updateProfile, updateProfileImage],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -34,7 +34,7 @@ function getClerkErrorMessage(error: unknown): string {
 export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { session, signOut, deleteAccount, updateProfile } = useAuth();
+  const { session, signOut, deleteAccount, updateProfile, updateProfileImage } = useAuth();
   const { user } = useUser();
   const {
     clearPendingNotifications,
@@ -100,12 +100,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
       if (result.canceled || !imageUri) return;
 
       setSavingProfile(true);
-      const imageFile = {
-        uri: imageUri,
-        name: imageAsset.fileName ?? 'profile-image.jpg',
-        type: imageAsset.mimeType ?? 'image/jpeg',
-      };
-      await user.setProfileImage({ file: imageFile as unknown as Blob });
+      await updateProfileImage(imageUri, imageAsset.mimeType ?? 'image/jpeg');
     } catch (error) {
       console.error('[ProfileDetails] Falha ao alterar a foto do perfil', error);
       Alert.alert('Não foi possível alterar a foto', getClerkErrorMessage(error));
