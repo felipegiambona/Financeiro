@@ -12,6 +12,7 @@ export * from './categoryUpdate';
 export * from './healthStatus';
 export * from './paymentStatusUpdate';
 export * from './paymentStatusUpdatePaymentStatus';
+export * from './profileUpdate';
 export * from './recurrence';
 export * from './recurrenceAmountMode';
 export * from './recurrenceFrequency';

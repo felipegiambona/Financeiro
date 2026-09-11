@@ -34,7 +34,7 @@ function getClerkErrorMessage(error: unknown): string {
 export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { session, signOut, deleteAccount } = useAuth();
+  const { session, signOut, deleteAccount, updateProfile } = useAuth();
   const { user } = useUser();
   const {
     clearPendingNotifications,
@@ -128,10 +128,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
 
     try {
       setSavingProfile(true);
-      await user.update({
-        firstName,
-        ...(lastName ? { lastName } : {}),
-      });
+      await updateProfile(firstName, lastName || undefined);
       setEditingProfile(false);
     } catch (error) {
       console.error('[ProfileDetails] Falha ao salvar o perfil', error);

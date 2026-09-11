@@ -23,4 +23,21 @@ router.delete("/account", requireAuth, async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
+router.patch("/account/profile", requireAuth, async (req, res): Promise<void> => {
+  const userId = userIdFrom(req);
+  const firstName = typeof req.body?.firstName === "string" ? req.body.firstName.trim() : "";
+  const lastName = typeof req.body?.lastName === "string" ? req.body.lastName.trim() : "";
+
+  if (!firstName) {
+    res.status(400).json({ error: "firstName is required" });
+    return;
+  }
+
+  await clerkClient.users.updateUser(userId, {
+    firstName,
+    ...(lastName ? { lastName } : {}),
+  });
+  res.sendStatus(204);
+});
+
 export default router;

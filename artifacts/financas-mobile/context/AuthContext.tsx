@@ -1,6 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useAuth as useClerkAuth, useClerk, useUser } from '@clerk/expo';
-import { deleteAccount as deleteAccountRequest, setAuthTokenGetter } from '@workspace/api-client-react';
+import {
+  deleteAccount as deleteAccountRequest,
+  setAuthTokenGetter,
+  updateAccountProfile,
+} from '@workspace/api-client-react';
 
 interface AuthSession {
   userId: string;
@@ -13,6 +17,7 @@ interface AuthContextValue {
   loading: boolean;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
+  updateProfile: (firstName: string, lastName?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -41,6 +46,19 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     await clerkSignOut().catch(() => undefined);
   }, [clerkSignOut]);
 
+  const updateProfile = useCallback(async (firstName: string, lastName?: string) => {
+    await updateAccountProfile({
+      firstName,
+      ...(lastName ? { lastName } : {}),
+    });
+    try {
+      await user?.reload();
+    } catch {
+      // The profile was already updated on the server; refreshing the local
+      // Clerk resource is best effort and should not turn success into an error.
+    }
+  }, [user]);
+
   const session = isSignedIn && userId
     ? {
         userId,
@@ -49,8 +67,8 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
       }
     : null;
   const value = useMemo(
-    () => ({ session, loading: !isLoaded, signOut, deleteAccount }),
-    [deleteAccount, isLoaded, session?.email, session?.name, session?.userId, signOut],
+    () => ({ session, loading: !isLoaded, signOut, deleteAccount, updateProfile }),
+    [deleteAccount, isLoaded, session?.email, session?.name, session?.userId, signOut, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

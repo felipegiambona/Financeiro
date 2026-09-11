@@ -368,3 +368,18 @@ export const DeleteWalletResponse = zod.void()
 export const DeleteAccountResponse = zod.void()
 
 
+/**
+ * @summary Update the authenticated user's profile name
+ */
+
+
+
+
+export const UpdateAccountProfileBody = zod.object({
+  "firstName": zod.string().min(1),
+  "lastName": zod.string().min(1).optional()
+})
+
+export const UpdateAccountProfileResponse = zod.void()
+
+

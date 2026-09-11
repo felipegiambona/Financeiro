@@ -9,6 +9,13 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface ProfileUpdate {
+  /** @minLength 1 */
+  firstName: string;
+  /** @minLength 1 */
+  lastName?: string;
+}
+
 export type RecurrenceKind = typeof RecurrenceKind[keyof typeof RecurrenceKind];
 
 
