@@ -97,6 +97,7 @@ export interface Transaction {
   id: string;
   walletId: string;
   destinationWalletId: string | null;
+  categoryId: string | null;
   type: TransactionType;
   /** @exclusiveMinimum 0 */
   amount: number;
@@ -129,6 +130,7 @@ export const TransactionInputPaymentStatus = {
 export interface TransactionInput {
   walletId?: string;
   destinationWalletId?: string | null;
+  categoryId?: string | null;
   type: TransactionInputType;
   /** @exclusiveMinimum 0 */
   amount: number;
@@ -162,6 +164,7 @@ export type TransactionUpdatePaymentStatusOverrides = {[key: string]: 'paid' | '
 export interface TransactionUpdate {
   walletId?: string;
   destinationWalletId?: string | null;
+  categoryId?: string | null;
   type?: TransactionUpdateType;
   /** @exclusiveMinimum 0 */
   amount?: number;
@@ -233,5 +236,24 @@ export interface WalletUpdate {
   title?: string;
   initialBalance?: number;
   icon?: WalletUpdateIcon;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
+export interface CategoryInput {
+  /** @minLength 1 */
+  name: string;
+  color?: string;
+}
+
+export interface CategoryUpdate {
+  /** @minLength 1 */
+  name?: string;
+  color?: string;
 }
 

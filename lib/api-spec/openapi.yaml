@@ -14,6 +14,8 @@ tags:
     description: Authenticated financial transaction operations
   - name: wallets
     description: Authenticated wallet management operations
+  - name: categories
+    description: Authenticated category management operations
   - name: account
     description: Authenticated account management operations
 paths:
@@ -165,6 +167,66 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Wallet"
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      responses:
+        "200":
+          description: User categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+  /categories/{id}:
+    patch:
+      operationId: updateCategory
+      tags: [categories]
+      parameters:
+        - $ref: "#/components/parameters/CategoryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdate"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCategory
+      tags: [categories]
+      parameters:
+        - $ref: "#/components/parameters/CategoryId"
+      responses:
+        "204":
+          description: Category removed
+        "404":
+          description: Not found
   /wallets/{id}:
     patch:
       operationId: updateWallet
@@ -222,6 +284,13 @@ components:
       schema:
         type: string
         format: uuid
+    CategoryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     HealthStatus:
       type: object
@@ -268,11 +337,12 @@ components:
           enum: [installment, total]
     Transaction:
       type: object
-      required: [id, walletId, destinationWalletId, type, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
+      required: [id, walletId, destinationWalletId, categoryId, type, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
       properties:
         id: { type: string, format: uuid }
         walletId: { type: string, format: uuid }
         destinationWalletId: { type: string, format: uuid, nullable: true }
+        categoryId: { type: string, format: uuid, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string }
@@ -293,6 +363,7 @@ components:
       properties:
         walletId: { type: string, format: uuid }
         destinationWalletId: { type: string, format: uuid, nullable: true }
+        categoryId: { type: string, format: uuid, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
@@ -306,6 +377,7 @@ components:
       properties:
         walletId: { type: string, format: uuid }
         destinationWalletId: { type: string, format: uuid, nullable: true }
+        categoryId: { type: string, format: uuid, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
@@ -361,4 +433,23 @@ components:
         icon:
           type: string
           enum: [wallet-outline]
+    Category:
+      type: object
+      required: [id, name, color, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        color: { type: string }
+        createdAt: { type: string, format: date-time }
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        color: { type: string }
+    CategoryUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        color: { type: string }
 

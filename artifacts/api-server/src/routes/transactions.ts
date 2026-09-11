@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Response } from "express";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
-import { db, transactionsTable } from "@workspace/db";
+import { categoriesTable, db, transactionsTable } from "@workspace/db";
 import {
   CreateTransactionBody,
   CreateTransactionResponse,
@@ -83,11 +83,20 @@ router.post("/transactions", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Wallet not found" });
     return;
   }
+  if (parsed.data.categoryId) {
+    const [category] = await db.select().from(categoriesTable)
+      .where(and(eq(categoriesTable.id, parsed.data.categoryId), eq(categoriesTable.userId, userId)));
+    if (!category) {
+      res.status(400).json({ error: "Category not found" });
+      return;
+    }
+  }
   const [row] = await db.insert(transactionsTable).values({
     ...parsed.data,
     userId,
     walletId: wallet.id,
     destinationWalletId: parsed.data.type === "transfer" ? destinationWallet?.id : null,
+    categoryId: parsed.data.categoryId ?? null,
     amount: String(parsed.data.amount),
     date: dateOnly(parsed.data.date),
     dueDate: dateOnly(parsed.data.dueDate),
@@ -114,6 +123,7 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     dueDate,
     walletId,
     destinationWalletId,
+    categoryId,
     type,
     paymentStatus,
     ...otherUpdates
@@ -138,6 +148,14 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: effectiveType === "transfer" ? "Invalid transfer wallets" : "Wallet not found" });
     return;
   }
+  if (categoryId !== undefined) {
+    const [category] = categoryId === null ? [] : await db.select().from(categoriesTable)
+      .where(and(eq(categoriesTable.id, categoryId), eq(categoriesTable.userId, userId)));
+    if (categoryId !== null && !category) {
+      res.status(400).json({ error: "Category not found" });
+      return;
+    }
+  }
   const updates = {
     ...otherUpdates,
     ...(amount === undefined ? {} : { amount: String(amount) }),
@@ -146,6 +164,7 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     ...(walletId === undefined ? {} : { walletId: wallet.id }),
     ...(type === undefined ? {} : { type }),
     ...(paymentStatus === undefined ? {} : { paymentStatus }),
+    ...(categoryId === undefined ? {} : { categoryId }),
     ...(destinationWalletId === undefined && type === undefined
       ? {}
       : { destinationWalletId: effectiveType === "transfer" ? destinationWallet?.id : null }),

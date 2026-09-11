@@ -5,21 +5,43 @@ import { ForecastTable } from '@/components/ForecastTable';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
+import { useCategories } from '@/context/CategoryContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateTotalsByMonth } from '@/services/financialRules';
+import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
-import { formatShortMonthLabel } from '@/utils/date';
+import { formatMonthLabel, formatShortMonthLabel } from '@/utils/date';
 
 export default function ChartsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { transactions, loading, error, refresh } = useFinance();
+  const { categories } = useCategories();
   const totals = useMemo(() => calculateTotalsByMonth(transactions), [transactions]);
   const hasData = totals.some((month) => month.income > 0 || month.expense > 0);
   const maxValue = Math.max(...totals.flatMap((month) => [month.income, month.expense]), 1);
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
   const [chartWidth, setChartWidth] = useState(0);
   const selectedMonth = totals.find((month) => month.key === selectedMonthKey) ?? totals[totals.length - 1];
+  const categoryTotals = useMemo(() => {
+    if (!selectedMonth) return [];
+    const totalsByCategory = new Map<string, number>();
+    for (const transaction of getTransactionOccurrencesForMonth(transactions, selectedMonth.date)) {
+      if (transaction.type !== 'expense') continue;
+      const key = transaction.categoryId ?? 'uncategorized';
+      totalsByCategory.set(key, (totalsByCategory.get(key) ?? 0) + transaction.amount);
+    }
+    const categoryById = new Map(categories.map((category) => [category.id, category]));
+    return Array.from(totalsByCategory.entries())
+      .map(([key, amount]) => ({
+        key,
+        amount,
+        name: key === 'uncategorized' ? 'Sem categoria' : categoryById.get(key)?.name ?? 'Sem categoria',
+        color: key === 'uncategorized' ? colors.mutedForeground : categoryById.get(key)?.color ?? colors.mutedForeground,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [categories, colors.mutedForeground, selectedMonth, transactions]);
+  const categoryTotal = categoryTotals.reduce((total, item) => total + item.amount, 0);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -130,6 +152,40 @@ export default function ChartsScreen() {
                 )}
               </View>
             )}
+            <View style={[styles.categoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.chartTitle, { color: colors.foreground }]}>Gastos por categoria</Text>
+              <Text style={[styles.chartDescription, { color: colors.mutedForeground }]}>
+                {selectedMonth ? `Distribuição de ${formatMonthLabel(selectedMonth.date)}` : 'Distribuição dos seus gastos'}
+              </Text>
+              {categoryTotals.length === 0 ? (
+                <Text style={[styles.categoryEmpty, { color: colors.mutedForeground }]}>
+                  Não há despesas para analisar neste mês.
+                </Text>
+              ) : (
+                <View style={styles.categoryRows}>
+                  {categoryTotals.map((item) => {
+                    const percentage = categoryTotal > 0 ? item.amount / categoryTotal : 0;
+                    return (
+                      <View key={item.key} style={styles.categoryRow}>
+                        <View style={styles.categoryRowHeader}>
+                          <View style={styles.categoryLabel}>
+                            <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                            <Text numberOfLines={1} style={[styles.categoryName, { color: colors.foreground }]}>{item.name}</Text>
+                          </View>
+                          <Text style={[styles.categoryAmount, { color: colors.expense }]}>{formatCurrency(item.amount)}</Text>
+                        </View>
+                        <View style={[styles.categoryTrack, { backgroundColor: colors.secondary }]}>
+                          <View style={[styles.categoryBar, { width: `${Math.max(percentage * 100, 2)}%`, backgroundColor: item.color }]} />
+                        </View>
+                        <Text style={[styles.categoryPercentage, { color: colors.mutedForeground }]}>
+                          {Math.round(percentage * 100)}% dos gastos
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
             <ForecastTable transactions={transactions} />
           </>
         )}
@@ -142,6 +198,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 16 },
   chartCard: { borderRadius: 8, borderWidth: 1, padding: 16 },
+  categoryCard: { borderRadius: 8, borderWidth: 1, padding: 16, marginTop: 12 },
   chartTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   chartDescription: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 4 },
   legend: { flexDirection: 'row', gap: 14, marginTop: 15 },
@@ -163,4 +220,14 @@ const styles = StyleSheet.create({
   movementRows: { gap: 9, marginTop: 12 },
   movementRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   movementLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  categoryEmpty: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: 18 },
+  categoryRows: { gap: 16, marginTop: 18 },
+  categoryRow: { gap: 5 },
+  categoryRowHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  categoryLabel: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  categoryName: { flex: 1, minWidth: 0, fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  categoryAmount: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  categoryTrack: { height: 7, borderRadius: 4, overflow: 'hidden' },
+  categoryBar: { height: '100%', borderRadius: 4 },
+  categoryPercentage: { fontSize: 10, fontFamily: 'Inter_400Regular' },
 });

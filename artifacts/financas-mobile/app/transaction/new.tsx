@@ -8,6 +8,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { LoadingState } from '@/components/StateView';
 import { WalletIconView } from '@/components/WalletIconView';
 import { useFinance } from '@/context/FinanceContext';
+import { useCategories } from '@/context/CategoryContext';
 import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 import { CalculatorModal } from '@/components/CalculatorModal';
@@ -91,6 +92,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { createTransaction, updateTransaction } = useFinance();
+  const { categories, loading: categoriesLoading } = useCategories();
   const { wallets, loading: walletsLoading } = useWallets();
   const isEditing = Boolean(transaction);
   const defaultWallet = wallets.find((wallet) => wallet.isDefault) ?? wallets[0];
@@ -116,6 +118,8 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [categoryId, setCategoryId] = useState<string | null>(transaction?.categoryId ?? null);
   const amountInputRef = useRef<TextInput>(null);
   const isFixedRecurrence = recurrence === 'recurring' && recurrenceLimitMode === 'fixed';
 
@@ -192,6 +196,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           amount: numericAmount,
           description: description.trim(),
           walletId,
+           categoryId,
            destinationWalletId: type === 'transfer' ? destinationWalletId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
           recurrence: recurrenceValue,
@@ -203,6 +208,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           type,
           amount: numericAmount,
           description,
+           categoryId,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
            destinationWalletId: type === 'transfer' ? destinationWalletId : null,
           recurrence: recurrenceValue,
@@ -309,6 +315,29 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           returnKeyType="done"
           style={[styles.textInput, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }]}
         />
+
+        <Text style={[styles.label, { color: colors.foreground }]}>Categoria</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Selecionar categoria"
+          testID="category-select"
+          disabled={categoriesLoading}
+          onPress={() => setCategoryPickerOpen(true)}
+          style={({ pressed }) => [
+            styles.dateInputShell,
+            { backgroundColor: colors.card, borderColor: colors.input },
+            categoriesLoading && styles.disabled,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Feather name="tag" size={17} color={categoryId ? (categories.find((item) => item.id === categoryId)?.color ?? colors.mutedForeground) : colors.mutedForeground} />
+          <Text style={[styles.dateInput, { color: categoryId ? colors.foreground : colors.mutedForeground }]}>
+            {categoriesLoading
+              ? 'Carregando categorias...'
+              : categories.find((item) => item.id === categoryId)?.name ?? 'Sem categoria'}
+          </Text>
+          <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+        </Pressable>
 
         <Text style={[styles.label, { color: colors.foreground }]}>{type === 'transfer' ? 'Carteira de origem' : 'Carteira'}</Text>
         <Pressable
@@ -564,6 +593,61 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
       <Modal
         animationType="fade"
         transparent
+        visible={categoryPickerOpen}
+        onRequestClose={() => setCategoryPickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable accessibilityLabel="Fechar seletor de categoria" onPress={() => setCategoryPickerOpen(false)} style={StyleSheet.absoluteFill} />
+          <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Categoria</Text>
+            <Pressable
+              testID="category-option-none"
+              onPress={() => {
+                setCategoryId(null);
+                setCategoryPickerOpen(false);
+              }}
+              style={({ pressed }) => [
+                styles.unitMenuOption,
+                { borderColor: categoryId === null ? colors.primary : colors.border, backgroundColor: categoryId === null ? colors.primary : colors.card },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.unitMenuOptionText, { color: categoryId === null ? colors.primaryForeground : colors.foreground }]}>Sem categoria</Text>
+              {categoryId === null ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+            </Pressable>
+            {categories.map((category) => {
+              const active = category.id === categoryId;
+              return (
+                <Pressable
+                  key={category.id}
+                  testID={`category-option-${category.id}`}
+                  onPress={() => {
+                    setCategoryId(category.id);
+                    setCategoryPickerOpen(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.unitMenuOption,
+                    { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.categoryMenuLabel}>
+                    <View style={[styles.categoryMenuDot, { backgroundColor: category.color }]} />
+                    <Text numberOfLines={1} style={[styles.unitMenuOptionText, styles.categoryMenuText, { color: active ? colors.primaryForeground : colors.foreground }]}>{category.name}</Text>
+                  </View>
+                  {active ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+                </Pressable>
+              );
+            })}
+            {categories.length === 0 ? (
+              <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>Crie categorias em Configurações para usá-las aqui.</Text>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent
         visible={unitPickerOpen}
         onRequestClose={() => setUnitPickerOpen(false)}
       >
@@ -716,6 +800,9 @@ const styles = StyleSheet.create({
   walletMenuIcon: { width: 24, alignItems: 'flex-start' },
   walletMenuOptionText: { flex: 1, minWidth: 0, fontSize: 13, fontFamily: 'Inter_500Medium', marginLeft: 7 },
   walletMenuTrailing: { minWidth: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
+  categoryMenuLabel: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  categoryMenuDot: { width: 10, height: 10, borderRadius: 5 },
+  categoryMenuText: { flex: 1, minWidth: 0 },
   error: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 9 },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.72 },

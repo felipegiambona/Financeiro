@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -77,6 +78,29 @@ export default function SettingsScreen() {
             );
           })}
         </View>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Organização</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Gerenciar categorias"
+          testID="manage-categories-button"
+          onPress={() => router.push('/more/categories')}
+          style={({ pressed }) => [
+            styles.managementCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+            pressed && styles.pressed,
+          ]}
+        >
+          <View style={[styles.optionIcon, { backgroundColor: colors.secondary }]}>
+            <Feather name="tag" size={17} color={colors.foreground} />
+          </View>
+          <View style={styles.optionCopy}>
+            <Text style={[styles.optionTitle, { color: colors.foreground }]}>Categorias</Text>
+            <Text style={[styles.optionDescription, { color: colors.mutedForeground }]}>
+              Organize seus lançamentos por tipo de gasto.
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -88,6 +112,7 @@ const styles = StyleSheet.create({
   intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 22 },
   sectionLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 },
   optionsCard: { borderWidth: 1, borderRadius: 9, paddingHorizontal: 13 },
+  managementCard: { minHeight: 76, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 22 },
   option: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 11 },
   optionIcon: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   optionCopy: { flex: 1, minWidth: 0 },

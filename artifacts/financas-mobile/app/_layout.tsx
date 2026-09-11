@@ -24,6 +24,7 @@ import { FinanceProvider } from '@/context/FinanceContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { WalletProvider } from '@/context/WalletContext';
+import { CategoryProvider } from '@/context/CategoryContext';
 import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -49,6 +50,7 @@ function RootLayoutNav() {
         <Stack.Screen name="transaction/new" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/profile" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/settings" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="more/categories" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="wallets" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />
       </Stack.Protected>
@@ -70,7 +72,9 @@ function AuthenticatedApp() {
   return session ? (
     <FinanceProvider>
       <WalletProvider>
-        <RootLayoutNav />
+        <CategoryProvider>
+          <RootLayoutNav />
+        </CategoryProvider>
       </WalletProvider>
     </FinanceProvider>
   ) : <RootLayoutNav />;

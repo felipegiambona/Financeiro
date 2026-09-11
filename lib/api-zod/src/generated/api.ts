@@ -27,6 +27,7 @@ export const ListTransactionsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
   "destinationWalletId": zod.string().uuid().nullable(),
+  "categoryId": zod.string().uuid().nullable(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(listTransactionsResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -61,6 +62,7 @@ export const createTransactionBodyAmountExclusiveMin = 0;
 export const CreateTransactionBody = zod.object({
   "walletId": zod.string().uuid().optional(),
   "destinationWalletId": zod.string().uuid().nullish(),
+  "categoryId": zod.string().uuid().nullish(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(createTransactionBodyAmountExclusiveMin),
   "description": zod.string().min(1),
@@ -91,6 +93,7 @@ export const CreateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
   "destinationWalletId": zod.string().uuid().nullable(),
+  "categoryId": zod.string().uuid().nullable(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(createTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -131,6 +134,7 @@ export const updateTransactionBodyAmountExclusiveMin = 0;
 export const UpdateTransactionBody = zod.object({
   "walletId": zod.string().uuid().optional(),
   "destinationWalletId": zod.string().uuid().nullish(),
+  "categoryId": zod.string().uuid().nullish(),
   "type": zod.enum(['income', 'expense', 'transfer']).optional(),
   "amount": zod.number().gt(updateTransactionBodyAmountExclusiveMin).optional(),
   "description": zod.string().min(1).optional(),
@@ -162,6 +166,7 @@ export const UpdateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
   "destinationWalletId": zod.string().uuid().nullable(),
+  "categoryId": zod.string().uuid().nullable(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(updateTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -211,6 +216,7 @@ export const UpdateTransactionOccurrencePaymentStatusResponse = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
   "destinationWalletId": zod.string().uuid().nullable(),
+  "categoryId": zod.string().uuid().nullable(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(updateTransactionOccurrencePaymentStatusResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -272,6 +278,58 @@ export const CreateWalletResponse = zod.object({
   "isDefault": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
+
+
+export const ListCategoriesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "color": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem)
+
+
+
+
+
+export const CreateCategoryBody = zod.object({
+  "name": zod.string().min(1),
+  "color": zod.string().optional()
+})
+
+export const CreateCategoryResponse = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "color": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const UpdateCategoryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+export const UpdateCategoryBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "color": zod.string().optional()
+})
+
+export const UpdateCategoryResponse = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "color": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const DeleteCategoryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteCategoryResponse = zod.void()
 
 
 export const UpdateWalletParams = zod.object({

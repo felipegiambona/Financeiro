@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './category';
+export * from './categoryInput';
+export * from './categoryUpdate';
 export * from './healthStatus';
 export * from './paymentStatusUpdate';
 export * from './paymentStatusUpdatePaymentStatus';
