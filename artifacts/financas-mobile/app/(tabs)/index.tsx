@@ -126,7 +126,10 @@ export default function DashboardScreen() {
             </View> : null}
             {visibility.wallets ? <View style={styles.walletSection}>
               <View style={styles.walletHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Minhas carteiras</Text>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Minhas carteiras</Text>
+                  <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Acompanhe o saldo das suas contas.</Text>
+                </View>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Gerenciar carteiras"
@@ -249,9 +252,9 @@ const styles = StyleSheet.create({
   metricLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metricLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   metricValue: { fontSize: 16, fontFamily: 'Inter_700Bold', marginTop: 5 },
-  walletSection: { marginTop: 2 },
+  walletSection: { marginTop: 0 },
   walletCard: { borderRadius: 9, borderWidth: 1, padding: 14 },
-  walletHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  walletHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   manageWalletButton: { minHeight: 27, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   manageWalletButtonText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   walletState: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
@@ -260,7 +263,7 @@ const styles = StyleSheet.create({
   walletName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   walletNameText: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium' },
   walletValue: { fontSize: 13, fontFamily: 'Inter_700Bold', textAlign: 'right' },
-  limitsSection: { marginTop: 24 },
+  limitsSection: { marginTop: 10 },
   limitsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   sectionTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   sectionHint: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
