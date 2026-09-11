@@ -11,11 +11,12 @@ interface LimitCardProps {
   limit: Limit;
   categoryName: string;
   usage: LimitUsage;
+  onPress?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
 }
 
-export function LimitCard({ limit, categoryName, usage, onEdit, onDelete }: LimitCardProps) {
+export function LimitCard({ limit, categoryName, usage, onPress, onEdit, onDelete }: LimitCardProps) {
   const colors = useColors();
   const periodLabel = LIMIT_PERIODS.find((period) => period.value === limit.period)?.label ?? 'Período';
   const exceeded = usage.remaining < 0;
@@ -23,7 +24,13 @@ export function LimitCard({ limit, categoryName, usage, onEdit, onDelete }: Limi
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.header}>
-        <View style={styles.titleCopy}>
+          <Pressable
+            disabled={!onPress}
+            accessibilityRole={onPress ? 'button' : undefined}
+            accessibilityLabel={onPress ? `Visualizar limite de ${categoryName}` : undefined}
+            onPress={onPress}
+            style={({ pressed }) => [styles.titleCopy, pressed && styles.pressed]}
+          >
           <View style={styles.titleLine}>
             <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
               <Feather name="target" size={16} color={colors.foreground} />
@@ -34,7 +41,7 @@ export function LimitCard({ limit, categoryName, usage, onEdit, onDelete }: Limi
                 {limit.description ? `${limit.description} · ` : ''}{periodLabel}
               </Text>
             </View>
-          </View>
+          </Pressable>
         </View>
         <View style={styles.actions}>
           {onEdit ? (
@@ -49,21 +56,29 @@ export function LimitCard({ limit, categoryName, usage, onEdit, onDelete }: Limi
           ) : null}
         </View>
       </View>
-      <View style={styles.amounts}>
-        <Text style={[styles.used, { color: exceeded ? colors.expense : colors.foreground }]}>{formatCurrency(usage.used)} usados</Text>
-        <Text style={[styles.limitAmount, { color: colors.mutedForeground }]}>de {formatCurrency(limit.amount)}</Text>
-      </View>
-      <View style={[styles.progressTrack, { backgroundColor: colors.secondary }]}>
-        <View style={[styles.progressBar, { width: `${usage.progress * 100}%`, backgroundColor: exceeded ? colors.expense : colors.primary }]} />
-      </View>
-      <View style={styles.footer}>
-        <Text style={[styles.percentage, { color: exceeded ? colors.expense : colors.mutedForeground }]}>
-          {Math.round(usage.percentage)}% usado
-        </Text>
-        <Text style={[styles.remaining, { color: exceeded ? colors.expense : colors.mutedForeground }]}>
-          {exceeded ? `${formatCurrency(Math.abs(usage.remaining))} acima` : `${formatCurrency(usage.remaining)} disponível`}
-        </Text>
-      </View>
+      <Pressable
+        disabled={!onPress}
+        accessibilityRole={onPress ? 'button' : undefined}
+        accessibilityLabel={onPress ? `Abrir detalhes do limite de ${categoryName}` : undefined}
+        onPress={onPress}
+        style={({ pressed }) => [styles.cardBody, pressed && styles.pressed]}
+      >
+        <View style={styles.amounts}>
+          <Text style={[styles.used, { color: exceeded ? colors.expense : colors.foreground }]}>{formatCurrency(usage.used)} usados</Text>
+          <Text style={[styles.limitAmount, { color: colors.mutedForeground }]}>de {formatCurrency(limit.amount)}</Text>
+        </View>
+        <View style={[styles.progressTrack, { backgroundColor: colors.secondary }]}>
+          <View style={[styles.progressBar, { width: `${usage.progress * 100}%`, backgroundColor: exceeded ? colors.expense : colors.accent }]} />
+        </View>
+        <View style={styles.footer}>
+          <Text style={[styles.percentage, { color: exceeded ? colors.expense : colors.mutedForeground }]}>
+            {Math.round(usage.percentage)}% usado
+          </Text>
+          <Text style={[styles.remaining, { color: exceeded ? colors.expense : colors.mutedForeground }]}>
+            {exceeded ? `${formatCurrency(Math.abs(usage.remaining))} acima` : `${formatCurrency(usage.remaining)} disponível`}
+          </Text>
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -80,6 +95,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 6 },
   action: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   amounts: { flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 14 },
+  cardBody: { borderRadius: 6 },
   used: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   limitAmount: { fontSize: 10, fontFamily: 'Inter_400Regular' },
   progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 9 },

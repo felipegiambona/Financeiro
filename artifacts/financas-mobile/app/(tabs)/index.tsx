@@ -126,22 +126,19 @@ export default function DashboardScreen() {
             </View> : null}
             {visibility.wallets ? <View style={[styles.walletCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.walletHeader}>
-                <Text style={[styles.walletTitle, { color: colors.foreground }]}>Carteiras</Text>
-                <View style={styles.walletHeaderActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Gerenciar carteiras"
-                    onPress={() => router.push('/wallets')}
-                    style={({ pressed }) => [
-                      styles.manageWalletButton,
-                      { backgroundColor: colors.secondary, borderColor: colors.border },
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Gerenciar</Text>
-                  </Pressable>
-                  <MaterialCommunityIcons name="wallet-outline" size={18} color={colors.mutedForeground} />
-                </View>
+                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Minhas carteiras</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Gerenciar carteiras"
+                  onPress={() => router.push('/wallets')}
+                  style={({ pressed }) => [
+                    styles.manageWalletButton,
+                    { backgroundColor: colors.secondary, borderColor: colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Gerenciar</Text>
+                </Pressable>
               </View>
               {walletsLoading ? (
                 <Text style={[styles.walletState, { color: colors.mutedForeground }]}>Carregando carteiras...</Text>
@@ -200,6 +197,7 @@ export default function DashboardScreen() {
                     limit={limit}
                     categoryName={categoryName}
                     usage={usage}
+                      onPress={() => router.push('/more/limits')}
                     onEdit={() => router.push({ pathname: '/more/limits', params: { editId: limit.id } })}
                     onDelete={() => router.push({ pathname: '/more/limits', params: { deleteId: limit.id } })}
                   />
@@ -251,8 +249,6 @@ const styles = StyleSheet.create({
   metricValue: { fontSize: 16, fontFamily: 'Inter_700Bold', marginTop: 5 },
   walletCard: { borderRadius: 9, borderWidth: 1, padding: 14, marginTop: 2 },
   walletHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  walletHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  walletTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   manageWalletButton: { minHeight: 27, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   manageWalletButtonText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   walletState: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 8 },

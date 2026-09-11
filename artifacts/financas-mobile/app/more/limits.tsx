@@ -26,6 +26,7 @@ export default function LimitsScreen() {
   const handledRouteAction = useRef(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [periodPickerOpen, setPeriodPickerOpen] = useState(false);
   const [editingLimit, setEditingLimit] = useState<Limit | null>(null);
   const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
@@ -35,7 +36,7 @@ export default function LimitsScreen() {
 
   const openEditor = (limit?: Limit) => {
     setEditingLimit(limit ?? null);
-    setCategoryId(limit?.categoryId ?? categories[0]?.id ?? '');
+    setCategoryId(limit?.categoryId ?? '');
     setDescription(limit?.description ?? '');
     setAmount(limit ? formatAmountValue(limit.amount) : '');
     setPeriod(limit?.period ?? 'monthly');
@@ -45,6 +46,7 @@ export default function LimitsScreen() {
   const closeEditor = () => {
     if (!saving) {
       setCategoryPickerOpen(false);
+      setPeriodPickerOpen(false);
       setEditorOpen(false);
     }
   };
@@ -208,28 +210,19 @@ export default function LimitsScreen() {
                 style={[styles.input, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
               />
 
-              <Text style={[styles.label, { color: colors.foreground }]}>Intervalo de acompanhamento *</Text>
-              <View style={styles.periodOptions}>
-                {LIMIT_PERIODS.map((option) => {
-                  const selected = period === option.value;
-                  return (
-                    <Pressable
-                      key={option.value}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected }}
-                      accessibilityLabel={`Selecionar período ${option.label}`}
-                      onPress={() => setPeriod(option.value)}
-                      style={({ pressed }) => [
-                        styles.periodOption,
-                        { backgroundColor: selected ? colors.primary : colors.secondary, borderColor: selected ? colors.primary : colors.border },
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <Text style={[styles.periodOptionText, { color: selected ? colors.primaryForeground : colors.foreground }]}>{option.label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+               <Text style={[styles.label, { color: colors.foreground }]}>Recorrência *</Text>
+               <Pressable
+                 accessibilityRole="button"
+                 accessibilityLabel="Selecionar recorrência do limite"
+                 testID="limit-period-picker"
+                 onPress={() => setPeriodPickerOpen(true)}
+                 style={({ pressed }) => [styles.select, { backgroundColor: colors.background, borderColor: colors.input }, pressed && styles.pressed]}
+               >
+                 <Text style={[styles.selectText, { color: colors.foreground }]}>
+                   {LIMIT_PERIODS.find((option) => option.value === period)?.label ?? 'Selecione uma recorrência'}
+                 </Text>
+                 <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+               </Pressable>
 
               <View style={styles.modalActions}>
                 <Pressable disabled={saving} onPress={closeEditor} style={({ pressed }) => [styles.cancelButton, { borderColor: colors.border }, pressed && styles.pressed]}>
@@ -278,6 +271,36 @@ export default function LimitsScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal animationType="fade" transparent visible={periodPickerOpen} onRequestClose={() => setPeriodPickerOpen(false)}>
+        <View style={styles.modalRoot}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPeriodPickerOpen(false)} />
+          <View style={[styles.pickerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.pickerHeader}>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Escolha a recorrência</Text>
+              <Pressable accessibilityLabel="Fechar seleção de recorrência" onPress={() => setPeriodPickerOpen(false)} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
+                <Feather name="x" size={18} color={colors.foreground} />
+              </Pressable>
+            </View>
+            {LIMIT_PERIODS.map((option) => (
+              <Pressable
+                key={option.value}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: option.value === period }}
+                accessibilityLabel={`Selecionar recorrência ${option.label}`}
+                onPress={() => {
+                  setPeriod(option.value);
+                  setPeriodPickerOpen(false);
+                }}
+                style={({ pressed }) => [styles.categoryOption, { borderBottomColor: colors.border }, pressed && styles.pressed]}
+              >
+                <Text style={[styles.categoryName, { color: colors.foreground }]}>{option.label}</Text>
+                {option.value === period ? <Feather name="check" size={17} color={colors.primary} /> : null}
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -297,9 +320,6 @@ const styles = StyleSheet.create({
   select: { minHeight: 46, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   selectText: { flex: 1, fontSize: 13, fontFamily: 'Inter_400Regular' },
   input: { minHeight: 46, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 14, fontFamily: 'Inter_400Regular', marginBottom: 16 },
-  periodOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 22 },
-  periodOption: { minHeight: 32, borderWidth: 1, borderRadius: 7, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
-  periodOptionText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   modalActions: { flexDirection: 'row', gap: 8 },
   cancelButton: { flex: 1, minHeight: 42, borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   saveButton: { flex: 1, minHeight: 42, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
