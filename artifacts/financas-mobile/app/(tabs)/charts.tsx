@@ -44,6 +44,25 @@ export default function ChartsScreen() {
       .sort((a, b) => b.amount - a.amount);
   }, [categories, categoryMonth, colors.mutedForeground, transactions]);
   const categoryTotal = categoryTotals.reduce((total, item) => total + item.amount, 0);
+  const [incomeCategoryMonth, setIncomeCategoryMonth] = useState(() => shiftMonth(new Date(), 0));
+  const incomeCategoryTotals = useMemo(() => {
+    const totalsByCategory = new Map<string, number>();
+    for (const transaction of getTransactionOccurrencesForMonth(transactions, incomeCategoryMonth)) {
+      if (transaction.type !== 'income') continue;
+      const key = transaction.categoryId ?? 'uncategorized';
+      totalsByCategory.set(key, (totalsByCategory.get(key) ?? 0) + transaction.amount);
+    }
+    const categoryById = new Map(categories.map((category) => [category.id, category]));
+    return Array.from(totalsByCategory.entries())
+      .map(([key, amount]) => ({
+        key,
+        amount,
+        name: key === 'uncategorized' ? 'Sem categoria' : categoryById.get(key)?.name ?? 'Sem categoria',
+        color: key === 'uncategorized' ? colors.mutedForeground : categoryById.get(key)?.color ?? colors.mutedForeground,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [categories, colors.mutedForeground, incomeCategoryMonth, transactions]);
+  const incomeCategoryTotal = incomeCategoryTotals.reduce((total, item) => total + item.amount, 0);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -148,52 +167,32 @@ export default function ChartsScreen() {
                 )}
               </View>
             )}
-            <View style={[styles.categoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.categoryTitleRow}>
-                <View style={styles.categoryTitleCopy}>
-                  <Text style={[styles.chartTitle, styles.categoryTitle, { color: colors.foreground }]}>
-                    Gastos por{'\n'}categoria
-                  </Text>
-                  <Text style={[styles.chartDescription, { color: colors.mutedForeground }]}>
-                    Veja como os gastos se distribuem entre as categorias
-                  </Text>
-                </View>
-                <MonthSelector
-                  month={categoryMonth}
-                  onPrevious={() => setCategoryMonth((month) => shiftMonth(month, -1))}
-                  onNext={() => setCategoryMonth((month) => shiftMonth(month, 1))}
-                  accessibilityPrefix="Gastos por categoria"
-                />
-              </View>
-              {categoryTotals.length === 0 ? (
-                <Text style={[styles.categoryEmpty, { color: colors.mutedForeground }]}>
-                  Não há despesas para analisar neste mês.
-                </Text>
-              ) : (
-                <View style={styles.categoryRows}>
-                  {categoryTotals.map((item) => {
-                    const percentage = categoryTotal > 0 ? item.amount / categoryTotal : 0;
-                    return (
-                      <View key={item.key} style={styles.categoryRow}>
-                        <View style={styles.categoryRowHeader}>
-                          <View style={styles.categoryLabel}>
-                            <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                            <Text numberOfLines={1} style={[styles.categoryName, { color: colors.foreground }]}>{item.name}</Text>
-                          </View>
-                          <Text style={[styles.categoryAmount, { color: colors.expense }]}>{formatCurrency(item.amount)}</Text>
-                        </View>
-                        <View style={[styles.categoryTrack, { backgroundColor: colors.secondary }]}>
-                          <View style={[styles.categoryBar, { width: `${Math.max(percentage * 100, 2)}%`, backgroundColor: item.color }]} />
-                        </View>
-                        <Text style={[styles.categoryPercentage, { color: colors.mutedForeground }]}>
-                          {Math.round(percentage * 100)}% dos gastos
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
+            <CategoryReport
+              title={<>Gastos por{'\n'}categoria</>}
+              description="Veja como os gastos se distribuem entre as categorias"
+              month={categoryMonth}
+              onPrevious={() => setCategoryMonth((month) => shiftMonth(month, -1))}
+              onNext={() => setCategoryMonth((month) => shiftMonth(month, 1))}
+              accessibilityPrefix="Gastos por categoria"
+              totals={categoryTotals}
+              total={categoryTotal}
+              amountColor={colors.expense}
+              emptyMessage="Não há despesas para analisar neste mês."
+              percentageLabel="dos gastos"
+            />
+            <CategoryReport
+              title={<>Receitas por{'\n'}categoria</>}
+              description="Veja como as receitas se distribuem entre as categorias"
+              month={incomeCategoryMonth}
+              onPrevious={() => setIncomeCategoryMonth((month) => shiftMonth(month, -1))}
+              onNext={() => setIncomeCategoryMonth((month) => shiftMonth(month, 1))}
+              accessibilityPrefix="Receitas por categoria"
+              totals={incomeCategoryTotals}
+              total={incomeCategoryTotal}
+              amountColor={colors.income}
+              emptyMessage="Não há receitas para analisar neste mês."
+              percentageLabel="das receitas"
+            />
             <ForecastTable transactions={transactions} />
           </>
         )}
@@ -247,6 +246,90 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.6 },
 });
+
+type CategoryTotal = {
+  key: string;
+  amount: number;
+  name: string;
+  color: string;
+};
+
+function CategoryReport({
+  title,
+  description,
+  month,
+  onPrevious,
+  onNext,
+  accessibilityPrefix,
+  totals,
+  total,
+  amountColor,
+  emptyMessage,
+  percentageLabel,
+}: {
+  title: React.ReactNode;
+  description: string;
+  month: Date;
+  onPrevious: () => void;
+  onNext: () => void;
+  accessibilityPrefix: string;
+  totals: CategoryTotal[];
+  total: number;
+  amountColor: string;
+  emptyMessage: string;
+  percentageLabel: string;
+}) {
+  const colors = useColors();
+
+  return (
+    <View style={[styles.categoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={styles.categoryTitleRow}>
+        <View style={styles.categoryTitleCopy}>
+          <Text style={[styles.chartTitle, styles.categoryTitle, { color: colors.foreground }]}>
+            {title}
+          </Text>
+          <Text style={[styles.chartDescription, { color: colors.mutedForeground }]}>
+            {description}
+          </Text>
+        </View>
+        <MonthSelector
+          month={month}
+          onPrevious={onPrevious}
+          onNext={onNext}
+          accessibilityPrefix={accessibilityPrefix}
+        />
+      </View>
+      {totals.length === 0 ? (
+        <Text style={[styles.categoryEmpty, { color: colors.mutedForeground }]}>
+          {emptyMessage}
+        </Text>
+      ) : (
+        <View style={styles.categoryRows}>
+          {totals.map((item) => {
+            const percentage = total > 0 ? item.amount / total : 0;
+            return (
+              <View key={item.key} style={styles.categoryRow}>
+                <View style={styles.categoryRowHeader}>
+                  <View style={styles.categoryLabel}>
+                    <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                    <Text numberOfLines={1} style={[styles.categoryName, { color: colors.foreground }]}>{item.name}</Text>
+                  </View>
+                  <Text style={[styles.categoryAmount, { color: amountColor }]}>{formatCurrency(item.amount)}</Text>
+                </View>
+                <View style={[styles.categoryTrack, { backgroundColor: colors.secondary }]}>
+                  <View style={[styles.categoryBar, { width: `${Math.max(percentage * 100, 2)}%`, backgroundColor: item.color }]} />
+                </View>
+                <Text style={[styles.categoryPercentage, { color: colors.mutedForeground }]}>
+                  {Math.round(percentage * 100)}% {percentageLabel}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
 
 function MonthSelector({
   month,
