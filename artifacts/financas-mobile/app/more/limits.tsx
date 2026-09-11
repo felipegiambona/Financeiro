@@ -157,6 +157,7 @@ export default function LimitsScreen() {
         <View style={styles.editorModalRoot}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closeEditor} />
           <KeyboardAwareScrollViewCompat
+            style={styles.modalScroll}
             contentContainerStyle={styles.modalScrollContent}
             keyboardShouldPersistTaps="handled"
           >
@@ -311,6 +312,7 @@ const styles = StyleSheet.create({
   intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 22 },
   editorModalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', padding: 10 },
+  modalScroll: { width: '100%', flexShrink: 1 },
   modalScrollContent: { flexGrow: 1, width: '100%', alignItems: 'stretch', justifyContent: 'center', paddingVertical: 18 },
   modalCard: { width: '100%', maxWidth: 340, maxHeight: '82%', borderRadius: 12, borderWidth: 1, padding: 14, flexShrink: 1 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
