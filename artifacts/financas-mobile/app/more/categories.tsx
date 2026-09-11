@@ -5,6 +5,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { useCategories } from '@/context/CategoryContext';
 import { useColors } from '@/hooks/useColors';
 import { CATEGORY_COLORS, Category } from '@/types/category';
@@ -18,6 +19,7 @@ export default function CategoriesScreen() {
   const [name, setName] = useState('');
   const [color, setColor] = useState<string>(CATEGORY_COLORS[0]);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   const openEditor = (category?: Category) => {
     setEditingCategory(category ?? null);
@@ -52,22 +54,7 @@ export default function CategoriesScreen() {
   };
 
   const confirmDelete = (category: Category) => {
-    Alert.alert(
-      `Excluir ${category.name}?`,
-      'Os lançamentos associados continuarão salvos, mas ficarão sem categoria.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: () => {
-            void deleteCategory(category.id).catch(() => {
-              Alert.alert('Não foi possível excluir', 'Tente novamente.');
-            });
-          },
-        },
-      ],
-    );
+    setDeleteTarget(category);
   };
 
   return (
@@ -177,6 +164,15 @@ export default function CategoriesScreen() {
           </View>
         </View>
       </Modal>
+      <ConfirmationModal
+        visible={deleteTarget !== null}
+        title={deleteTarget ? `Excluir ${deleteTarget.name}?` : 'Excluir categoria?'}
+        message="Os lançamentos associados continuarão salvos, mas ficarão sem categoria."
+        confirmLabel="Excluir"
+        onConfirm={() => deleteTarget ? deleteCategory(deleteTarget.id) : Promise.resolve()}
+        onClose={() => setDeleteTarget(null)}
+        errorTitle="Não foi possível excluir"
+      />
     </View>
   );
 }

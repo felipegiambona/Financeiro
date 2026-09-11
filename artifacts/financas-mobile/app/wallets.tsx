@@ -4,6 +4,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, EmptyState, LoadingState } from '@/components/StateView';
+import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { WalletIconView } from '@/components/WalletIconView';
 import { useFinance } from '@/context/FinanceContext';
@@ -41,6 +42,7 @@ export default function WalletsScreen() {
   const [editingWalletId, setEditingWalletId] = useState<string | null>(null);
   const [form, setForm] = useState<WalletForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Wallet | null>(null);
 
   const editingWallet = useMemo(
     () => wallets.find((wallet) => wallet.id === editingWalletId),
@@ -111,22 +113,7 @@ export default function WalletsScreen() {
   };
 
   const confirmDelete = (wallet: Wallet) => {
-    Alert.alert(
-      'Excluir carteira?',
-      `A carteira "${wallet.title}" será excluída permanentemente.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: () => {
-            void deleteWallet(wallet.id).catch(() => {
-              Alert.alert('Não foi possível excluir', 'Tente novamente.');
-            });
-          },
-        },
-      ],
-    );
+    setDeleteTarget(wallet);
   };
 
   return (
@@ -264,6 +251,15 @@ export default function WalletsScreen() {
           </View>
         </View>
       </Modal>
+      <ConfirmationModal
+        visible={deleteTarget !== null}
+        title="Excluir carteira?"
+        message={deleteTarget ? `A carteira "${deleteTarget.title}" será excluída permanentemente.` : ''}
+        confirmLabel="Excluir"
+        onConfirm={() => deleteTarget ? deleteWallet(deleteTarget.id) : Promise.resolve()}
+        onClose={() => setDeleteTarget(null)}
+        errorTitle="Não foi possível excluir"
+      />
     </View>
   );
 }
