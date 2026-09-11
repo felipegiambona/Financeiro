@@ -176,10 +176,9 @@ async function shareNativeFile(uri: string, format: TransactionExportFormat): Pr
   if (!(await Sharing.isAvailableAsync())) {
     throw new Error('O compartilhamento de arquivos não está disponível neste dispositivo.');
   }
-  // Android does not allow another app to read the private file:// URI directly.
-  // The legacy helper creates a FileProvider content:// URI with a read grant.
-  const shareUri = Platform.OS === 'android' ? await FileSystem.getContentUriAsync(uri) : uri;
-  await Sharing.shareAsync(shareUri, {
+  // expo-sharing creates its own FileProvider URI. Passing a content:// URI
+  // here makes the module reject it because it only accepts file:// inputs.
+  await Sharing.shareAsync(uri, {
     dialogTitle: `Salvar ou compartilhar ${format.toUpperCase()}`,
     mimeType: format === 'csv' ? 'text/csv' : 'application/pdf',
     UTI: format === 'csv' ? 'public.comma-separated-values-text' : 'com.adobe.pdf',
@@ -199,8 +198,8 @@ export async function exportTransactions(
       downloadOnWeb(csv, createFileName('csv'), 'text/csv;charset=utf-8');
       return;
     }
-    if (!FileSystem.cacheDirectory) throw new Error('O armazenamento temporário não está disponível.');
-    const uri = `${FileSystem.cacheDirectory}${createFileName('csv')}`;
+    if (!FileSystem.documentDirectory) throw new Error('O armazenamento local não está disponível.');
+    const uri = `${FileSystem.documentDirectory}${createFileName('csv')}`;
     await FileSystem.writeAsStringAsync(uri, csv, { encoding: FileSystem.EncodingType.UTF8 });
     await shareNativeFile(uri, 'csv');
     return;

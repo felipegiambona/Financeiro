@@ -3,8 +3,8 @@ name: Android Expo file sharing
 description: Android Expo Go sharing requires a readable content URI for locally generated files.
 ---
 
-On Android, pass a `content://` URI to Expo Sharing when sharing a locally generated file; a private `file://` URI can fail with “Not allowed to read file under given URL.” In Expo Go, use the legacy `getContentUriAsync` helper rather than relying on the newer `File.contentUri` property.
+On Android with Expo SDK 57, pass the original `file://` URI to Expo Sharing and store generated files under `documentDirectory`; `content://` URIs are rejected and cache paths may fail the provider's read check.
 
-**Why:** Expo Go's Android sharing provider cannot grant another app access to the app-private file URI directly, and the newer File API may require a read permission that is not available for generated cache files.
+**Why:** The Expo Sharing module creates its own FileProvider URI, only accepts local file URLs, and its Android permission service reliably recognizes the app document directory.
 
-**How to apply:** For a local file URI, call `FileSystem.getContentUriAsync(uri)` on Android before calling `Sharing.shareAsync`; keep the original URI for iOS.
+**How to apply:** Write the file under `FileSystem.documentDirectory` and call `Sharing.shareAsync(uri)` with that `file://` URI. Use the native print sheet on Android when PDF-to-file generation fails in Expo Go.
