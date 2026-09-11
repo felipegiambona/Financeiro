@@ -1,4 +1,5 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
@@ -42,14 +43,19 @@ export default function DashboardScreen() {
         />
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
           <>
-            <View style={[styles.balanceCard, { backgroundColor: colors.radio }]}>
+            <LinearGradient
+              colors={[colors.balanceGradientStart, colors.balanceGradientEnd]}
+              end={{ x: 1, y: 1 }}
+              start={{ x: 0, y: 0 }}
+              style={styles.balanceCard}
+            >
               <View style={styles.balanceTop}>
-                <Text style={[styles.balanceLabel, { color: colors.accentForeground }]}>Saldo atual</Text>
-                <View style={[styles.balanceMark, { backgroundColor: colors.incomeSoft }]}><Feather name="bar-chart-2" size={17} color={colors.accentForeground} /></View>
+                <Text style={[styles.balanceLabel, { color: colors.primaryForeground }]}>Saldo atual</Text>
+                <View style={styles.balanceMark}><Feather name="bar-chart-2" size={17} color={colors.primaryForeground} /></View>
               </View>
-              <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.balanceValue, { color: colors.accentForeground }]}>{formatCurrency(balance)}</Text>
-              <Text style={[styles.balanceHint, { color: colors.secondaryForeground }]}>Receitas menos despesas</Text>
-            </View>
+              <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.balanceValue, { color: colors.primaryForeground }]}>{formatCurrency(balance)}</Text>
+              <Text style={[styles.balanceHint, { color: colors.primaryForeground }]}>Receitas menos despesas</Text>
+            </LinearGradient>
             <View style={styles.monthMetrics}>
               <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.metricIcon, { backgroundColor: colors.incomeSoft }]}>
@@ -164,9 +170,9 @@ const styles = StyleSheet.create({
   balanceCard: { minHeight: 164, borderRadius: 9, padding: 17, overflow: 'hidden', justifyContent: 'space-between', marginBottom: 10 },
   balanceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   balanceLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  balanceMark: { width: 30, height: 30, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  balanceMark: { width: 30, height: 30, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
   balanceValue: { fontSize: 30, lineHeight: 36, fontFamily: 'Inter_700Bold', letterSpacing: -0.8, marginTop: 17 },
-  balanceHint: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  balanceHint: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 3, opacity: 0.82 },
   monthMetrics: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   monthMetric: { flex: 1, minHeight: 112, borderRadius: 9, borderWidth: 1, padding: 12 },
   metricIcon: { width: 29, height: 29, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
