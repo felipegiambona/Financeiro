@@ -240,7 +240,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: 16 },
-  balanceCard: { minHeight: 164, borderRadius: 9, padding: 17, overflow: 'hidden', justifyContent: 'space-between', marginBottom: 24 },
+  balanceCard: { minHeight: 164, borderRadius: 9, padding: 17, overflow: 'hidden', justifyContent: 'space-between', marginBottom: 10 },
   balanceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   balanceLabel: { color: '#D4D4D4', fontSize: 12, fontFamily: 'Inter_500Medium' },
   balanceMark: { width: 30, height: 30, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
