@@ -4,6 +4,7 @@ import transactionsRouter from "./transactions";
 import walletsRouter from "./wallets";
 import accountRouter from "./account";
 import categoriesRouter from "./categories";
+import limitsRouter from "./limits";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(transactionsRouter);
 router.use(walletsRouter);
 router.use(accountRouter);
 router.use(categoriesRouter);
+router.use(limitsRouter);
 
 export default router;

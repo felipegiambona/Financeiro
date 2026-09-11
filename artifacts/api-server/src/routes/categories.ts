@@ -1,6 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { db, categoriesTable, transactionsTable } from "@workspace/db";
+import { db, categoriesTable, limitsTable, transactionsTable } from "@workspace/db";
 import {
   CreateCategoryBody,
   CreateCategoryResponse,
@@ -99,6 +99,8 @@ router.delete("/categories/:id", async (req, res): Promise<void> => {
     await tx.update(transactionsTable)
       .set({ categoryId: null })
       .where(and(eq(transactionsTable.userId, userId), eq(transactionsTable.categoryId, category.id)));
+    await tx.delete(limitsTable)
+      .where(and(eq(limitsTable.userId, userId), eq(limitsTable.categoryId, category.id)));
     await tx.delete(categoriesTable)
       .where(and(eq(categoriesTable.id, category.id), eq(categoriesTable.userId, userId)));
   });

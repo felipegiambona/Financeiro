@@ -346,6 +346,85 @@ export const DeleteCategoryParams = zod.object({
 export const DeleteCategoryResponse = zod.void()
 
 
+export const listLimitsResponseAmountExclusiveMin = 0;
+
+
+
+export const ListLimitsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "categoryId": zod.string().uuid(),
+  "description": zod.string().nullable(),
+  "amount": zod.number().gt(listLimitsResponseAmountExclusiveMin),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListLimitsResponse = zod.array(ListLimitsResponseItem)
+
+
+export const createLimitBodyAmountExclusiveMin = 0;
+
+
+
+export const CreateLimitBody = zod.object({
+  "categoryId": zod.string().uuid(),
+  "description": zod.string().nullish(),
+  "amount": zod.number().gt(createLimitBodyAmountExclusiveMin),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual'])
+})
+
+export const createLimitResponseAmountExclusiveMin = 0;
+
+
+
+export const CreateLimitResponse = zod.object({
+  "id": zod.string().uuid(),
+  "categoryId": zod.string().uuid(),
+  "description": zod.string().nullable(),
+  "amount": zod.number().gt(createLimitResponseAmountExclusiveMin),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const UpdateLimitParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateLimitBodyAmountExclusiveMin = 0;
+
+
+
+export const UpdateLimitBody = zod.object({
+  "categoryId": zod.string().uuid().optional(),
+  "description": zod.string().nullish(),
+  "amount": zod.number().gt(updateLimitBodyAmountExclusiveMin).optional(),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']).optional()
+})
+
+export const updateLimitResponseAmountExclusiveMin = 0;
+
+
+
+export const UpdateLimitResponse = zod.object({
+  "id": zod.string().uuid(),
+  "categoryId": zod.string().uuid(),
+  "description": zod.string().nullable(),
+  "amount": zod.number().gt(updateLimitResponseAmountExclusiveMin),
+  "period": zod.enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const DeleteLimitParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteLimitResponse = zod.void()
+
+
 export const UpdateWalletParams = zod.object({
   "id": zod.coerce.string().uuid()
 })

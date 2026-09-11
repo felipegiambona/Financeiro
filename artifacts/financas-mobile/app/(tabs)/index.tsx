@@ -6,11 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, LoadingState } from '@/components/StateView';
 import { WalletIconView } from '@/components/WalletIconView';
+import { LimitCard } from '@/components/LimitCard';
+import { useCategories } from '@/context/CategoryContext';
 import { useFinance } from '@/context/FinanceContext';
+import { useLimits } from '@/context/LimitContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateMonthlyTotals, calculateWalletTotals } from '@/services/financialRules';
+import { calculateLimitUsage } from '@/services/limitRules';
 import { getPendingTransactionOccurrences } from '@/services/pendingNotifications';
 import { formatCurrency } from '@/utils/currency';
 
@@ -19,11 +23,21 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { transactions, loading, error, refresh } = useFinance();
   const { wallets, loading: walletsLoading } = useWallets();
+  const { categories } = useCategories();
+  const { limits, loading: limitsLoading } = useLimits();
   const { signOut } = useAuth();
   const monthlyTotals = useMemo(() => calculateMonthlyTotals(transactions, new Date()), [transactions]);
   const walletTotals = useMemo(() => calculateWalletTotals(wallets, transactions), [transactions, wallets]);
   const balance = calculateCurrentBalance(wallets, transactions);
   const pendingNotifications = useMemo(() => getPendingTransactionOccurrences(transactions), [transactions]);
+  const limitCards = useMemo(
+    () => limits.map((limit) => ({
+      limit,
+      categoryName: categories.find((category) => category.id === limit.categoryId)?.name ?? 'Categoria',
+      usage: calculateLimitUsage(limit, transactions),
+    })),
+    [categories, limits, transactions],
+  );
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -153,6 +167,43 @@ export default function DashboardScreen() {
                 </View>
               )}
             </View>
+            <View style={styles.limitsSection}>
+              <View style={styles.limitsHeader}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Meus limites</Text>
+                  <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Acompanhe o uso dos seus gastos.</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Criar novo limite"
+                  testID="dashboard-new-limit-button"
+                  onPress={() => router.push({ pathname: '/more/limits', params: { openNew: '1' } })}
+                  style={({ pressed }) => [styles.addLimitButton, { backgroundColor: colors.primary }, pressed && styles.pressed]}
+                >
+                  <Feather name="plus" size={15} color={colors.primaryForeground} />
+                  <Text style={[styles.addLimitText, { color: colors.primaryForeground }]}>Novo</Text>
+                </Pressable>
+              </View>
+              {limitsLoading ? (
+                <Text style={[styles.limitState, { color: colors.mutedForeground }]}>Carregando limites...</Text>
+              ) : limitCards.length === 0 ? (
+                <View style={[styles.emptyLimitCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Feather name="target" size={20} color={colors.mutedForeground} />
+                  <Text style={[styles.limitState, { color: colors.mutedForeground }]}>Crie um limite para acompanhar seus gastos.</Text>
+                </View>
+              ) : (
+                limitCards.map(({ limit, categoryName, usage }) => (
+                  <LimitCard
+                    key={limit.id}
+                    limit={limit}
+                    categoryName={categoryName}
+                    usage={usage}
+                    onEdit={() => router.push({ pathname: '/more/limits', params: { editId: limit.id } })}
+                    onDelete={() => router.push({ pathname: '/more/limits', params: { deleteId: limit.id } })}
+                  />
+                ))
+              )}
+            </View>
           </>
         )}
       </ScrollView>
@@ -187,5 +238,13 @@ const styles = StyleSheet.create({
   walletName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   walletNameText: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium' },
   walletValue: { fontSize: 13, fontFamily: 'Inter_700Bold', textAlign: 'right' },
+  limitsSection: { marginTop: 5 },
+  limitsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  sectionTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  sectionHint: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  addLimitButton: { minHeight: 30, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  addLimitText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
+  emptyLimitCard: { minHeight: 72, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  limitState: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   pressed: { opacity: 0.72 },
 });

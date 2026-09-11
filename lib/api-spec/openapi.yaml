@@ -16,6 +16,8 @@ tags:
     description: Authenticated wallet management operations
   - name: categories
     description: Authenticated category management operations
+  - name: limits
+    description: Authenticated spending limit management operations
   - name: account
     description: Authenticated account management operations
 paths:
@@ -240,6 +242,66 @@ paths:
           description: Category removed
         "404":
           description: Not found
+  /limits:
+    get:
+      operationId: listLimits
+      tags: [limits]
+      responses:
+        "200":
+          description: User spending limits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Limit"
+    post:
+      operationId: createLimit
+      tags: [limits]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitInput"
+      responses:
+        "201":
+          description: Created spending limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Limit"
+  /limits/{id}:
+    patch:
+      operationId: updateLimit
+      tags: [limits]
+      parameters:
+        - $ref: "#/components/parameters/LimitId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitUpdate"
+      responses:
+        "200":
+          description: Updated spending limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Limit"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteLimit
+      tags: [limits]
+      parameters:
+        - $ref: "#/components/parameters/LimitId"
+      responses:
+        "204":
+          description: Spending limit removed
+        "404":
+          description: Not found
   /wallets/{id}:
     patch:
       operationId: updateWallet
@@ -334,6 +396,13 @@ components:
         type: string
         format: uuid
     CategoryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LimitId:
       name: id
       in: path
       required: true
@@ -536,4 +605,36 @@ components:
       properties:
         name: { type: string, minLength: 1 }
         color: { type: string }
+    LimitPeriod:
+      type: string
+      enum: [weekly, biweekly, monthly, bimonthly, quarterly, semiannual, annual]
+    Limit:
+      type: object
+      required: [id, categoryId, description, amount, period, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        categoryId: { type: string, format: uuid }
+        description: { type: ["string", "null"] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        period:
+          $ref: "#/components/schemas/LimitPeriod"
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    LimitInput:
+      type: object
+      required: [categoryId, amount, period]
+      properties:
+        categoryId: { type: string, format: uuid }
+        description: { type: ["string", "null"] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        period:
+          $ref: "#/components/schemas/LimitPeriod"
+    LimitUpdate:
+      type: object
+      properties:
+        categoryId: { type: string, format: uuid }
+        description: { type: ["string", "null"] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        period:
+          $ref: "#/components/schemas/LimitPeriod"
 

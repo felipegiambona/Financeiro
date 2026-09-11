@@ -101,6 +101,28 @@ export default function SettingsScreen() {
           </View>
           <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Gerenciar meus limites"
+          testID="manage-limits-button"
+          onPress={() => router.push('/more/limits')}
+          style={({ pressed }) => [
+            styles.managementCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+            pressed && styles.pressed,
+          ]}
+        >
+          <View style={[styles.optionIcon, { backgroundColor: colors.secondary }]}>
+            <Feather name="target" size={17} color={colors.foreground} />
+          </View>
+          <View style={styles.optionCopy}>
+            <Text style={[styles.optionTitle, { color: colors.foreground }]}>Meus limites</Text>
+            <Text style={[styles.optionDescription, { color: colors.mutedForeground }]}>
+              Acompanhe seus gastos por categoria e lançamento.
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+        </Pressable>
       </ScrollView>
     </View>
   );

@@ -24,6 +24,9 @@ import type {
   CategoryInput,
   CategoryUpdate,
   HealthStatus,
+  Limit,
+  LimitInput,
+  LimitUpdate,
   PaymentStatusUpdate,
   ProfileImageUpdate,
   ProfileUpdate,
@@ -1073,6 +1076,273 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteCategoryMutationOptions(options));
+    }
+
+export const getListLimitsUrl = () => {
+
+
+
+
+  return `/api/limits`
+}
+
+export const listLimits = async ( options?: Parameters<typeof customFetch>[1]): Promise<Limit[]> => {
+
+  return customFetch<Limit[]>(getListLimitsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLimitsQueryKey = () => {
+    return [
+    `/api/limits`
+    ] as const;
+    }
+
+
+export const getListLimitsQueryOptions = <TData = Awaited<ReturnType<typeof listLimits>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLimits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLimitsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLimits>>> = ({ signal }) => listLimits({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLimits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLimitsQueryResult = NonNullable<Awaited<ReturnType<typeof listLimits>>>
+export type ListLimitsQueryError = ErrorType<unknown>
+
+
+
+export function useListLimits<TData = Awaited<ReturnType<typeof listLimits>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLimits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLimitsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateLimitUrl = () => {
+
+
+
+
+  return `/api/limits`
+}
+
+export const createLimit = async (limitInput: LimitInput, options?: Parameters<typeof customFetch>[1]): Promise<Limit> => {
+
+  return customFetch<Limit>(getCreateLimitUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(limitInput)
+  }
+);}
+
+
+
+
+
+export const getCreateLimitMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLimit>>, TError,{data: BodyType<LimitInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createLimit>>, TError,{data: BodyType<LimitInput>}, TContext> => {
+
+const mutationKey = ['createLimit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createLimit>>, {data: BodyType<LimitInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createLimit(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateLimitMutationResult = NonNullable<Awaited<ReturnType<typeof createLimit>>>
+    export type CreateLimitMutationBody = BodyType<LimitInput>
+    export type CreateLimitMutationError = ErrorType<unknown>
+
+    export const useCreateLimit = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLimit>>, TError,{data: BodyType<LimitInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createLimit>>,
+        TError,
+        {data: BodyType<LimitInput>},
+        TContext
+      > => {
+      return useMutation(getCreateLimitMutationOptions(options));
+    }
+
+export const getUpdateLimitUrl = (id: string,) => {
+
+
+
+
+  return `/api/limits/${id}`
+}
+
+export const updateLimit = async (id: string,
+    limitUpdate: LimitUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Limit> => {
+
+  return customFetch<Limit>(getUpdateLimitUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(limitUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateLimitMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLimit>>, TError,{id: string;data: BodyType<LimitUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateLimit>>, TError,{id: string;data: BodyType<LimitUpdate>}, TContext> => {
+
+const mutationKey = ['updateLimit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateLimit>>, {id: string;data: BodyType<LimitUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateLimit(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateLimitMutationResult = NonNullable<Awaited<ReturnType<typeof updateLimit>>>
+    export type UpdateLimitMutationBody = BodyType<LimitUpdate>
+    export type UpdateLimitMutationError = ErrorType<void>
+
+    export const useUpdateLimit = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLimit>>, TError,{id: string;data: BodyType<LimitUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateLimit>>,
+        TError,
+        {id: string;data: BodyType<LimitUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateLimitMutationOptions(options));
+    }
+
+export const getDeleteLimitUrl = (id: string,) => {
+
+
+
+
+  return `/api/limits/${id}`
+}
+
+export const deleteLimit = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteLimitUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteLimitMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLimit>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteLimit>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteLimit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteLimit>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteLimit(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteLimitMutationResult = NonNullable<Awaited<ReturnType<typeof deleteLimit>>>
+
+    export type DeleteLimitMutationError = ErrorType<void>
+
+    export const useDeleteLimit = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLimit>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteLimit>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteLimitMutationOptions(options));
     }
 
 export const getUpdateWalletUrl = (id: string,) => {

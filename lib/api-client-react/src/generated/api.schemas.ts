@@ -296,3 +296,46 @@ export interface CategoryUpdate {
   color?: string;
 }
 
+export type LimitPeriod = typeof LimitPeriod[keyof typeof LimitPeriod];
+
+
+export const LimitPeriod = {
+  weekly: 'weekly',
+  biweekly: 'biweekly',
+  monthly: 'monthly',
+  bimonthly: 'bimonthly',
+  quarterly: 'quarterly',
+  semiannual: 'semiannual',
+  annual: 'annual',
+} as const;
+
+export interface Limit {
+  id: string;
+  categoryId: string;
+  /** @nullable */
+  description: string | null;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  period: LimitPeriod;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LimitInput {
+  categoryId: string;
+  /** @nullable */
+  description?: string | null;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  period: LimitPeriod;
+}
+
+export interface LimitUpdate {
+  categoryId?: string;
+  /** @nullable */
+  description?: string | null;
+  /** @exclusiveMinimum 0 */
+  amount?: number;
+  period?: LimitPeriod;
+}
+
