@@ -17,6 +17,20 @@ function getInitials(name: string, email: string): string {
   return source.slice(0, 2).toUpperCase();
 }
 
+function getClerkErrorMessage(error: unknown): string {
+  if (!error || typeof error !== 'object') return 'Tente novamente.';
+
+  const clerkError = error as {
+    errors?: Array<{ longMessage?: string; message?: string }>;
+    message?: string;
+  };
+  const message = clerkError.errors?.[0]?.longMessage
+    ?? clerkError.errors?.[0]?.message
+    ?? clerkError.message;
+
+  return message || 'Tente novamente.';
+}
+
 export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -92,9 +106,9 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         type: imageAsset.mimeType ?? 'image/jpeg',
       };
       await user.setProfileImage({ file: imageFile as unknown as Blob });
-      await user.reload();
-    } catch {
-      Alert.alert('Não foi possível alterar a foto', 'Tente novamente.');
+    } catch (error) {
+      console.error('[ProfileDetails] Falha ao alterar a foto do perfil', error);
+      Alert.alert('Não foi possível alterar a foto', getClerkErrorMessage(error));
     } finally {
       setSavingProfile(false);
     }
@@ -118,10 +132,10 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         firstName,
         ...(lastName ? { lastName } : {}),
       });
-      await user.reload();
       setEditingProfile(false);
-    } catch {
-      Alert.alert('Não foi possível salvar o perfil', 'Tente novamente.');
+    } catch (error) {
+      console.error('[ProfileDetails] Falha ao salvar o perfil', error);
+      Alert.alert('Não foi possível salvar o perfil', getClerkErrorMessage(error));
     } finally {
       setSavingProfile(false);
     }
