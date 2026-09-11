@@ -68,7 +68,7 @@ export default function DashboardScreen() {
               <Text adjustsFontSizeToFit numberOfLines={1} style={styles.balanceValue}>{formatCurrency(balance)}</Text>
               <Text style={styles.balanceHint}>Receitas menos despesas</Text>
             </View> : null}
-            {visibility.monthlySummary ? <View style={styles.monthMetrics}>
+            {visibility.monthlySummary ? <View style={styles.summaryMetrics}>
               <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.metricIcon, { backgroundColor: colors.incomeSoft }]}>
                   <Feather name="trending-up" size={16} color={colors.income} />
@@ -84,7 +84,7 @@ export default function DashboardScreen() {
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.expense)}</Text>
               </View>
             </View> : null}
-            {visibility.pending ? <View style={styles.monthMetrics}>
+            {visibility.pending ? <View style={styles.pendingMetrics}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Ver receitas não pagas"
@@ -246,7 +246,8 @@ const styles = StyleSheet.create({
   balanceMark: { width: 30, height: 30, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
   balanceValue: { color: '#FFFFFF', fontSize: 30, lineHeight: 36, fontFamily: 'Inter_700Bold', letterSpacing: -0.8, marginTop: 17 },
   balanceHint: { color: '#999999', fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 3 },
-  monthMetrics: { flexDirection: 'row', gap: 10, marginBottom: 24 },
+  summaryMetrics: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  pendingMetrics: { flexDirection: 'row', gap: 10, marginBottom: 24 },
   monthMetric: { flex: 1, minHeight: 112, borderRadius: 9, borderWidth: 1, padding: 12 },
   metricIcon: { width: 29, height: 29, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   metricLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
