@@ -93,14 +93,15 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
+        base64: true,
         quality: 0.8,
       });
       const imageAsset = result.assets?.[0];
-      const imageUri = imageAsset?.uri;
-      if (result.canceled || !imageUri) return;
+      const imageBase64 = imageAsset?.base64;
+      if (result.canceled || !imageBase64) return;
 
       setSavingProfile(true);
-      await updateProfileImage(imageUri, imageAsset.mimeType ?? 'image/jpeg');
+      await updateProfileImage(imageBase64, imageAsset.mimeType ?? 'image/jpeg');
     } catch (error) {
       console.error('[ProfileDetails] Falha ao alterar a foto do perfil', error);
       Alert.alert('Não foi possível alterar a foto', getClerkErrorMessage(error));

@@ -1,6 +1,6 @@
 import { clerkClient } from "@clerk/express";
 import { eq } from "drizzle-orm";
-import express, { Router, type IRouter } from "express";
+import { Router, type IRouter } from "express";
 import { categoriesTable, db, transactionsTable, walletsTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
 
@@ -42,15 +42,20 @@ router.patch("/account/profile", requireAuth, async (req, res): Promise<void> =>
 
 router.patch(
   "/account/profile-image",
-  express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: "5mb" }),
   requireAuth,
   async (req, res): Promise<void> => {
     const userId = userIdFrom(req);
-    const file = req.body as Buffer;
-    const contentType = req.header("content-type") ?? "image/jpeg";
+    const base64Data = typeof req.body?.data === "string" ? req.body.data : "";
+    const contentType = typeof req.body?.mimeType === "string" ? req.body.mimeType : "";
 
-    if (!Buffer.isBuffer(file) || file.length === 0) {
+    if (!base64Data || !["image/jpeg", "image/png", "image/webp"].includes(contentType)) {
       res.status(400).json({ error: "A profile image is required" });
+      return;
+    }
+
+    const file = Buffer.from(base64Data, "base64");
+    if (file.length === 0) {
+      res.status(400).json({ error: "A valid profile image is required" });
       return;
     }
 

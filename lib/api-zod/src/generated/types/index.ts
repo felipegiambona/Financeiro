@@ -12,6 +12,8 @@ export * from './categoryUpdate';
 export * from './healthStatus';
 export * from './paymentStatusUpdate';
 export * from './paymentStatusUpdatePaymentStatus';
+export * from './profileImageUpdate';
+export * from './profileImageUpdateMimeType';
 export * from './profileUpdate';
 export * from './recurrence';
 export * from './recurrenceAmountMode';

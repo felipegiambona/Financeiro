@@ -294,18 +294,9 @@ paths:
       requestBody:
         required: true
         content:
-          image/jpeg:
+          application/json:
             schema:
-              type: string
-              format: binary
-          image/png:
-            schema:
-              type: string
-              format: binary
-          image/webp:
-            schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/ProfileImageUpdate"
       responses:
         "204":
           description: Profile image updated
@@ -355,6 +346,18 @@ components:
           minLength: 1
       required:
         - firstName
+    ProfileImageUpdate:
+      type: object
+      properties:
+        data:
+          type: string
+          minLength: 1
+        mimeType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+      required:
+        - data
+        - mimeType
     Recurrence:
       type: object
       required: [kind]

@@ -386,6 +386,14 @@ export const UpdateAccountProfileResponse = zod.void()
 /**
  * @summary Update the authenticated user's profile image
  */
+
+
+
+export const UpdateAccountProfileImageBody = zod.object({
+  "data": zod.string().min(1),
+  "mimeType": zod.enum(['image/jpeg', 'image/png', 'image/webp'])
+})
+
 export const UpdateAccountProfileImageResponse = zod.void()
 
 

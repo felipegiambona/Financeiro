@@ -19,7 +19,7 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   updateProfile: (firstName: string, lastName?: string) => Promise<void>;
-  updateProfileImage: (imageUri: string, mimeType: string) => Promise<void>;
+  updateProfileImage: (imageBase64: string, mimeType: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -61,16 +61,8 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     }
   }, [user]);
 
-  const updateProfileImage = useCallback(async (imageUri: string, mimeType: string) => {
-    const imageResponse = await fetch(imageUri);
-    if (!imageResponse.ok) {
-      throw new Error('Não foi possível ler a imagem selecionada.');
-    }
-
-    const imageBlob = await imageResponse.blob();
-    await updateAccountProfileImage(imageBlob, {
-      headers: { 'Content-Type': mimeType },
-    });
+  const updateProfileImage = useCallback(async (imageBase64: string, mimeType: string) => {
+    await updateAccountProfileImage({ data: imageBase64, mimeType });
     try {
       await user?.reload();
     } catch {

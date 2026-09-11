@@ -16,6 +16,21 @@ export interface ProfileUpdate {
   lastName?: string;
 }
 
+export type ProfileImageUpdateMimeType = typeof ProfileImageUpdateMimeType[keyof typeof ProfileImageUpdateMimeType];
+
+
+export const ProfileImageUpdateMimeType = {
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface ProfileImageUpdate {
+  /** @minLength 1 */
+  data: string;
+  mimeType: ProfileImageUpdateMimeType;
+}
+
 export type RecurrenceKind = typeof RecurrenceKind[keyof typeof RecurrenceKind];
 
 
