@@ -1,13 +1,11 @@
 import { Feather } from '@expo/vector-icons';
 import { useUser } from '@clerk/expo';
 import * as ImagePicker from 'expo-image-picker';
-import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/context/AuthContext';
-import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
 
 function getInitials(name: string, email: string): string {
@@ -36,15 +34,6 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const insets = useSafeAreaInsets();
   const { session, signOut, deleteAccount, updateProfile, updateProfileImage } = useAuth();
   const { user } = useUser();
-  const {
-    clearPendingNotifications,
-    notificationAccessEnabled,
-    notificationImportEnabled,
-    notificationListenerAvailable,
-    openNotificationSettings,
-    refreshNotificationAccess,
-    setNotificationImportEnabled,
-  } = useFinance();
   const name = session?.name || 'Usuário';
   const email = session?.email || 'E-mail não informado';
   const initials = useMemo(() => getInitials(name, email), [email, name]);
@@ -53,33 +42,10 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const [profileName, setProfileName] = useState(name);
   const [savingProfile, setSavingProfile] = useState(false);
 
-  useFocusEffect(useCallback(() => {
-    void refreshNotificationAccess();
-  }, [refreshNotificationAccess]));
-
-  const handleNotificationToggle = async (enabled: boolean) => {
-    if (!enabled) {
-      await setNotificationImportEnabled(false);
-      return;
-    }
-    if (!notificationAccessEnabled) {
-      await setNotificationImportEnabled(true);
-      await openNotificationSettings();
-      return;
-    }
-    await setNotificationImportEnabled(true);
-  };
-
-  const handleSignOut = async () => {
-    await clearPendingNotifications();
-    await signOut();
-  };
-
   const handleDeleteAccount = async () => {
     setDeletingAccount(true);
     try {
       await deleteAccount();
-      await clearPendingNotifications();
     } catch {
       setDeletingAccount(false);
       Alert.alert('Não foi possível excluir a conta', 'Sua conta não foi excluída. Tente novamente.');
@@ -236,58 +202,6 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
           </View>
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Automação</Text>
-        <View style={[styles.automationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.automationHeader}>
-            <View style={[styles.infoIcon, { backgroundColor: colors.secondary }]}>
-              <Feather name="bell" size={16} color={colors.foreground} />
-            </View>
-            <View style={styles.automationCopy}>
-              <Text style={[styles.automationTitle, { color: colors.foreground }]}>Importar por notificações</Text>
-              <Text style={[styles.automationDescription, { color: colors.mutedForeground }]}>
-                Cria lançamentos pagos quando uma notificação contém um valor e termos de movimentação.
-              </Text>
-            </View>
-            {Platform.OS === 'android' && notificationListenerAvailable ? (
-              <Switch
-                accessibilityLabel="Importar lançamentos por notificações"
-                testID="notification-import-switch"
-                value={notificationImportEnabled && notificationAccessEnabled}
-                onValueChange={(value) => void handleNotificationToggle(value)}
-                trackColor={{ false: colors.secondary, true: colors.primary }}
-                thumbColor={colors.foreground}
-              />
-            ) : null}
-          </View>
-          {Platform.OS !== 'android' ? (
-            <Text style={[styles.automationStatus, { color: colors.mutedForeground }]}>Disponível somente em development build Android.</Text>
-          ) : !notificationListenerAvailable ? (
-            <Text style={[styles.automationStatus, { color: colors.mutedForeground }]}>Instale uma development build para ativar esta função.</Text>
-          ) : (
-            <>
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              <Text style={[styles.automationStatus, { color: notificationAccessEnabled ? colors.paid : colors.expense }]}>
-                {notificationAccessEnabled ? 'Acesso às notificações concedido.' : 'Acesso às notificações ainda não concedido.'}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={notificationAccessEnabled ? 'Revisar acesso às notificações' : 'Conceder acesso às notificações'}
-                testID="notification-settings-button"
-                onPress={() => void openNotificationSettings()}
-                style={({ pressed }) => [styles.automationButton, { borderColor: colors.border }, pressed && styles.pressed]}
-              >
-                <Feather name="settings" size={15} color={colors.foreground} />
-                <Text style={[styles.automationButtonText, { color: colors.foreground }]}>
-                  {notificationAccessEnabled ? 'Revisar acesso' : 'Conceder acesso'}
-                </Text>
-              </Pressable>
-              <Text style={[styles.privacyNote, { color: colors.mutedForeground }]}>
-                O Android exige acesso especial para ler notificações. O app guarda apenas candidatos com valor e não salva o texto completo da notificação.
-              </Text>
-            </>
-          )}
-        </View>
-
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Sair da conta"
@@ -295,10 +209,10 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
           disabled={deletingAccount}
           onPress={() => Alert.alert(
             'Sair da conta',
-            'As notificações pendentes deste dispositivo serão descartadas.',
+            'Você será desconectado deste dispositivo.',
             [
               { text: 'Cancelar', style: 'cancel' },
-              { text: 'Sair', style: 'destructive', onPress: () => void handleSignOut() },
+              { text: 'Sair', style: 'destructive', onPress: () => void signOut() },
             ],
           )}
           style={({ pressed }) => [styles.signOutButton, { backgroundColor: colors.expenseSoft, borderColor: colors.expense }, pressed && styles.pressed]}
@@ -374,15 +288,6 @@ const styles = StyleSheet.create({
   profileSaveButton: { flex: 1, minHeight: 42, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   profileCancelText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   profileSaveText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
-  automationCard: { borderWidth: 1, borderRadius: 9, padding: 13 },
-  automationHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  automationCopy: { flex: 1, minWidth: 0 },
-  automationTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
-  automationDescription: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', marginTop: 4 },
-  automationStatus: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_500Medium', marginTop: 10 },
-  automationButton: { minHeight: 40, borderWidth: 1, borderRadius: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 10 },
-  automationButtonText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
-  privacyNote: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular', marginTop: 10 },
   signOutButton: { minHeight: 48, borderRadius: 8, borderWidth: 1, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   signOutText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   deleteCard: { borderWidth: 1, borderRadius: 9, padding: 13 },

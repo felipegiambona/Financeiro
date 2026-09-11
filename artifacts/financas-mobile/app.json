@@ -27,8 +27,7 @@
         }
       ],
       "expo-secure-store",
-      "expo-web-browser",
-      "./plugins/withNotificationListener"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

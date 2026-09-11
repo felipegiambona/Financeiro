@@ -1,6 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Platform } from 'react-native';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   createTransaction as persistTransaction,
   clearTransactions as clearPersistedTransactions,
@@ -16,18 +14,6 @@ import {
   PaymentStatus,
   Transaction,
 } from '@/types/transaction';
-import {
-  acknowledgeNotificationTransactions,
-  clearPendingNotificationTransactions,
-  getPendingNotificationTransactions,
-  isNotificationListenerAvailable,
-  isNotificationListenerEnabled,
-  normalizeNotificationType,
-  openNotificationListenerSettings,
-} from '@/services/notificationListener';
-
-const NOTIFICATION_IMPORT_ENABLED_KEY = '@financas-mobile/notification-import-enabled';
-
 interface FinanceContextValue {
   transactions: Transaction[];
   loading: boolean;
@@ -45,13 +31,6 @@ interface FinanceContextValue {
     paymentStatus?: PaymentStatus;
   }) => Promise<void>;
   clearTransactions: () => Promise<void>;
-  notificationListenerAvailable: boolean;
-  notificationAccessEnabled: boolean;
-  notificationImportEnabled: boolean;
-  refreshNotificationAccess: () => Promise<void>;
-  openNotificationSettings: () => Promise<boolean>;
-  setNotificationImportEnabled: (enabled: boolean) => Promise<void>;
-  clearPendingNotifications: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextValue | null>(null);
@@ -60,10 +39,6 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notificationAccessEnabled, setNotificationAccessEnabled] = useState(false);
-  const [notificationImportEnabled, setNotificationImportEnabledState] = useState(false);
-  const notificationSyncInFlight = useRef(false);
-  const notificationListenerAvailable = isNotificationListenerAvailable();
 
   const reloadTransactions = useCallback(async () => {
     const nextTransactions = await getTransactions();
@@ -86,32 +61,6 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  useEffect(() => {
-    let active = true;
-    void AsyncStorage.getItem(NOTIFICATION_IMPORT_ENABLED_KEY).then((value) => {
-      if (active) setNotificationImportEnabledState(value === 'true');
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const refreshNotificationAccess = useCallback(async () => {
-    if (Platform.OS !== 'android' || !notificationListenerAvailable) {
-      setNotificationAccessEnabled(false);
-      return;
-    }
-    try {
-      setNotificationAccessEnabled(await isNotificationListenerEnabled());
-    } catch {
-      setNotificationAccessEnabled(false);
-    }
-  }, [notificationListenerAvailable]);
-
-  useEffect(() => {
-    void refreshNotificationAccess();
-  }, [refreshNotificationAccess]);
 
   const createTransaction = useCallback(async (input: NewTransactionInput) => {
     try {
@@ -166,97 +115,6 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
     setTransactions([]);
   }, []);
 
-  const openNotificationSettings = useCallback(
-    () => openNotificationListenerSettings(),
-    [],
-  );
-
-  const setNotificationImportEnabled = useCallback(async (enabled: boolean) => {
-    setNotificationImportEnabledState(enabled);
-    await AsyncStorage.setItem(NOTIFICATION_IMPORT_ENABLED_KEY, String(enabled));
-  }, []);
-
-  const clearPendingNotifications = useCallback(async () => {
-    await clearPendingNotificationTransactions();
-  }, []);
-
-  const syncNotificationTransactions = useCallback(async () => {
-    if (
-      Platform.OS !== 'android'
-      || !notificationListenerAvailable
-      || !notificationAccessEnabled
-      || !notificationImportEnabled
-      || notificationSyncInFlight.current
-    ) return;
-
-    notificationSyncInFlight.current = true;
-    try {
-      const pending = await getPendingNotificationTransactions();
-      const acknowledgedIds: string[] = [];
-      for (const candidate of pending) {
-        try {
-          await persistTransaction({
-            type: normalizeNotificationType(candidate.type),
-            amount: candidate.amount,
-            description: candidate.description,
-            date: candidate.date,
-            dueDate: null,
-            recurrence: { kind: 'none' },
-            paymentStatus: 'paid',
-          });
-          acknowledgedIds.push(candidate.id);
-        } catch {
-          break;
-        }
-      }
-      if (acknowledgedIds.length > 0) {
-        await acknowledgeNotificationTransactions(acknowledgedIds);
-        await reloadTransactions();
-      }
-    } catch {
-      setError('Não foi possível importar lançamentos das notificações.');
-    } finally {
-      notificationSyncInFlight.current = false;
-    }
-  }, [
-    notificationAccessEnabled,
-    notificationImportEnabled,
-    notificationListenerAvailable,
-    reloadTransactions,
-  ]);
-
-  useEffect(() => {
-    if (!loading) void syncNotificationTransactions();
-  }, [loading, syncNotificationTransactions]);
-
-  useEffect(() => {
-    if (
-      Platform.OS !== 'android'
-      || !notificationListenerAvailable
-      || !notificationImportEnabled
-    ) return undefined;
-
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        void refreshNotificationAccess();
-        void syncNotificationTransactions();
-      }
-    });
-    const interval = setInterval(() => {
-      if (AppState.currentState === 'active') void syncNotificationTransactions();
-    }, 15000);
-
-    return () => {
-      subscription.remove();
-      clearInterval(interval);
-    };
-  }, [
-    notificationImportEnabled,
-    notificationListenerAvailable,
-    refreshNotificationAccess,
-    syncNotificationTransactions,
-  ]);
-
   const value = useMemo(
     () => ({
       transactions,
@@ -270,13 +128,6 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
       deleteTransactions,
       updateTransactions,
       clearTransactions,
-      notificationListenerAvailable,
-      notificationAccessEnabled,
-      notificationImportEnabled,
-      refreshNotificationAccess,
-      openNotificationSettings,
-      setNotificationImportEnabled,
-      clearPendingNotifications,
     }),
     [
       transactions,
@@ -290,13 +141,6 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
       deleteTransactions,
       updateTransactions,
       clearTransactions,
-      notificationListenerAvailable,
-      notificationAccessEnabled,
-      notificationImportEnabled,
-      refreshNotificationAccess,
-      openNotificationSettings,
-      setNotificationImportEnabled,
-      clearPendingNotifications,
     ],
   );
 
