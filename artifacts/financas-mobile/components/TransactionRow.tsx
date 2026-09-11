@@ -44,8 +44,8 @@ export function TransactionRow({
   const position = useRef(0);
   const panStart = useRef(0);
 
-  useEffect(() => {
-    const target = swipeOpen ? -SWIPE_ACTION_WIDTH : 0;
+  const animateTo = (target: number) => {
+    translateX.flattenOffset();
     position.current = target;
     Animated.spring(translateX, {
       toValue: target,
@@ -53,6 +53,10 @@ export function TransactionRow({
       tension: 70,
       useNativeDriver: true,
     }).start();
+  };
+
+  useEffect(() => {
+    animateTo(swipeOpen ? -SWIPE_ACTION_WIDTH : 0);
   }, [swipeOpen, translateX]);
 
   const closeSwipe = () => {
@@ -68,18 +72,26 @@ export function TransactionRow({
         && Math.abs(gestureState.dx) > Math.abs(gestureState.dy)
       ),
       onPanResponderGrant: () => {
-        panStart.current = position.current;
+        translateX.stopAnimation((currentValue) => {
+          const current = Math.max(-SWIPE_ACTION_WIDTH, Math.min(0, currentValue));
+          panStart.current = current;
+          position.current = current;
+          translateX.setOffset(current);
+          translateX.setValue(0);
+        });
       },
-      onPanResponderMove: (_, gestureState) => {
-        const nextPosition = Math.max(
+      onPanResponderMove: Animated.event(
+        [null, { dx: translateX }],
+        { useNativeDriver: true },
+      ),
+      onPanResponderRelease: (_, gestureState) => {
+        const current = Math.max(
           -SWIPE_ACTION_WIDTH,
           Math.min(0, panStart.current + gestureState.dx),
         );
-        position.current = nextPosition;
-        translateX.setValue(nextPosition);
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        const shouldOpen = position.current < -(SWIPE_ACTION_WIDTH * 0.42) || gestureState.vx < -0.5;
+        const shouldOpen = current < -(SWIPE_ACTION_WIDTH * 0.42) || gestureState.vx < -0.5;
+        const target = shouldOpen ? -SWIPE_ACTION_WIDTH : 0;
+        animateTo(target);
         if (shouldOpen) {
           onSwipeOpen?.();
         } else {
@@ -100,7 +112,6 @@ export function TransactionRow({
   const handleEdit = () => {
     if (swipeOpen) {
       closeSwipe();
-      return;
     }
     onPress?.();
   };
@@ -130,7 +141,7 @@ export function TransactionRow({
             onPress={handlePaymentStatus}
             style={({ pressed }) => [styles.swipeAction, { backgroundColor: colors.muted }, pressed && styles.pressed]}
           >
-            <Feather name={isPaid ? 'x-circle' : 'check-circle'} size={21} color={colors.foreground} />
+            <Feather name={isPaid ? 'check-circle' : 'clock'} size={21} color={isPaid ? colors.paid : colors.pending} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
