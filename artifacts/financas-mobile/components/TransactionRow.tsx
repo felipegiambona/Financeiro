@@ -29,8 +29,8 @@ export function TransactionRow({
   const colors = useColors();
   const isIncome = transaction.type === 'income';
   const isTransfer = transaction.type === 'transfer';
-  const tone = isTransfer ? colors.primary : isIncome ? colors.income : colors.expense;
-  const softTone = isTransfer ? colors.secondary : isIncome ? colors.incomeSoft : colors.expenseSoft;
+  const tone = isTransfer ? colors.transfer : isIncome ? colors.income : colors.expense;
+  const softTone = isTransfer ? colors.transferSoft : isIncome ? colors.incomeSoft : colors.expenseSoft;
   const isPaid = transaction.paymentStatus === 'paid';
   return (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
