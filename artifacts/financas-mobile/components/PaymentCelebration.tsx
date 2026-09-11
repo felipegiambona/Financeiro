@@ -97,7 +97,7 @@ export function PaymentCelebration({ description, onDone }: PaymentCelebrationPr
       {CONFETTI.map((piece, index) => (
         <ConfettiPiece key={`${piece.x}-${piece.y}`} piece={piece} color={confettiColors[index % confettiColors.length]} />
       ))}
-      <Animated.View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.paid }, cardStyle]}>
+      <Animated.View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, cardStyle]}>
         <View style={[styles.icon, { backgroundColor: colors.paidSoft }]}>
           <Feather name="check" size={25} color={colors.paid} />
         </View>
