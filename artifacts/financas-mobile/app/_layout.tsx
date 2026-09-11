@@ -26,6 +26,7 @@ import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { WalletProvider } from '@/context/WalletContext';
 import { CategoryProvider } from '@/context/CategoryContext';
 import { LimitProvider } from '@/context/LimitContext';
+import { DashboardPreferencesProvider } from '@/context/DashboardPreferencesContext';
 import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -53,6 +54,7 @@ function RootLayoutNav() {
         <Stack.Screen name="more/settings" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/categories" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/limits" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="more/dashboard-cards" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="wallets" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />
       </Stack.Protected>
@@ -76,7 +78,9 @@ function AuthenticatedApp() {
       <WalletProvider>
         <CategoryProvider>
           <LimitProvider>
-            <RootLayoutNav />
+            <DashboardPreferencesProvider>
+              <RootLayoutNav />
+            </DashboardPreferencesProvider>
           </LimitProvider>
         </CategoryProvider>
       </WalletProvider>

@@ -12,6 +12,7 @@ import { useFinance } from '@/context/FinanceContext';
 import { useLimits } from '@/context/LimitContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWallets } from '@/context/WalletContext';
+import { useDashboardPreferences } from '@/context/DashboardPreferencesContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateMonthlyTotals, calculateWalletTotals } from '@/services/financialRules';
 import { calculateLimitUsage } from '@/services/limitRules';
@@ -26,6 +27,7 @@ export default function DashboardScreen() {
   const { categories } = useCategories();
   const { limits, loading: limitsLoading } = useLimits();
   const { signOut } = useAuth();
+  const { visibility } = useDashboardPreferences();
   const monthlyTotals = useMemo(() => calculateMonthlyTotals(transactions, new Date()), [transactions]);
   const walletTotals = useMemo(() => calculateWalletTotals(wallets, transactions), [transactions, wallets]);
   const balance = calculateCurrentBalance(wallets, transactions);
@@ -56,7 +58,7 @@ export default function DashboardScreen() {
         />
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
           <>
-            <View style={[styles.balanceCard, { backgroundColor: colors.primary }]}>
+            {visibility.balance ? <View style={[styles.balanceCard, { backgroundColor: colors.primary }]}>
               <View style={styles.balanceTop}>
                 <Text style={styles.balanceLabel}>Saldo atual</Text>
                 <View style={styles.balanceMark}>
@@ -65,8 +67,8 @@ export default function DashboardScreen() {
               </View>
               <Text adjustsFontSizeToFit numberOfLines={1} style={styles.balanceValue}>{formatCurrency(balance)}</Text>
               <Text style={styles.balanceHint}>Receitas menos despesas</Text>
-            </View>
-            <View style={styles.monthMetrics}>
+            </View> : null}
+            {visibility.monthlySummary ? <View style={styles.monthMetrics}>
               <View style={[styles.monthMetric, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.metricIcon, { backgroundColor: colors.incomeSoft }]}>
                   <Feather name="trending-up" size={16} color={colors.income} />
@@ -81,8 +83,8 @@ export default function DashboardScreen() {
                 <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>Despesas do mês</Text>
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.expense)}</Text>
               </View>
-            </View>
-            <View style={styles.monthMetrics}>
+            </View> : null}
+            {visibility.pending ? <View style={styles.monthMetrics}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Ver receitas não pagas"
@@ -121,8 +123,8 @@ export default function DashboardScreen() {
                 </View>
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.payable)}</Text>
               </Pressable>
-            </View>
-            <View style={[styles.walletCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            </View> : null}
+            {visibility.wallets ? <View style={[styles.walletCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.walletHeader}>
                 <Text style={[styles.walletTitle, { color: colors.foreground }]}>Carteiras</Text>
                 <View style={styles.walletHeaderActions}>
@@ -166,8 +168,8 @@ export default function DashboardScreen() {
                   ))}
                 </View>
               )}
-            </View>
-            <View style={styles.limitsSection}>
+            </View> : null}
+            {visibility.limits ? <View style={styles.limitsSection}>
               <View style={styles.limitsHeader}>
                 <View>
                   <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Meus limites</Text>
@@ -203,6 +205,27 @@ export default function DashboardScreen() {
                   />
                 ))
               )}
+            </View> : null}
+            <View style={styles.customizeSection}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Personalizar cards do dashboard"
+                testID="customize-dashboard-button"
+                onPress={() => router.push('/more/dashboard-cards')}
+                style={({ pressed }) => [
+                  styles.customizeButton,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View style={[styles.customizeIcon, { backgroundColor: colors.secondary }]}>
+                  <Feather name="sliders" size={17} color={colors.foreground} />
+                </View>
+                <Text style={[styles.customizeTitle, { color: colors.foreground }]}>Personalizar dashboard</Text>
+                <Text style={[styles.customizeHint, { color: colors.mutedForeground }]}>
+                  Escolha quais cards deseja visualizar nesta tela.
+                </Text>
+              </Pressable>
             </View>
           </>
         )}
@@ -238,7 +261,7 @@ const styles = StyleSheet.create({
   walletName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   walletNameText: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium' },
   walletValue: { fontSize: 13, fontFamily: 'Inter_700Bold', textAlign: 'right' },
-  limitsSection: { marginTop: 5 },
+  limitsSection: { marginTop: 24 },
   limitsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   sectionTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   sectionHint: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
@@ -247,4 +270,9 @@ const styles = StyleSheet.create({
   emptyLimitCard: { minHeight: 72, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
   limitState: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   pressed: { opacity: 0.72 },
+  customizeSection: { alignItems: 'center', marginTop: 24 },
+  customizeButton: { width: '100%', minHeight: 98, borderWidth: 1, borderStyle: 'dashed', borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
+  customizeIcon: { width: 31, height: 31, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  customizeTitle: { fontSize: 12, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+  customizeHint: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular', textAlign: 'center', marginTop: 3 },
 });
