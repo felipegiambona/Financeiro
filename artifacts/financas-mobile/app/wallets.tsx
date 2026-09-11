@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   walletActions: { flexDirection: 'row', gap: 6 },
   iconButton: { width: 30, height: 30, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.72)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
-  modalCard: { width: '100%', maxWidth: 340, maxHeight: '82%', borderRadius: 10, borderWidth: 1, padding: 14, flexShrink: 1 },
+  modalCard: { width: 340, maxHeight: '82%', borderRadius: 10, borderWidth: 1, padding: 14, flexShrink: 1 },
   modalFormScroll: { flexShrink: 1 },
   modalFormContent: { paddingBottom: 1 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
