@@ -81,14 +81,18 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         aspect: [1, 1],
         quality: 0.8,
       });
-      const imageUri = result.assets?.[0]?.uri;
+      const imageAsset = result.assets?.[0];
+      const imageUri = imageAsset?.uri;
       if (result.canceled || !imageUri) return;
 
       setSavingProfile(true);
-      const imageResponse = await fetch(imageUri);
-      if (!imageResponse.ok) throw new Error('Não foi possível ler a imagem selecionada.');
-      const imageBlob = await imageResponse.blob();
-      await user.setProfileImage({ file: imageBlob });
+      const imageFile = {
+        uri: imageUri,
+        name: imageAsset.fileName ?? 'profile-image.jpg',
+        type: imageAsset.mimeType ?? 'image/jpeg',
+      };
+      await user.setProfileImage({ file: imageFile as unknown as Blob });
+      await user.reload();
     } catch {
       Alert.alert('Não foi possível alterar a foto', 'Tente novamente.');
     } finally {
@@ -114,6 +118,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         firstName,
         ...(lastName ? { lastName } : {}),
       });
+      await user.reload();
       setEditingProfile(false);
     } catch {
       Alert.alert('Não foi possível salvar o perfil', 'Tente novamente.');
