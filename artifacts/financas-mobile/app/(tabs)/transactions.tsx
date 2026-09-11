@@ -439,7 +439,7 @@ export default function TransactionsScreen() {
           {moreFiltersOpen ? (
             <View style={styles.moreFiltersContent}>
               <View style={styles.filterGroup}>
-                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Tipo</Text>
+                <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Tipo</Text>
                 <View style={styles.filterRows}>
                   <View style={styles.filterRow}>
                     {TYPE_FILTERS.slice(0, 2).map(renderTypeFilter)}
@@ -450,7 +450,7 @@ export default function TransactionsScreen() {
                 </View>
               </View>
               <View style={styles.filterGroup}>
-                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Status</Text>
+                <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Status</Text>
                 <View style={styles.filterOptions}>
                   {STATUS_FILTERS.map((option) => {
                     const active = statusFilter === option.value;
@@ -478,7 +478,7 @@ export default function TransactionsScreen() {
                 </View>
               </View>
               <View style={styles.filterGroup}>
-                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Carteira</Text>
+                <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Carteira</Text>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Selecionar carteira, ${walletFilter === 'all' ? 'todas as carteiras' : wallets.find((wallet) => wallet.id === walletFilter)?.title ?? 'carteira selecionada'}`}
@@ -498,7 +498,7 @@ export default function TransactionsScreen() {
                 </Pressable>
               </View>
               <View style={styles.filterGroup}>
-                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Categoria</Text>
+                <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Categoria</Text>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Selecionar categoria, ${categoryFilter === 'all' ? 'todas as categorias' : categoryFilter === 'uncategorized' ? 'sem categoria' : categories.find((category) => category.id === categoryFilter)?.name ?? 'categoria selecionada'}`}
@@ -522,7 +522,7 @@ export default function TransactionsScreen() {
                 </Pressable>
               </View>
               <View style={styles.filterGroup}>
-                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Data</Text>
+                <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Data</Text>
                 <View style={styles.dateFilterContent}>
                   <View style={styles.dateFilterRow}>
                     <Pressable
@@ -555,7 +555,7 @@ export default function TransactionsScreen() {
                 </View>
               </View>
               <View style={styles.filterGroup}>
-                <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Recorrência</Text>
+                <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Recorrência</Text>
                 <View style={styles.filterOptions}>
                   {RECURRENCE_FILTERS.map((option) => {
                     const active = recurrenceFilter === option.value;
@@ -949,7 +949,7 @@ const styles = StyleSheet.create({
   activeFiltersDot: { width: 6, height: 6, borderRadius: 3 },
   moreFiltersContent: { gap: 7, paddingTop: 1 },
   filterGroup: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
-  filterLabel: { width: 43, marginLeft: 3, fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  filterLabel: { width: 64, flexShrink: 0, marginLeft: 3, fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   filterRows: { flex: 1, gap: 5 },
   filterRow: { flexDirection: 'row', gap: 5 },
   filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
