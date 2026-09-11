@@ -78,7 +78,7 @@ export default function SettingsScreen() {
             );
           })}
         </View>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Organização</Text>
+        <Text style={[styles.sectionLabel, styles.organizationLabel, { color: colors.mutedForeground }]}>Organização</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Gerenciar categorias"
@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16 },
   intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 22 },
   sectionLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 },
+  organizationLabel: { marginTop: 24 },
   optionsCard: { borderWidth: 1, borderRadius: 9, paddingHorizontal: 13 },
   managementCard: { minHeight: 76, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 22 },
   option: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 11 },
