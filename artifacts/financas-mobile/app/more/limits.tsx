@@ -7,6 +7,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { LimitCard } from '@/components/LimitCard';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { useCategories } from '@/context/CategoryContext';
 import { useFinance } from '@/context/FinanceContext';
 import { useLimits } from '@/context/LimitContext';
@@ -33,6 +34,7 @@ export default function LimitsScreen() {
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState<LimitPeriod>('monthly');
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Limit | null>(null);
 
   const openEditor = (limit?: Limit) => {
     setEditingLimit(limit ?? null);
@@ -99,23 +101,7 @@ export default function LimitsScreen() {
   };
 
   function confirmDelete(limit: Limit) {
-    const categoryName = categories.find((category) => category.id === limit.categoryId)?.name ?? 'este limite';
-    Alert.alert(
-      `Excluir limite de ${categoryName}?`,
-      'O limite será removido, mas os lançamentos continuarão salvos.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: () => {
-            void deleteLimit(limit.id).catch(() => {
-              Alert.alert('Não foi possível excluir', 'Tente novamente.');
-            });
-          },
-        },
-      ],
-    );
+    setDeleteTarget(limit);
   }
 
   const selectedCategory = categories.find((category) => category.id === categoryId);
@@ -301,6 +287,15 @@ export default function LimitsScreen() {
           </View>
         </View>
       </Modal>
+      <ConfirmationModal
+        visible={deleteTarget !== null}
+        title={deleteTarget ? `Excluir limite de ${categories.find((category) => category.id === deleteTarget.categoryId)?.name ?? 'este limite'}?` : 'Excluir limite?'}
+        message="O limite será removido, mas os lançamentos continuarão salvos."
+        confirmLabel="Excluir"
+        onConfirm={() => deleteTarget ? deleteLimit(deleteTarget.id) : Promise.resolve()}
+        onClose={() => setDeleteTarget(null)}
+        errorTitle="Não foi possível excluir"
+      />
     </View>
   );
 }

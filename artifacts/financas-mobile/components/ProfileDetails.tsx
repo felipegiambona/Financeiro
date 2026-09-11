@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/hooks/useColors';
@@ -38,6 +39,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const email = session?.email || 'E-mail não informado';
   const initials = useMemo(() => getInitials(name, email), [email, name]);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileName, setProfileName] = useState(name);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -48,7 +50,9 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
       await deleteAccount();
     } catch {
       setDeletingAccount(false);
-      Alert.alert('Não foi possível excluir a conta', 'Sua conta não foi excluída. Tente novamente.');
+      throw new Error('Não foi possível excluir a conta.');
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -232,14 +236,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
             accessibilityLabel="Excluir conta permanentemente"
             testID="profile-delete-account-button"
             disabled={deletingAccount}
-            onPress={() => Alert.alert(
-              'Excluir conta permanentemente?',
-              'Todos os seus dados financeiros serão removidos e você não poderá recuperar esta conta.',
-              [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'Excluir conta', style: 'destructive', onPress: () => void handleDeleteAccount() },
-              ],
-            )}
+            onPress={() => setDeleteAccountModalOpen(true)}
             style={({ pressed }) => [
               styles.deleteButton,
               { backgroundColor: colors.expense, borderColor: colors.expense },
@@ -254,6 +251,16 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
           </Pressable>
         </View>
       </ScrollView>
+      <ConfirmationModal
+        visible={deleteAccountModalOpen}
+        title="Excluir conta permanentemente?"
+        message="Todos os seus dados financeiros serão removidos e você não poderá recuperar esta conta."
+        confirmLabel="Excluir conta"
+        onConfirm={handleDeleteAccount}
+        onClose={() => setDeleteAccountModalOpen(false)}
+        errorTitle="Não foi possível excluir a conta"
+        errorMessage="Sua conta não foi excluída. Tente novamente."
+      />
     </View>
   );
 }
