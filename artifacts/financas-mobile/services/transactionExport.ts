@@ -1,5 +1,4 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { File } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
@@ -178,8 +177,8 @@ async function shareNativeFile(uri: string, format: TransactionExportFormat): Pr
     throw new Error('O compartilhamento de arquivos não está disponível neste dispositivo.');
   }
   // Android does not allow another app to read the private file:// URI directly.
-  // Expo FileSystem exposes a temporary content:// URI with the required grant.
-  const shareUri = Platform.OS === 'android' ? new File(uri).contentUri : uri;
+  // The legacy helper creates a FileProvider content:// URI with a read grant.
+  const shareUri = Platform.OS === 'android' ? await FileSystem.getContentUriAsync(uri) : uri;
   await Sharing.shareAsync(shareUri, {
     dialogTitle: `Salvar ou compartilhar ${format.toUpperCase()}`,
     mimeType: format === 'csv' ? 'text/csv' : 'application/pdf',
@@ -210,6 +209,13 @@ export async function exportTransactions(
   const html = createPdfHtml(items, periodLabel);
   if (Platform.OS === 'web') {
     printOnWeb(html);
+    return;
+  }
+  // Expo Go on Android can fail while writing the temporary PDF file. The
+  // native print sheet can save the document as PDF without that intermediate
+  // app-private file.
+  if (Platform.OS === 'android') {
+    await Print.printAsync({ html });
     return;
   }
   const { uri } = await Print.printToFileAsync({ html });
