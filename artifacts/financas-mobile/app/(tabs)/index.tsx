@@ -26,8 +26,15 @@ export default function DashboardScreen() {
   const { wallets, loading: walletsLoading } = useWallets();
   const { categories } = useCategories();
   const { limits, loading: limitsLoading } = useLimits();
-  const { signOut } = useAuth();
+  const { session, signOut } = useAuth();
   const { visibility } = useDashboardPreferences();
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+    const firstName = session?.name.trim().split(/\s+/)[0] || 'usuário';
+
+    return `${timeGreeting}, ${firstName}`;
+  }, [session?.name]);
   const monthlyTotals = useMemo(() => calculateMonthlyTotals(transactions, new Date()), [transactions]);
   const walletTotals = useMemo(() => calculateWalletTotals(wallets, transactions), [transactions, wallets]);
   const balance = calculateCurrentBalance(wallets, transactions);
@@ -49,7 +56,7 @@ export default function DashboardScreen() {
       >
         <ScreenHeader
           eyebrow="Visão geral"
-          title="Seu dinheiro, no controle."
+          title={greeting}
           notificationCount={pendingNotifications.length}
           onNotificationPress={() => router.push('/notifications')}
           actionLabel="Sair"
