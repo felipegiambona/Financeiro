@@ -44,8 +44,8 @@ async function getSavedAmounts(userId: string, goalIds: string[]): Promise<Map<s
   for (const row of rows) {
     if (!row.goalId || row.paymentStatus !== "paid") continue;
     const amount = Number(row.amount);
-    const signedAmount = row.type === "expense" ? -amount : row.type === "income" ? amount : 0;
-    totals.set(row.goalId, (totals.get(row.goalId) ?? 0) + signedAmount);
+    const savedAmount = row.type === "expense" ? amount : 0;
+    totals.set(row.goalId, (totals.get(row.goalId) ?? 0) + savedAmount);
   }
   return totals;
 }

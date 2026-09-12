@@ -5,8 +5,7 @@ export function calculateGoalSavedAmount(goal: Goal, transactions: Transaction[]
   return Math.max(
     transactions.reduce((total, transaction) => {
       if (transaction.goalId !== goal.id || transaction.paymentStatus !== 'paid') return total;
-      if (transaction.type === 'income') return total + transaction.amount;
-      if (transaction.type === 'expense') return total - transaction.amount;
+      if (transaction.type === 'expense') return total + transaction.amount;
       return total;
     }, 0),
     0,
