@@ -14,6 +14,7 @@ export interface TransactionUpdate {
   walletId?: string;
   destinationWalletId?: string | null;
   categoryId?: string | null;
+  goalId?: string | null;
   type?: TransactionUpdateType;
   /** @exclusiveMinimum 0 */
   amount?: number;

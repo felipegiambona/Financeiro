@@ -41,6 +41,7 @@ export interface Transaction {
   walletId: string;
   destinationWalletId?: string | null;
   categoryId?: string | null;
+  goalId?: string | null;
   type: TransactionType;
   amount: number;
   description: string;
@@ -56,6 +57,7 @@ export interface NewTransactionInput {
   walletId?: string;
   destinationWalletId?: string | null;
   categoryId?: string | null;
+  goalId?: string | null;
   type: TransactionType;
   amount: number;
   description: string;

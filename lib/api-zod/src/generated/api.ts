@@ -28,6 +28,7 @@ export const ListTransactionsResponseItem = zod.object({
   "walletId": zod.string().uuid(),
   "destinationWalletId": zod.string().uuid().nullable(),
   "categoryId": zod.string().uuid().nullable(),
+  "goalId": zod.string().uuid().nullish(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(listTransactionsResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -63,6 +64,7 @@ export const CreateTransactionBody = zod.object({
   "walletId": zod.string().uuid().optional(),
   "destinationWalletId": zod.string().uuid().nullish(),
   "categoryId": zod.string().uuid().nullish(),
+  "goalId": zod.string().uuid().nullish(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(createTransactionBodyAmountExclusiveMin),
   "description": zod.string().min(1),
@@ -94,6 +96,7 @@ export const CreateTransactionResponse = zod.object({
   "walletId": zod.string().uuid(),
   "destinationWalletId": zod.string().uuid().nullable(),
   "categoryId": zod.string().uuid().nullable(),
+  "goalId": zod.string().uuid().nullish(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(createTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -135,6 +138,7 @@ export const UpdateTransactionBody = zod.object({
   "walletId": zod.string().uuid().optional(),
   "destinationWalletId": zod.string().uuid().nullish(),
   "categoryId": zod.string().uuid().nullish(),
+  "goalId": zod.string().uuid().nullish(),
   "type": zod.enum(['income', 'expense', 'transfer']).optional(),
   "amount": zod.number().gt(updateTransactionBodyAmountExclusiveMin).optional(),
   "description": zod.string().min(1).optional(),
@@ -167,6 +171,7 @@ export const UpdateTransactionResponse = zod.object({
   "walletId": zod.string().uuid(),
   "destinationWalletId": zod.string().uuid().nullable(),
   "categoryId": zod.string().uuid().nullable(),
+  "goalId": zod.string().uuid().nullish(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(updateTransactionResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -217,6 +222,7 @@ export const UpdateTransactionOccurrencePaymentStatusResponse = zod.object({
   "walletId": zod.string().uuid(),
   "destinationWalletId": zod.string().uuid().nullable(),
   "categoryId": zod.string().uuid().nullable(),
+  "goalId": zod.string().uuid().nullish(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "amount": zod.number().gt(updateTransactionOccurrencePaymentStatusResponseAmountExclusiveMin),
   "description": zod.string(),
@@ -423,6 +429,96 @@ export const DeleteLimitParams = zod.object({
 })
 
 export const DeleteLimitResponse = zod.void()
+
+
+export const listGoalsResponseTargetAmountExclusiveMin = 0;
+
+export const listGoalsResponseSavedAmountMin = 0;
+
+
+
+export const ListGoalsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "title": zod.string(),
+  "targetAmount": zod.number().gt(listGoalsResponseTargetAmountExclusiveMin),
+  "savedAmount": zod.number().min(listGoalsResponseSavedAmountMin),
+  "imageData": zod.string().nullable(),
+  "deadline": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListGoalsResponse = zod.array(ListGoalsResponseItem)
+
+
+
+export const createGoalBodyTargetAmountExclusiveMin = 0;
+
+
+
+export const CreateGoalBody = zod.object({
+  "title": zod.string().min(1),
+  "targetAmount": zod.number().gt(createGoalBodyTargetAmountExclusiveMin),
+  "imageData": zod.string().nullish(),
+  "deadline": zod.coerce.date().nullish()
+})
+
+export const createGoalResponseTargetAmountExclusiveMin = 0;
+
+export const createGoalResponseSavedAmountMin = 0;
+
+
+
+export const CreateGoalResponse = zod.object({
+  "id": zod.string().uuid(),
+  "title": zod.string(),
+  "targetAmount": zod.number().gt(createGoalResponseTargetAmountExclusiveMin),
+  "savedAmount": zod.number().min(createGoalResponseSavedAmountMin),
+  "imageData": zod.string().nullable(),
+  "deadline": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const UpdateGoalParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+export const updateGoalBodyTargetAmountExclusiveMin = 0;
+
+
+
+export const UpdateGoalBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "targetAmount": zod.number().gt(updateGoalBodyTargetAmountExclusiveMin).optional(),
+  "imageData": zod.string().nullish(),
+  "deadline": zod.coerce.date().nullish()
+})
+
+export const updateGoalResponseTargetAmountExclusiveMin = 0;
+
+export const updateGoalResponseSavedAmountMin = 0;
+
+
+
+export const UpdateGoalResponse = zod.object({
+  "id": zod.string().uuid(),
+  "title": zod.string(),
+  "targetAmount": zod.number().gt(updateGoalResponseTargetAmountExclusiveMin),
+  "savedAmount": zod.number().min(updateGoalResponseSavedAmountMin),
+  "imageData": zod.string().nullable(),
+  "deadline": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const DeleteGoalParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteGoalResponse = zod.void()
 
 
 export const UpdateWalletParams = zod.object({

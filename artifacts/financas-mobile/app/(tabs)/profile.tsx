@@ -32,6 +32,12 @@ const MENU_ITEMS = [
     icon: 'target',
   },
   {
+    key: 'goals',
+    title: 'Metas e objetivos',
+    description: 'Planeje e acompanhe o dinheiro dos seus objetivos',
+    icon: 'award',
+  },
+  {
     key: 'settings',
     title: 'Configurações',
     description: 'Aparência e preferências do app',
@@ -70,6 +76,8 @@ export default function MoreScreen() {
                         ? '/more/categories'
                         : item.key === 'limits'
                           ? '/more/limits'
+                        : item.key === 'goals'
+                          ? '/more/goals'
                           : '/more/settings',
                 )}
                 style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}

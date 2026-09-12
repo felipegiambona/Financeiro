@@ -10,6 +10,7 @@ import { WalletIconView } from '@/components/WalletIconView';
 import { useFinance } from '@/context/FinanceContext';
 import { useCategories } from '@/context/CategoryContext';
 import { useWallets } from '@/context/WalletContext';
+import { useGoals } from '@/context/GoalContext';
 import { useColors } from '@/hooks/useColors';
 import { CalculatorModal } from '@/components/CalculatorModal';
 import {
@@ -95,6 +96,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const { createTransaction, updateTransaction } = useFinance();
   const { categories, loading: categoriesLoading, createCategory } = useCategories();
   const { wallets, loading: walletsLoading } = useWallets();
+  const { goals } = useGoals();
   const isEditing = Boolean(transaction);
   const defaultWallet = wallets.find((wallet) => wallet.isDefault) ?? wallets[0];
   const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
@@ -121,6 +123,8 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [categoryId, setCategoryId] = useState<string | null>(transaction?.categoryId ?? null);
+  const [goalPickerOpen, setGoalPickerOpen] = useState(false);
+  const [goalId, setGoalId] = useState<string | null>(transaction?.goalId ?? null);
   const [categoryCreationOpen, setCategoryCreationOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState<string>(CATEGORY_COLORS[0]);
@@ -201,8 +205,9 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           amount: numericAmount,
           description: description.trim(),
           walletId,
-           categoryId,
-           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
+          categoryId,
+          goalId: type === 'income' ? goalId : null,
+          destinationWalletId: type === 'transfer' ? destinationWalletId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
           recurrence: recurrenceValue,
           paymentStatus,
@@ -213,9 +218,10 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           type,
           amount: numericAmount,
           description,
-           categoryId,
+          categoryId,
+          goalId: type === 'income' ? goalId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
-           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
+          destinationWalletId: type === 'transfer' ? destinationWalletId : null,
           recurrence: recurrenceValue,
           paymentStatus,
         });
@@ -289,6 +295,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 testID={`${option}-type-option`}
                 onPress={() => {
                   setType(option);
+                  if (option !== 'income') setGoalId(null);
                   if (option === 'transfer' && (!destinationWalletId || destinationWalletId === walletId)) {
                     setDestinationWalletId(wallets.find((wallet) => wallet.id !== walletId)?.id ?? '');
                   }
@@ -364,6 +371,28 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           </Text>
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
+
+        {type === 'income' ? (
+          <>
+            <Text style={[styles.label, { color: colors.foreground }]}>Meta</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Selecionar meta para esta receita"
+              testID="goal-select"
+              onPress={() => setGoalPickerOpen(true)}
+              style={({ pressed }) => [styles.dateInputShell, { backgroundColor: colors.card, borderColor: colors.input }, pressed && styles.pressed]}
+            >
+              <Feather name="target" size={17} color={goalId ? colors.accent : colors.mutedForeground} />
+              <Text style={[styles.dateInput, { color: goalId ? colors.foreground : colors.mutedForeground }]}>
+                {goals.find((goal) => goal.id === goalId)?.title ?? 'Sem meta associada'}
+              </Text>
+              <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+            </Pressable>
+            <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
+              Receitas pagas associadas a uma meta entram automaticamente no progresso.
+            </Text>
+          </>
+        ) : null}
 
         <Text style={[styles.label, { color: colors.foreground }]}>{type === 'transfer' ? 'Carteira de origem' : 'Carteira'}</Text>
         <Pressable
@@ -704,6 +733,61 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             })}
             {categories.length === 0 ? (
               <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>Crie categorias em Configurações para usá-las aqui.</Text>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={goalPickerOpen}
+        onRequestClose={() => setGoalPickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable accessibilityLabel="Fechar seletor de meta" onPress={() => setGoalPickerOpen(false)} style={StyleSheet.absoluteFill} />
+          <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Meta da receita</Text>
+            <Pressable
+              testID="goal-option-none"
+              onPress={() => {
+                setGoalId(null);
+                setGoalPickerOpen(false);
+              }}
+              style={({ pressed }) => [
+                styles.unitMenuOption,
+                { borderColor: goalId === null ? colors.primary : colors.border, backgroundColor: goalId === null ? colors.primary : colors.card },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.unitMenuOptionText, { color: goalId === null ? colors.primaryForeground : colors.foreground }]}>Sem meta associada</Text>
+              {goalId === null ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+            </Pressable>
+            {goals.map((goal) => {
+              const active = goal.id === goalId;
+              return (
+                <Pressable
+                  key={goal.id}
+                  testID={`goal-option-${goal.id}`}
+                  onPress={() => {
+                    setGoalId(goal.id);
+                    setGoalPickerOpen(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.unitMenuOption,
+                    { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.categoryMenuLabel}>
+                    <Feather name="target" size={16} color={active ? colors.primaryForeground : colors.mutedForeground} />
+                    <Text numberOfLines={1} style={[styles.unitMenuOptionText, styles.categoryMenuText, { color: active ? colors.primaryForeground : colors.foreground }]}>{goal.title}</Text>
+                  </View>
+                  {active ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+                </Pressable>
+              );
+            })}
+            {goals.length === 0 ? (
+              <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>Crie uma meta em Mais para associá-la a esta receita.</Text>
             ) : null}
           </View>
         </View>

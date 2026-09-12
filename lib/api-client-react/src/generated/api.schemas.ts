@@ -120,6 +120,7 @@ export interface Transaction {
   walletId: string;
   destinationWalletId: string | null;
   categoryId: string | null;
+  goalId?: string | null;
   type: TransactionType;
   /** @exclusiveMinimum 0 */
   amount: number;
@@ -153,6 +154,7 @@ export interface TransactionInput {
   walletId?: string;
   destinationWalletId?: string | null;
   categoryId?: string | null;
+  goalId?: string | null;
   type: TransactionInputType;
   /** @exclusiveMinimum 0 */
   amount: number;
@@ -187,6 +189,7 @@ export interface TransactionUpdate {
   walletId?: string;
   destinationWalletId?: string | null;
   categoryId?: string | null;
+  goalId?: string | null;
   type?: TransactionUpdateType;
   /** @exclusiveMinimum 0 */
   amount?: number;
@@ -337,5 +340,42 @@ export interface LimitUpdate {
   /** @exclusiveMinimum 0 */
   amount?: number;
   period?: LimitPeriod;
+}
+
+export interface Goal {
+  id: string;
+  title: string;
+  /** @exclusiveMinimum 0 */
+  targetAmount: number;
+  /** @minimum 0 */
+  savedAmount: number;
+  /** @nullable */
+  imageData: string | null;
+  /** @nullable */
+  deadline: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GoalInput {
+  /** @minLength 1 */
+  title: string;
+  /** @exclusiveMinimum 0 */
+  targetAmount: number;
+  /** @nullable */
+  imageData?: string | null;
+  /** @nullable */
+  deadline?: string | null;
+}
+
+export interface GoalUpdate {
+  /** @minLength 1 */
+  title?: string;
+  /** @exclusiveMinimum 0 */
+  targetAmount?: number;
+  /** @nullable */
+  imageData?: string | null;
+  /** @nullable */
+  deadline?: string | null;
 }
 

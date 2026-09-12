@@ -15,6 +15,7 @@ export interface Transaction {
   walletId: string;
   destinationWalletId: string | null;
   categoryId: string | null;
+  goalId?: string | null;
   type: TransactionType;
   /** @exclusiveMinimum 0 */
   amount: number;

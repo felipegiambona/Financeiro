@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Response } from "express";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
-import { categoriesTable, db, transactionsTable } from "@workspace/db";
+import { categoriesTable, db, goalsTable, transactionsTable } from "@workspace/db";
 import {
   CreateTransactionBody,
   CreateTransactionResponse,
@@ -92,12 +92,21 @@ router.post("/transactions", async (req, res): Promise<void> => {
       return;
     }
   }
+  if (parsed.data.goalId) {
+    const [goal] = await db.select({ id: goalsTable.id }).from(goalsTable)
+      .where(and(eq(goalsTable.id, parsed.data.goalId), eq(goalsTable.userId, userId)));
+    if (!goal || parsed.data.type !== "income") {
+      res.status(400).json({ error: "Invalid goal contribution" });
+      return;
+    }
+  }
   const [row] = await db.insert(transactionsTable).values({
     ...parsed.data,
     userId,
     walletId: wallet.id,
     destinationWalletId: parsed.data.type === "transfer" ? destinationWallet?.id : null,
     categoryId: parsed.data.categoryId ?? null,
+    goalId: parsed.data.goalId ?? null,
     amount: String(parsed.data.amount),
     date: dateOnly(parsed.data.date),
     dueDate: dateOnly(parsed.data.dueDate),
@@ -125,6 +134,7 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     walletId,
     destinationWalletId,
     categoryId,
+    goalId,
     type,
     paymentStatus,
     ...otherUpdates
@@ -157,6 +167,15 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
       return;
     }
   }
+  const effectiveGoalId = goalId === undefined ? current.goalId : goalId;
+  if (effectiveGoalId) {
+    const [goal] = await db.select({ id: goalsTable.id }).from(goalsTable)
+      .where(and(eq(goalsTable.id, effectiveGoalId), eq(goalsTable.userId, userId)));
+    if (!goal || effectiveType !== "income") {
+      res.status(400).json({ error: "Invalid goal contribution" });
+      return;
+    }
+  }
   const updates = {
     ...otherUpdates,
     ...(amount === undefined ? {} : { amount: String(amount) }),
@@ -166,6 +185,7 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     ...(type === undefined ? {} : { type }),
     ...(paymentStatus === undefined ? {} : { paymentStatus }),
     ...(categoryId === undefined ? {} : { categoryId }),
+    ...(goalId === undefined ? {} : { goalId }),
     ...(destinationWalletId === undefined && type === undefined
       ? {}
       : { destinationWalletId: effectiveType === "transfer" ? destinationWallet?.id : null }),

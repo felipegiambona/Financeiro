@@ -13,6 +13,7 @@ export interface TransactionInput {
   walletId?: string;
   destinationWalletId?: string | null;
   categoryId?: string | null;
+  goalId?: string | null;
   type: TransactionInputType;
   /** @exclusiveMinimum 0 */
   amount: number;

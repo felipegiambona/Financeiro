@@ -23,6 +23,9 @@ import type {
   Category,
   CategoryInput,
   CategoryUpdate,
+  Goal,
+  GoalInput,
+  GoalUpdate,
   HealthStatus,
   Limit,
   LimitInput,
@@ -1343,6 +1346,273 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteLimitMutationOptions(options));
+    }
+
+export const getListGoalsUrl = () => {
+
+
+
+
+  return `/api/goals`
+}
+
+export const listGoals = async ( options?: Parameters<typeof customFetch>[1]): Promise<Goal[]> => {
+
+  return customFetch<Goal[]>(getListGoalsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGoalsQueryKey = () => {
+    return [
+    `/api/goals`
+    ] as const;
+    }
+
+
+export const getListGoalsQueryOptions = <TData = Awaited<ReturnType<typeof listGoals>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGoals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGoalsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGoals>>> = ({ signal }) => listGoals({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGoals>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGoalsQueryResult = NonNullable<Awaited<ReturnType<typeof listGoals>>>
+export type ListGoalsQueryError = ErrorType<unknown>
+
+
+
+export function useListGoals<TData = Awaited<ReturnType<typeof listGoals>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGoals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGoalsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateGoalUrl = () => {
+
+
+
+
+  return `/api/goals`
+}
+
+export const createGoal = async (goalInput: GoalInput, options?: Parameters<typeof customFetch>[1]): Promise<Goal> => {
+
+  return customFetch<Goal>(getCreateGoalUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(goalInput)
+  }
+);}
+
+
+
+
+
+export const getCreateGoalMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGoal>>, TError,{data: BodyType<GoalInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGoal>>, TError,{data: BodyType<GoalInput>}, TContext> => {
+
+const mutationKey = ['createGoal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGoal>>, {data: BodyType<GoalInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createGoal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGoalMutationResult = NonNullable<Awaited<ReturnType<typeof createGoal>>>
+    export type CreateGoalMutationBody = BodyType<GoalInput>
+    export type CreateGoalMutationError = ErrorType<unknown>
+
+    export const useCreateGoal = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGoal>>, TError,{data: BodyType<GoalInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createGoal>>,
+        TError,
+        {data: BodyType<GoalInput>},
+        TContext
+      > => {
+      return useMutation(getCreateGoalMutationOptions(options));
+    }
+
+export const getUpdateGoalUrl = (id: string,) => {
+
+
+
+
+  return `/api/goals/${id}`
+}
+
+export const updateGoal = async (id: string,
+    goalUpdate: GoalUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Goal> => {
+
+  return customFetch<Goal>(getUpdateGoalUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(goalUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateGoalMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateGoal>>, TError,{id: string;data: BodyType<GoalUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateGoal>>, TError,{id: string;data: BodyType<GoalUpdate>}, TContext> => {
+
+const mutationKey = ['updateGoal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateGoal>>, {id: string;data: BodyType<GoalUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateGoal(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateGoalMutationResult = NonNullable<Awaited<ReturnType<typeof updateGoal>>>
+    export type UpdateGoalMutationBody = BodyType<GoalUpdate>
+    export type UpdateGoalMutationError = ErrorType<void>
+
+    export const useUpdateGoal = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateGoal>>, TError,{id: string;data: BodyType<GoalUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateGoal>>,
+        TError,
+        {id: string;data: BodyType<GoalUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateGoalMutationOptions(options));
+    }
+
+export const getDeleteGoalUrl = (id: string,) => {
+
+
+
+
+  return `/api/goals/${id}`
+}
+
+export const deleteGoal = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteGoalUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteGoalMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGoal>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteGoal>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteGoal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteGoal>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteGoal(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteGoalMutationResult = NonNullable<Awaited<ReturnType<typeof deleteGoal>>>
+
+    export type DeleteGoalMutationError = ErrorType<void>
+
+    export const useDeleteGoal = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGoal>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteGoal>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteGoalMutationOptions(options));
     }
 
 export const getUpdateWalletUrl = (id: string,) => {

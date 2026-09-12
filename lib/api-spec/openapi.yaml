@@ -18,6 +18,8 @@ tags:
     description: Authenticated category management operations
   - name: limits
     description: Authenticated spending limit management operations
+  - name: goals
+    description: Authenticated savings goal management operations
   - name: account
     description: Authenticated account management operations
 paths:
@@ -302,6 +304,66 @@ paths:
           description: Spending limit removed
         "404":
           description: Not found
+  /goals:
+    get:
+      operationId: listGoals
+      tags: [goals]
+      responses:
+        "200":
+          description: User savings goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+    post:
+      operationId: createGoal
+      tags: [goals]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "201":
+          description: Created savings goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+  /goals/{id}:
+    patch:
+      operationId: updateGoal
+      tags: [goals]
+      parameters:
+        - $ref: "#/components/parameters/GoalId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalUpdate"
+      responses:
+        "200":
+          description: Updated savings goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteGoal
+      tags: [goals]
+      parameters:
+        - $ref: "#/components/parameters/GoalId"
+      responses:
+        "204":
+          description: Goal removed
+        "404":
+          description: Not found
   /wallets/{id}:
     patch:
       operationId: updateWallet
@@ -409,6 +471,13 @@ components:
       schema:
         type: string
         format: uuid
+    GoalId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     HealthStatus:
       type: object
@@ -484,6 +553,7 @@ components:
         walletId: { type: string, format: uuid }
         destinationWalletId: { type: string, format: uuid, nullable: true }
         categoryId: { type: string, format: uuid, nullable: true }
+        goalId: { type: string, format: uuid, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string }
@@ -505,6 +575,7 @@ components:
         walletId: { type: string, format: uuid }
         destinationWalletId: { type: string, format: uuid, nullable: true }
         categoryId: { type: string, format: uuid, nullable: true }
+        goalId: { type: string, format: uuid, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
@@ -519,6 +590,7 @@ components:
         walletId: { type: string, format: uuid }
         destinationWalletId: { type: string, format: uuid, nullable: true }
         categoryId: { type: string, format: uuid, nullable: true }
+        goalId: { type: string, format: uuid, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
@@ -637,4 +709,31 @@ components:
         amount: { type: number, exclusiveMinimum: 0 }
         period:
           $ref: "#/components/schemas/LimitPeriod"
+    Goal:
+      type: object
+      required: [id, title, targetAmount, savedAmount, imageData, deadline, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        targetAmount: { type: number, exclusiveMinimum: 0 }
+        savedAmount: { type: number, minimum: 0 }
+        imageData: { type: ["string", "null"] }
+        deadline: { type: ["string", "null"], format: date }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    GoalInput:
+      type: object
+      required: [title, targetAmount]
+      properties:
+        title: { type: string, minLength: 1 }
+        targetAmount: { type: number, exclusiveMinimum: 0 }
+        imageData: { type: ["string", "null"] }
+        deadline: { type: ["string", "null"], format: date }
+    GoalUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        targetAmount: { type: number, exclusiveMinimum: 0 }
+        imageData: { type: ["string", "null"] }
+        deadline: { type: ["string", "null"], format: date }
 
