@@ -15,10 +15,9 @@ import { calculateCurrentBalance, calculateForecast } from '@/services/financial
 import { getTransactionOccurrencesForMonth, getTransactionOccurrencesInRange } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
 import {
-  formatMonthLabel,
+  formatMonthYearLabel,
   formatTransactionGroupLabel,
   createLocalIsoDate,
-  getDateKey,
   getDayKey,
   getMonthStart,
   parseStoredDate,
@@ -151,7 +150,6 @@ export default function TransactionsScreen() {
     if (validStatusFilter) setStatusFilter(validStatusFilter);
     if (validTypeFilter || validStatusFilter) setMoreFiltersOpen(true);
   }, [routeStatusFilter, routeTypeFilter]);
-  const monthOptions = useMemo(() => [-2, -1, 0, 1, 2].map((offset) => shiftMonth(selectedMonth, offset)), [selectedMonth]);
   const selectedTransactions = useMemo(
     () => {
       const occurrences = dateRangeStart || dateRangeEnd
@@ -477,27 +475,30 @@ export default function TransactionsScreen() {
       >
         <ScreenHeader eyebrow="Movimentações" title="Transações" />
         <View style={styles.monthHeader}>
-          <Text style={[styles.monthTitle, { color: colors.foreground }]}>{formatMonthLabel(selectedMonth)}</Text>
-          <View style={styles.monthArrows}>
-            <Pressable accessibilityLabel="Mês anterior" hitSlop={8} onPress={() => setSelectedMonth((month) => shiftMonth(month, -1))} style={[styles.arrow, { borderColor: colors.border }]}>
-              <Feather name="chevron-left" size={17} color={colors.foreground} />
+          <View style={styles.monthSelector} accessibilityLabel="Selecionar mês das transações">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Mês anterior"
+              hitSlop={8}
+              onPress={() => setSelectedMonth((month) => shiftMonth(month, -1))}
+              style={({ pressed }) => [styles.monthButton, { borderColor: colors.border }, pressed && styles.pressed]}
+            >
+              <Feather name="chevron-left" size={15} color={colors.foreground} />
             </Pressable>
-            <Pressable accessibilityLabel="Próximo mês" hitSlop={8} onPress={() => setSelectedMonth((month) => shiftMonth(month, 1))} style={[styles.arrow, { borderColor: colors.border }]}>
-              <Feather name="chevron-right" size={17} color={colors.foreground} />
+            <Text style={[styles.monthText, { color: colors.foreground }]} numberOfLines={1}>
+              {formatMonthYearLabel(selectedMonth)}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Próximo mês"
+              hitSlop={8}
+              onPress={() => setSelectedMonth((month) => shiftMonth(month, 1))}
+              style={({ pressed }) => [styles.monthButton, { borderColor: colors.border }, pressed && styles.pressed]}
+            >
+              <Feather name="chevron-right" size={15} color={colors.foreground} />
             </Pressable>
           </View>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.months}>
-          {monthOptions.map((month) => {
-            const active = getDateKey(month) === getDateKey(selectedMonth);
-            return (
-              <Pressable key={getDateKey(month)} onPress={() => setSelectedMonth(month)} style={[styles.monthChip, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}>
-                <Text style={[styles.monthChipText, { color: active ? '#FFFFFF' : colors.mutedForeground }]}>{new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(month).replace('.', '')}</Text>
-                <Text style={[styles.monthChipYear, { color: active ? colors.primaryForeground : colors.foreground }]}>{month.getFullYear()}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
         <View style={[styles.filtersPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
           <View style={[styles.searchField, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="search" size={14} color={colors.mutedForeground} />
@@ -1293,14 +1294,10 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: 16 },
-  monthHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  monthTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
-  monthArrows: { flexDirection: 'row', gap: 7 },
-  arrow: { width: 32, height: 32, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  months: { gap: 7, paddingBottom: 14 },
-  monthChip: { width: 65, minHeight: 52, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  monthChipText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', textTransform: 'capitalize' },
-  monthChipYear: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  monthHeader: { alignItems: 'flex-end', marginBottom: 10 },
+  monthSelector: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  monthButton: { width: 25, height: 25, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  monthText: { maxWidth: 122, fontSize: 10, fontFamily: 'Inter_700Bold', textAlign: 'center', textTransform: 'capitalize' },
   filtersPanel: { borderRadius: 9, borderWidth: 1, padding: 8, marginBottom: 14, gap: 7 },
   searchField: { minHeight: 36, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
   searchInput: { flex: 1, minWidth: 0, paddingVertical: 0, fontSize: 11, fontFamily: 'Inter_400Regular' },
