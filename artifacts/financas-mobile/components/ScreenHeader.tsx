@@ -13,6 +13,7 @@ interface ScreenHeaderProps {
   notificationCount?: number;
   onNotificationPress?: () => void;
   showBack?: boolean;
+  rightContent?: React.ReactNode;
 }
 
 export function ScreenHeader({
@@ -24,6 +25,7 @@ export function ScreenHeader({
   notificationCount = 0,
   onNotificationPress,
   showBack = false,
+  rightContent,
 }: ScreenHeaderProps) {
   const colors = useColors();
   return (
@@ -45,6 +47,7 @@ export function ScreenHeader({
         </View>
       </View>
       <View style={styles.actions}>
+        {rightContent}
         {onNotificationPress ? (
           <Pressable
             accessibilityRole="button"

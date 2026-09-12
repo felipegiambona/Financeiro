@@ -473,32 +473,35 @@ export default function TransactionsScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void refresh()} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenHeader eyebrow="Movimentações" title="Transações" />
-        <View style={styles.monthHeader}>
-          <View style={styles.monthSelector} accessibilityLabel="Selecionar mês das transações">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Mês anterior"
-              hitSlop={8}
-              onPress={() => setSelectedMonth((month) => shiftMonth(month, -1))}
-              style={({ pressed }) => [styles.monthButton, { borderColor: colors.border }, pressed && styles.pressed]}
-            >
-              <Feather name="chevron-left" size={15} color={colors.foreground} />
-            </Pressable>
-            <Text style={[styles.monthText, { color: colors.foreground }]} numberOfLines={1}>
-              {formatMonthYearLabel(selectedMonth)}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Próximo mês"
-              hitSlop={8}
-              onPress={() => setSelectedMonth((month) => shiftMonth(month, 1))}
-              style={({ pressed }) => [styles.monthButton, { borderColor: colors.border }, pressed && styles.pressed]}
-            >
-              <Feather name="chevron-right" size={15} color={colors.foreground} />
-            </Pressable>
-          </View>
-        </View>
+        <ScreenHeader
+          eyebrow="Movimentações"
+          title="Transações"
+          rightContent={(
+            <View style={styles.monthSelector} accessibilityLabel="Selecionar mês das transações">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Mês anterior"
+                hitSlop={8}
+                onPress={() => setSelectedMonth((month) => shiftMonth(month, -1))}
+                style={({ pressed }) => [styles.monthButton, { borderColor: colors.border }, pressed && styles.pressed]}
+              >
+                <Feather name="chevron-left" size={15} color={colors.foreground} />
+              </Pressable>
+              <Text style={[styles.monthText, { color: colors.foreground }]} numberOfLines={1}>
+                {formatMonthYearLabel(selectedMonth)}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Próximo mês"
+                hitSlop={8}
+                onPress={() => setSelectedMonth((month) => shiftMonth(month, 1))}
+                style={({ pressed }) => [styles.monthButton, { borderColor: colors.border }, pressed && styles.pressed]}
+              >
+                <Feather name="chevron-right" size={15} color={colors.foreground} />
+              </Pressable>
+            </View>
+          )}
+        />
         <View style={[styles.filtersPanel, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
           <View style={[styles.searchField, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="search" size={14} color={colors.mutedForeground} />
@@ -1294,7 +1297,6 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: 16 },
-  monthHeader: { alignItems: 'flex-end', marginBottom: 10 },
   monthSelector: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   monthButton: { width: 25, height: 25, borderRadius: 6, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   monthText: { maxWidth: 122, fontSize: 10, fontFamily: 'Inter_700Bold', textAlign: 'center', textTransform: 'capitalize' },
