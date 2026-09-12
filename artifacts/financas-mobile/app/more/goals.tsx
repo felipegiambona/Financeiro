@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import { useGoals } from '@/context/GoalContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateGoalProgress } from '@/services/goalRules';
 import type { Goal } from '@/types/goal';
-import { formatAmountValue, parseAmountInput } from '@/utils/currency';
+import { formatAmountInput, formatAmountValue, parseAmountInput } from '@/utils/currency';
 import { createLocalIsoDate, formatDate, parseStoredDate } from '@/utils/date';
 import { DatePickerModal } from '@/components/DatePickerModal';
 
@@ -210,7 +210,7 @@ export default function GoalsScreen() {
               <TextInput
                 accessibilityLabel="Valor da meta"
                 keyboardType="decimal-pad"
-                onChangeText={(value) => setAmount(value.replace(/[^\d,.]/g, ''))}
+                onChangeText={(value) => setAmount(formatAmountInput(value))}
                 placeholder="0,00"
                 placeholderTextColor={colors.mutedForeground}
                 style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
