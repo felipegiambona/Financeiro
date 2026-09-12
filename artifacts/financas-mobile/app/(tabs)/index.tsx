@@ -7,15 +7,18 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState, LoadingState } from '@/components/StateView';
 import { WalletIconView } from '@/components/WalletIconView';
 import { LimitCard } from '@/components/LimitCard';
+import { GoalCard } from '@/components/GoalCard';
 import { useCategories } from '@/context/CategoryContext';
 import { useFinance } from '@/context/FinanceContext';
 import { useLimits } from '@/context/LimitContext';
+import { useGoals } from '@/context/GoalContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWallets } from '@/context/WalletContext';
 import { useDashboardPreferences } from '@/context/DashboardPreferencesContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateMonthlyTotals, calculateWalletTotals } from '@/services/financialRules';
 import { calculateLimitUsage } from '@/services/limitRules';
+import { calculateGoalProgress } from '@/services/goalRules';
 import { getPendingTransactionOccurrences } from '@/services/pendingNotifications';
 import { formatCurrency } from '@/utils/currency';
 
@@ -26,6 +29,7 @@ export default function DashboardScreen() {
   const { wallets, loading: walletsLoading } = useWallets();
   const { categories } = useCategories();
   const { limits, loading: limitsLoading } = useLimits();
+  const { goals, loading: goalsLoading } = useGoals();
   const { session, signOut } = useAuth();
   const { visibility } = useDashboardPreferences();
   const greeting = useMemo(() => {
@@ -46,6 +50,12 @@ export default function DashboardScreen() {
       usage: calculateLimitUsage(limit, transactions),
     })),
     [categories, limits, transactions],
+  );
+  const goalCards = useMemo(
+    () => goals
+      .map((goal) => ({ goal, ...calculateGoalProgress(goal, transactions) }))
+      .sort((first, second) => Number(first.percentage >= 100) - Number(second.percentage >= 100)),
+    [goals, transactions],
   );
 
   return (
@@ -178,6 +188,50 @@ export default function DashboardScreen() {
                 )}
               </View>
             </View> : null}
+            {visibility.goals ? <View style={styles.goalsSection}>
+              <View style={styles.goalsHeader}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Metas e objetivos</Text>
+                  <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Acompanhe o progresso do que você quer conquistar.</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Ver todas as metas"
+                  onPress={() => router.push('/more/goals')}
+                  style={({ pressed }) => [
+                    styles.manageWalletButton,
+                    { backgroundColor: colors.secondary, borderColor: colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Ver todas</Text>
+                </Pressable>
+              </View>
+              {goalsLoading ? (
+                <Text style={[styles.goalState, { color: colors.mutedForeground }]}>Carregando metas...</Text>
+              ) : goalCards.length === 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Criar uma meta"
+                  onPress={() => router.push({ pathname: '/more/goals', params: { openNew: '1' } })}
+                  style={({ pressed }) => [styles.emptyGoalCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Feather name="award" size={20} color={colors.mutedForeground} />
+                  <Text style={[styles.goalState, { color: colors.mutedForeground }]}>Crie uma meta para acompanhar seu progresso.</Text>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              ) : (
+                goalCards.map(({ goal, ...progress }) => (
+                  <GoalCard
+                    key={goal.id}
+                    goal={goal}
+                    {...progress}
+                    onEdit={() => router.push({ pathname: '/more/goals', params: { editId: goal.id } })}
+                    onDelete={() => router.push({ pathname: '/more/goals', params: { deleteId: goal.id } })}
+                  />
+                ))
+              )}
+            </View> : null}
             {visibility.limits ? <View style={styles.limitsSection}>
               <View style={styles.limitsHeader}>
                 <View>
@@ -271,6 +325,10 @@ const styles = StyleSheet.create({
   walletName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   walletNameText: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium' },
   walletValue: { fontSize: 13, fontFamily: 'Inter_700Bold', textAlign: 'right' },
+  goalsSection: { marginTop: 24 },
+  goalsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  emptyGoalCard: { minHeight: 72, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  goalState: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   limitsSection: { marginTop: 24 },
   limitsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   sectionTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
