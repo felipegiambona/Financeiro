@@ -281,12 +281,19 @@ function ScrollContent({
   onEdit: (goal: Goal) => void;
   onDelete: (goal: Goal) => void;
 }) {
+  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const goalsWithProgress = goals.map((goal) => ({
+    goal,
+    ...calculateGoalProgress(goal, transactions),
+  }));
+  const visibleGoals = goalsWithProgress.filter(({ percentage }) => activeTab === 'completed' ? percentage >= 100 : percentage < 100);
+
   return (
     <KeyboardAwareScrollViewCompat
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 100 }]}
       showsVerticalScrollIndicator={false}
     >
-      <ScreenHeader eyebrow="Planejamento" title="Metas e objetivos" />
+      <ScreenHeader eyebrow="Planejamento" title="Metas e objetivos" showBack />
       <View style={styles.introRow}>
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>Acompanhe o dinheiro separado para seus próximos objetivos.</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Criar nova meta" onPress={onNew} style={({ pressed }) => [styles.newButton, { backgroundColor: colors.primary }, pressed && styles.pressed]}>
@@ -294,24 +301,71 @@ function ScrollContent({
           <Text style={[styles.newButtonText, { color: colors.primaryForeground }]}>Nova</Text>
         </Pressable>
       </View>
-      {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : goals.length === 0 ? (
-        <EmptyState message="Você ainda não criou nenhuma meta." />
-      ) : goals.map((goal) => {
-        const { savedAmount, percentage, progress, remaining } = calculateGoalProgress(goal, transactions);
+      <GoalTabs
+        activeTab={activeTab}
+        activeCount={goals.filter((goal) => calculateGoalProgress(goal, transactions).percentage < 100).length}
+        completedCount={goals.filter((goal) => calculateGoalProgress(goal, transactions).percentage >= 100).length}
+        onChange={setActiveTab}
+        colors={colors}
+      />
+      {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : visibleGoals.length === 0 ? (
+        <EmptyState message={activeTab === 'active' ? 'Você não tem metas ativas.' : 'Você ainda não concluiu nenhuma meta.'} />
+      ) : visibleGoals.map(({ goal, ...progress }) => {
         return (
           <GoalCard
             key={goal.id}
             goal={goal}
-            savedAmount={savedAmount}
-            percentage={percentage}
-            progress={progress}
-            remaining={remaining}
+            {...progress}
             onEdit={() => onEdit(goal)}
             onDelete={() => onDelete(goal)}
           />
         );
       })}
     </KeyboardAwareScrollViewCompat>
+  );
+}
+
+function GoalTabs({
+  activeTab,
+  activeCount,
+  completedCount,
+  onChange,
+  colors,
+}: {
+  activeTab: 'active' | 'completed';
+  activeCount: number;
+  completedCount: number;
+  onChange: (tab: 'active' | 'completed') => void;
+  colors: ReturnType<typeof useColors>;
+}) {
+  return (
+    <View style={[styles.tabs, { backgroundColor: colors.secondary }]}>
+      {[
+        { key: 'active' as const, label: 'Metas ativas', count: activeCount },
+        { key: 'completed' as const, label: 'Concluídas', count: completedCount },
+      ].map((tab) => {
+        const selected = activeTab === tab.key;
+        return (
+          <Pressable
+            key={tab.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            accessibilityLabel={`${tab.label}, ${tab.count} ${tab.count === 1 ? 'meta' : 'metas'}`}
+            onPress={() => onChange(tab.key)}
+            style={({ pressed }) => [
+              styles.tab,
+              selected && { backgroundColor: colors.card, borderColor: colors.border },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.tabText, { color: selected ? colors.foreground : colors.mutedForeground }]}>{tab.label}</Text>
+            <View style={[styles.tabCount, { backgroundColor: selected ? colors.primary : colors.background }]}>
+              <Text style={[styles.tabCountText, { color: selected ? colors.primaryForeground : colors.mutedForeground }]}>{tab.count}</Text>
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -322,6 +376,11 @@ const styles = StyleSheet.create({
   intro: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular' },
   newButton: { minHeight: 34, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 4 },
   newButtonText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  tabs: { flexDirection: 'row', borderRadius: 8, padding: 3, gap: 3, marginBottom: 14 },
+  tab: { flex: 1, minHeight: 38, borderRadius: 6, borderWidth: 1, borderColor: 'transparent', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  tabText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  tabCount: { minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  tabCountText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   editorModalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
   modalCard: { width: '100%', maxWidth: 340, maxHeight: '82%', borderRadius: 10, borderWidth: 1, padding: 14, flexShrink: 1 },
   modalFormScroll: { flexShrink: 1 },
