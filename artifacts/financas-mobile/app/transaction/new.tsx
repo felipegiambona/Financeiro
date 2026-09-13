@@ -125,6 +125,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [categoryId, setCategoryId] = useState<string | null>(transaction?.categoryId ?? null);
   const [goalPickerOpen, setGoalPickerOpen] = useState(false);
   const [goalId, setGoalId] = useState<string | null>(transaction?.goalId ?? null);
+  const [moreOptionsOpen, setMoreOptionsOpen] = useState(false);
   const [categoryCreationOpen, setCategoryCreationOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState<string>(CATEGORY_COLORS[0]);
@@ -284,7 +285,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           {isEditing ? 'Atualize os dados e o status deste lançamento.' : 'Registre uma movimentação para manter seu saldo sempre atualizado.'}
         </Text>
 
-        <Text style={[styles.label, { color: colors.foreground }]}>Tipo</Text>
         <View style={[styles.segmented, { backgroundColor: colors.secondary }]}>
           {(['expense', 'income', 'transfer'] as TransactionType[]).map((option) => {
             const active = type === option;
@@ -310,7 +310,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           })}
         </View>
 
-        <Text style={[styles.label, { color: colors.foreground }]}>Valor</Text>
+        <Text style={[styles.label, { color: colors.foreground }]}>Quanto você gastou?</Text>
         <View style={[styles.inputShell, { backgroundColor: colors.card, borderColor: error && !parseAmountInput(amount) ? colors.expense : colors.input }]}>
           <Text style={[styles.currencyPrefix, { color: colors.mutedForeground }]}>R$</Text>
           <TextInput
@@ -337,6 +337,29 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             <MaterialCommunityIcons name="calculator" size={18} color={colors.foreground} />
           </Pressable>
         </View>
+
+        <Text style={[styles.label, { color: colors.foreground }]}>Quando?</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Selecionar data"
+          testID="due-date-picker"
+          onPress={() => setDatePickerOpen(true)}
+          style={({ pressed }) => [
+            styles.dateInputShell,
+            { backgroundColor: colors.card, borderColor: colors.input },
+            pressed && styles.pressed,
+          ]}
+        >
+          <Feather name="calendar" size={16} color={colors.mutedForeground} />
+          <Text style={[styles.dateInput, { color: dueDate ? colors.foreground : colors.mutedForeground }]}>
+            {dueDate || 'Selecionar data (opcional)'}
+          </Text>
+          <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+        </Pressable>
+
+        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>O que foi?</Text>
+          <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Descreva e organize este lançamento.</Text>
 
         <Text style={[styles.label, { color: colors.foreground }]}>Descrição</Text>
         <TextInput
@@ -373,40 +396,16 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-        {type === 'expense' || type === 'income' ? (
-          <>
-            <Text style={[styles.label, { color: colors.foreground }]}>Meta</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Selecionar meta para esta ${type === 'income' ? 'receita' : 'despesa'}`}
-              testID="goal-select"
-              onPress={() => setGoalPickerOpen(true)}
-              style={({ pressed }) => [styles.dateInputShell, { backgroundColor: colors.card, borderColor: colors.input }, pressed && styles.pressed]}
-            >
-              <Feather name="target" size={17} color={goalId ? colors.accent : colors.mutedForeground} />
-              <Text style={[styles.dateInput, { color: goalId ? colors.foreground : colors.mutedForeground }]}>
-                {goals.find((goal) => goal.id === goalId)?.title ?? 'Sem meta associada'}
-              </Text>
-              <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
-            </Pressable>
-            <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
-              {type === 'income'
-                ? 'Receitas pagas associadas a uma meta registram uma retirada do valor guardado.'
-                : 'Despesas pagas associadas a uma meta entram automaticamente no valor guardado.'}
-            </Text>
-          </>
-        ) : null}
-
         <Text style={[styles.label, { color: colors.foreground }]}>{type === 'transfer' ? 'Carteira de origem' : 'Carteira'}</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Selecionar carteira"
           testID="wallet-select"
           disabled={walletsLoading || wallets.length === 0}
-           onPress={() => {
-             setWalletPickerTarget('source');
-             setWalletPickerOpen(true);
-           }}
+          onPress={() => {
+            setWalletPickerTarget('source');
+            setWalletPickerOpen(true);
+          }}
           style={({ pressed }) => [
             styles.dateInputShell,
             { backgroundColor: colors.card, borderColor: colors.input },
@@ -465,25 +464,51 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             ) : null}
           </>
         ) : null}
+        </View>
 
-        <Text style={[styles.label, { color: colors.foreground }]}>Data de vencimento</Text>
         <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Selecionar data de vencimento"
-            testID="due-date-picker"
-            onPress={() => setDatePickerOpen(true)}
-            style={({ pressed }) => [
-              styles.dateInputShell,
-              { backgroundColor: colors.card, borderColor: colors.input },
-              pressed && styles.pressed,
-            ]}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: moreOptionsOpen }}
+          testID="more-options-toggle"
+          onPress={() => setMoreOptionsOpen((current) => !current)}
+          style={({ pressed }) => [
+            styles.sectionHeader,
+            { backgroundColor: colors.card, borderColor: colors.border },
+            pressed && styles.pressed,
+          ]}
         >
-          <Feather name="calendar" size={16} color={colors.mutedForeground} />
-          <Text style={[styles.dateInput, { color: dueDate ? colors.foreground : colors.mutedForeground }]}>
-            {dueDate || 'Selecionar data (opcional)'}
-          </Text>
-          <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Mais opções</Text>
+            <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Metas, recorrência e status do pagamento.</Text>
+          </View>
+          <Feather name={moreOptionsOpen ? 'chevron-up' : 'chevron-down'} size={19} color={colors.foreground} />
         </Pressable>
+
+        {moreOptionsOpen ? (
+          <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {type === 'expense' || type === 'income' ? (
+          <>
+            <Text style={[styles.label, { color: colors.foreground }]}>Meta</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Selecionar meta para esta ${type === 'income' ? 'receita' : 'despesa'}`}
+              testID="goal-select"
+              onPress={() => setGoalPickerOpen(true)}
+              style={({ pressed }) => [styles.dateInputShell, { backgroundColor: colors.card, borderColor: colors.input }, pressed && styles.pressed]}
+            >
+              <Feather name="target" size={17} color={goalId ? colors.accent : colors.mutedForeground} />
+              <Text style={[styles.dateInput, { color: goalId ? colors.foreground : colors.mutedForeground }]}>
+                {goals.find((goal) => goal.id === goalId)?.title ?? 'Sem meta associada'}
+              </Text>
+              <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+            </Pressable>
+            <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
+              {type === 'income'
+                ? 'Receitas pagas associadas a uma meta registram uma retirada do valor guardado.'
+                : 'Despesas pagas associadas a uma meta entram automaticamente no valor guardado.'}
+            </Text>
+          </>
+        ) : null}
 
         <Text style={[styles.label, { color: colors.foreground }]}>Recorrência</Text>
         <View style={styles.recurrenceTypeOptions}>
@@ -636,6 +661,8 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             );
           })}
         </View>
+          </View>
+        ) : null}
 
         {error ? <Text style={[styles.error, { color: colors.expense }]}>{error}</Text> : null}
         <Pressable
@@ -982,6 +1009,10 @@ const styles = StyleSheet.create({
   bottomSaveText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   intro: { fontSize: 13, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: 10, marginBottom: 18 },
   label: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 6, marginTop: 14 },
+  sectionCard: { borderRadius: 10, borderWidth: 1, padding: 12, marginTop: 16 },
+  sectionHeader: { minHeight: 62, borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 },
+  sectionTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  sectionHint: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular', marginTop: 3 },
   segmented: { borderRadius: 8, padding: 3, flexDirection: 'row', gap: 2 },
   segment: { flex: 1, minWidth: 0, minHeight: 48, borderRadius: 6, borderWidth: 1, borderColor: 'transparent', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 2 },
   segmentText: { flexShrink: 1, fontSize: 11, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
