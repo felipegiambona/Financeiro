@@ -61,19 +61,6 @@ function selectedPeriodLabel(period: RecurrencePeriod): string {
   return RECURRENCE_PERIODS.find((option) => option.value === period)?.label ?? 'Mensal';
 }
 
-function CalculatorIcon({ color }: { color: string }) {
-  return (
-    <View style={[styles.calculatorGlyph, { borderColor: color }]}>
-      <View style={[styles.calculatorDisplay, { borderColor: color }]} />
-      <View style={styles.calculatorKeys}>
-        {[0, 1, 2, 3].map((key) => (
-          <View key={key} style={[styles.calculatorKey, { backgroundColor: color }]} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
 export default function NewTransactionScreen() {
   const { id, fromTab } = useLocalSearchParams<{ id?: string; fromTab?: string }>();
   const returnToTabs = fromTab === '1';
@@ -327,7 +314,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         </View>
 
         <Text style={[styles.label, { color: colors.foreground }]}>Quanto você gastou?</Text>
-        <View style={[styles.inputShell, { backgroundColor: 'transparent', borderColor: error && !parseAmountInput(amount) ? colors.expense : colors.input }]}>
+        <View style={styles.inputShell}>
           <Text style={[styles.currencyPrefix, { color: colors.mutedForeground }]}>R$</Text>
           <TextInput
             accessibilityLabel="Valor"
@@ -350,7 +337,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             }}
             style={({ pressed }) => [styles.calculatorButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
           >
-            <CalculatorIcon color={colors.foreground} />
+            <Feather name="grid" size={20} color={colors.foreground} />
           </Pressable>
         </View>
 
@@ -1110,14 +1097,10 @@ const styles = StyleSheet.create({
   segmented: { borderRadius: 8, padding: 3, flexDirection: 'row', gap: 2 },
   segment: { flex: 1, minWidth: 0, minHeight: 48, borderRadius: 6, borderWidth: 1, borderColor: 'transparent', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 2 },
   segmentText: { flexShrink: 1, fontSize: 11, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
-  inputShell: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' },
+  inputShell: { minHeight: 56, paddingHorizontal: 0, flexDirection: 'row', alignItems: 'center' },
   currencyPrefix: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginRight: 6 },
-  amountInput: { flex: 1, fontSize: 26, fontFamily: 'Inter_700Bold', paddingVertical: 0 },
+  amountInput: { flex: 1, fontSize: 30, fontFamily: 'Inter_700Bold', paddingVertical: 0 },
   calculatorButton: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
-  calculatorGlyph: { width: 18, height: 20, borderWidth: 1.7, borderRadius: 3, padding: 2.5, justifyContent: 'space-between' },
-  calculatorDisplay: { height: 4, borderWidth: 1, borderRadius: 1 },
-  calculatorKeys: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, width: 11, alignSelf: 'center' },
-  calculatorKey: { width: 4, height: 4, borderRadius: 1 },
   textInput: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   dateInputShell: { minHeight: 46, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 9 },
   dateInput: { flex: 1, paddingVertical: 0, fontSize: 13, fontFamily: 'Inter_500Medium' },
