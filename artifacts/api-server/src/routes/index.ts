@@ -6,6 +6,7 @@ import accountRouter from "./account";
 import categoriesRouter from "./categories";
 import limitsRouter from "./limits";
 import goalsRouter from "./goals";
+import cardsRouter from "./cards";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(accountRouter);
 router.use(categoriesRouter);
 router.use(limitsRouter);
 router.use(goalsRouter);
+router.use(cardsRouter);
 
 export default router;

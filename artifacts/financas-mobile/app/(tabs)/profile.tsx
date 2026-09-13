@@ -38,6 +38,12 @@ const MENU_ITEMS = [
     icon: 'award',
   },
   {
+    key: 'cards',
+    title: 'Cartões',
+    description: 'Acompanhe faturas, vencimentos e limites dos seus cartões',
+    icon: 'credit-card',
+  },
+  {
     key: 'settings',
     title: 'Configurações',
     description: 'Aparência e preferências do app',
@@ -78,6 +84,8 @@ export default function MoreScreen() {
                           ? '/more/limits'
                         : item.key === 'goals'
                           ? '/more/goals'
+                          : item.key === 'cards'
+                            ? '/more/cards'
                           : '/more/settings',
                 )}
                 style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}

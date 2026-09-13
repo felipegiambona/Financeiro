@@ -1,7 +1,7 @@
 import { clerkClient } from "@clerk/express";
 import { eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { categoriesTable, db, goalMovementsTable, goalsTable, limitsTable, transactionsTable, walletsTable } from "@workspace/db";
+import { cardsTable, categoriesTable, db, goalMovementsTable, goalsTable, limitsTable, transactionsTable, walletsTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -18,6 +18,7 @@ router.delete("/account", requireAuth, async (req, res): Promise<void> => {
     await tx.delete(goalMovementsTable).where(eq(goalMovementsTable.userId, userId));
     await tx.delete(limitsTable).where(eq(limitsTable.userId, userId));
     await tx.delete(goalsTable).where(eq(goalsTable.userId, userId));
+    await tx.delete(cardsTable).where(eq(cardsTable.userId, userId));
     await tx.delete(categoriesTable).where(eq(categoriesTable.userId, userId));
     await tx.delete(walletsTable).where(eq(walletsTable.userId, userId));
   });

@@ -39,6 +39,12 @@ export const DASHBOARD_CARD_OPTIONS = [
     description: 'Acompanhe o progresso dos seus objetivos financeiros.',
     icon: 'award',
   },
+  {
+    id: 'cards',
+    title: 'Cartões',
+    description: 'Acompanhe faturas, vencimentos e limites dos seus cartões.',
+    icon: 'credit-card',
+  },
 ] as const satisfies ReadonlyArray<{
   id: string;
   title: string;
@@ -58,6 +64,7 @@ const DEFAULT_VISIBILITY: DashboardCardVisibility = {
   wallets: true,
   limits: true,
   goals: true,
+  cards: true,
 };
 
 function parseVisibility(value: string | null): DashboardCardVisibility {
@@ -71,6 +78,7 @@ function parseVisibility(value: string | null): DashboardCardVisibility {
       wallets: typeof parsed.wallets === 'boolean' ? parsed.wallets : DEFAULT_VISIBILITY.wallets,
       limits: typeof parsed.limits === 'boolean' ? parsed.limits : DEFAULT_VISIBILITY.limits,
       goals: typeof parsed.goals === 'boolean' ? parsed.goals : DEFAULT_VISIBILITY.goals,
+      cards: typeof parsed.cards === 'boolean' ? parsed.cards : DEFAULT_VISIBILITY.cards,
     };
   } catch {
     return DEFAULT_VISIBILITY;

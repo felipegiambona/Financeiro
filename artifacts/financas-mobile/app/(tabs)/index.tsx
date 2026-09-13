@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useCallback, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -9,10 +9,12 @@ import { ErrorState, LoadingState } from '@/components/StateView';
 import { WalletIconView } from '@/components/WalletIconView';
 import { LimitCard } from '@/components/LimitCard';
 import { GoalCard } from '@/components/GoalCard';
+import { CreditCardCard } from '@/components/CreditCardCard';
 import { useCategories } from '@/context/CategoryContext';
 import { useFinance } from '@/context/FinanceContext';
 import { useLimits } from '@/context/LimitContext';
 import { useGoals } from '@/context/GoalContext';
+import { useCards } from '@/context/CardContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWallets } from '@/context/WalletContext';
 import { useDashboardPreferences } from '@/context/DashboardPreferencesContext';
@@ -31,11 +33,13 @@ export default function DashboardScreen() {
   const { categories } = useCategories();
   const { limits, loading: limitsLoading } = useLimits();
   const { goals, loading: goalsLoading, refresh: refreshGoals } = useGoals();
+  const { cards, loading: cardsLoading, refresh: refreshCards, payCardInvoice } = useCards();
   const { session, signOut } = useAuth();
   const { visibility } = useDashboardPreferences();
   useFocusEffect(useCallback(() => {
     void refreshGoals();
-  }, [refreshGoals]));
+    void refreshCards();
+  }, [refreshCards, refreshGoals]));
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -61,6 +65,21 @@ export default function DashboardScreen() {
       .sort((first, second) => Number(first.percentage >= 100) - Number(second.percentage >= 100)),
     [goals, transactions],
   );
+  const handlePayCard = useCallback((cardId: string, cardName: string) => {
+    Alert.alert(
+      'Pagar fatura?',
+      `A fatura atual de ${cardName} será marcada como paga e zerada.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Pagar',
+          onPress: () => void payCardInvoice(cardId).catch(() => {
+            Alert.alert('Não foi possível pagar', 'Tente novamente.');
+          }),
+        },
+      ],
+    );
+  }, [payCardInvoice]);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -275,6 +294,49 @@ export default function DashboardScreen() {
                 ))
               )}
             </View> : null}
+            {visibility.cards ? <View style={styles.cardsSection}>
+              <View style={styles.cardsHeader}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Meus cartões</Text>
+                  <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Acompanhe suas faturas e vencimentos.</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Gerenciar cartões"
+                  onPress={() => router.push('/more/cards')}
+                  style={({ pressed }) => [
+                    styles.manageWalletButton,
+                    { backgroundColor: colors.secondary, borderColor: colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Gerenciar</Text>
+                </Pressable>
+              </View>
+              {cardsLoading ? (
+                <Text style={[styles.cardState, { color: colors.mutedForeground }]}>Carregando cartões...</Text>
+              ) : cards.length === 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Criar cartão"
+                  onPress={() => router.push({ pathname: '/more/cards', params: { openNew: '1' } })}
+                  style={({ pressed }) => [styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Feather name="credit-card" size={20} color={colors.mutedForeground} />
+                  <Text style={[styles.cardState, { color: colors.mutedForeground }]}>Cadastre um cartão para acompanhar suas faturas.</Text>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              ) : (
+                cards.map((card) => (
+                  <CreditCardCard
+                    key={card.id}
+                    card={card}
+                    onPress={() => router.push({ pathname: '/more/card/[id]', params: { id: card.id } })}
+                    onPay={() => handlePayCard(card.id, card.name)}
+                  />
+                ))
+              )}
+            </View> : null}
             <View style={styles.customizeSection}>
               <Pressable
                 accessibilityRole="button"
@@ -336,6 +398,10 @@ const styles = StyleSheet.create({
   goalState: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   limitsSection: { marginTop: 24 },
   limitsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  cardsSection: { marginTop: 24 },
+  cardsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  emptyCard: { minHeight: 72, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cardState: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   sectionTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   sectionHint: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
   addLimitButton: { minHeight: 30, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 4 },

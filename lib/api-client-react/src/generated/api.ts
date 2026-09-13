@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  Card,
+  CardInput,
+  CardUpdate,
   Category,
   CategoryInput,
   CategoryUpdate,
@@ -1753,6 +1756,409 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateGoalMovementMutationOptions(options));
+    }
+
+export const getListCardsUrl = () => {
+
+
+
+
+  return `/api/cards`
+}
+
+export const listCards = async ( options?: Parameters<typeof customFetch>[1]): Promise<Card[]> => {
+
+  return customFetch<Card[]>(getListCardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCardsQueryKey = () => {
+    return [
+    `/api/cards`
+    ] as const;
+    }
+
+
+export const getListCardsQueryOptions = <TData = Awaited<ReturnType<typeof listCards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCards>>> = ({ signal }) => listCards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCardsQueryResult = NonNullable<Awaited<ReturnType<typeof listCards>>>
+export type ListCardsQueryError = ErrorType<unknown>
+
+
+
+export function useListCards<TData = Awaited<ReturnType<typeof listCards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCardUrl = () => {
+
+
+
+
+  return `/api/cards`
+}
+
+export const createCard = async (cardInput: CardInput, options?: Parameters<typeof customFetch>[1]): Promise<Card> => {
+
+  return customFetch<Card>(getCreateCardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cardInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCard>>, TError,{data: BodyType<CardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCard>>, TError,{data: BodyType<CardInput>}, TContext> => {
+
+const mutationKey = ['createCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCard>>, {data: BodyType<CardInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCard(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCardMutationResult = NonNullable<Awaited<ReturnType<typeof createCard>>>
+    export type CreateCardMutationBody = BodyType<CardInput>
+    export type CreateCardMutationError = ErrorType<unknown>
+
+    export const useCreateCard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCard>>, TError,{data: BodyType<CardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCard>>,
+        TError,
+        {data: BodyType<CardInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCardMutationOptions(options));
+    }
+
+export const getGetCardUrl = (id: string,) => {
+
+
+
+
+  return `/api/cards/${id}`
+}
+
+export const getCard = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Card> => {
+
+  return customFetch<Card>(getGetCardUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCardQueryKey = (id: string,) => {
+    return [
+    `/api/cards/${id}`
+    ] as const;
+    }
+
+
+export const getGetCardQueryOptions = <TData = Awaited<ReturnType<typeof getCard>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCardQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCard>>> = ({ signal }) => getCard(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCardQueryResult = NonNullable<Awaited<ReturnType<typeof getCard>>>
+export type GetCardQueryError = ErrorType<void>
+
+
+
+export function useGetCard<TData = Awaited<ReturnType<typeof getCard>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCardQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateCardUrl = (id: string,) => {
+
+
+
+
+  return `/api/cards/${id}`
+}
+
+export const updateCard = async (id: string,
+    cardUpdate: CardUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Card> => {
+
+  return customFetch<Card>(getUpdateCardUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cardUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCard>>, TError,{id: string;data: BodyType<CardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCard>>, TError,{id: string;data: BodyType<CardUpdate>}, TContext> => {
+
+const mutationKey = ['updateCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCard>>, {id: string;data: BodyType<CardUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCard(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCardMutationResult = NonNullable<Awaited<ReturnType<typeof updateCard>>>
+    export type UpdateCardMutationBody = BodyType<CardUpdate>
+    export type UpdateCardMutationError = ErrorType<void>
+
+    export const useUpdateCard = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCard>>, TError,{id: string;data: BodyType<CardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCard>>,
+        TError,
+        {id: string;data: BodyType<CardUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCardMutationOptions(options));
+    }
+
+export const getDeleteCardUrl = (id: string,) => {
+
+
+
+
+  return `/api/cards/${id}`
+}
+
+export const deleteCard = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteCardUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteCardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCard>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCard>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCard>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCard(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCardMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCard>>>
+
+    export type DeleteCardMutationError = ErrorType<void>
+
+    export const useDeleteCard = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCard>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCard>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteCardMutationOptions(options));
+    }
+
+export const getPayCardInvoiceUrl = (id: string,) => {
+
+
+
+
+  return `/api/cards/${id}/pay-invoice`
+}
+
+export const payCardInvoice = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Card> => {
+
+  return customFetch<Card>(getPayCardInvoiceUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPayCardInvoiceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof payCardInvoice>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof payCardInvoice>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['payCardInvoice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof payCardInvoice>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  payCardInvoice(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PayCardInvoiceMutationResult = NonNullable<Awaited<ReturnType<typeof payCardInvoice>>>
+
+    export type PayCardInvoiceMutationError = ErrorType<void>
+
+    export const usePayCardInvoice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof payCardInvoice>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof payCardInvoice>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getPayCardInvoiceMutationOptions(options));
     }
 
 export const getUpdateWalletUrl = (id: string,) => {

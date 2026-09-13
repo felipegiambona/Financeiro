@@ -465,3 +465,73 @@ export interface GoalMovementInput {
   date?: string;
 }
 
+export type InvoiceStatus = typeof InvoiceStatus[keyof typeof InvoiceStatus];
+
+
+export const InvoiceStatus = {
+  open: 'open',
+  closed: 'closed',
+} as const;
+
+export interface Card {
+  id: string;
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  dueDay: number;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  closingDay: number;
+  /** @minimum 0 */
+  currentInvoiceAmount: number;
+  /** @minimum 0 */
+  availableLimit: number | null;
+  invoiceStatus: InvoiceStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CardInput {
+  /** @minLength 1 */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  dueDay: number;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  closingDay: number;
+  /** @minimum 0 */
+  currentInvoiceAmount?: number;
+  /** @minimum 0 */
+  availableLimit?: number | null;
+  invoiceStatus?: InvoiceStatus;
+}
+
+export interface CardUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  dueDay?: number;
+  /**
+     * @minimum 1
+     * @maximum 31
+     */
+  closingDay?: number;
+  /** @minimum 0 */
+  currentInvoiceAmount?: number;
+  /** @minimum 0 */
+  availableLimit?: number | null;
+  invoiceStatus?: InvoiceStatus;
+}
+

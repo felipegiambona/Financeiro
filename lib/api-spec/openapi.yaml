@@ -20,6 +20,8 @@ tags:
     description: Authenticated spending limit management operations
   - name: goals
     description: Authenticated savings goal management operations
+  - name: cards
+    description: Authenticated credit card management operations
   - name: account
     description: Authenticated account management operations
 paths:
@@ -401,6 +403,95 @@ paths:
           description: Invalid movement
         "404":
           description: Not found
+  /cards:
+    get:
+      operationId: listCards
+      tags: [cards]
+      responses:
+        "200":
+          description: User credit cards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Card"
+    post:
+      operationId: createCard
+      tags: [cards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardInput"
+      responses:
+        "201":
+          description: Created credit card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+  /cards/{id}:
+    get:
+      operationId: getCard
+      tags: [cards]
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      responses:
+        "200":
+          description: Credit card details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateCard
+      tags: [cards]
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardUpdate"
+      responses:
+        "200":
+          description: Updated credit card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCard
+      tags: [cards]
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      responses:
+        "204":
+          description: Credit card removed
+        "404":
+          description: Not found
+  /cards/{id}/pay-invoice:
+    post:
+      operationId: payCardInvoice
+      tags: [cards]
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      responses:
+        "200":
+          description: Credit card invoice paid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+        "404":
+          description: Not found
   /wallets/{id}:
     patch:
       operationId: updateWallet
@@ -509,6 +600,13 @@ components:
         type: string
         format: uuid
     GoalId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CardId:
       name: id
       in: path
       required: true
@@ -828,4 +926,42 @@ components:
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
         date: { type: string, format: date }
+    InvoiceStatus:
+      type: string
+      enum: [open, closed]
+    Card:
+      type: object
+      required: [id, name, dueDay, closingDay, currentInvoiceAmount, availableLimit, invoiceStatus, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        dueDay: { type: integer, minimum: 1, maximum: 31 }
+        closingDay: { type: integer, minimum: 1, maximum: 31 }
+        currentInvoiceAmount: { type: number, minimum: 0 }
+        availableLimit: { type: number, minimum: 0, nullable: true }
+        invoiceStatus:
+          $ref: "#/components/schemas/InvoiceStatus"
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CardInput:
+      type: object
+      required: [name, dueDay, closingDay]
+      properties:
+        name: { type: string, minLength: 1 }
+        dueDay: { type: integer, minimum: 1, maximum: 31 }
+        closingDay: { type: integer, minimum: 1, maximum: 31 }
+        currentInvoiceAmount: { type: number, minimum: 0 }
+        availableLimit: { type: number, minimum: 0, nullable: true }
+        invoiceStatus:
+          $ref: "#/components/schemas/InvoiceStatus"
+    CardUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        dueDay: { type: integer, minimum: 1, maximum: 31 }
+        closingDay: { type: integer, minimum: 1, maximum: 31 }
+        currentInvoiceAmount: { type: number, minimum: 0 }
+        availableLimit: { type: number, minimum: 0, nullable: true }
+        invoiceStatus:
+          $ref: "#/components/schemas/InvoiceStatus"
 

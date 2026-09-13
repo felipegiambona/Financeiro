@@ -27,6 +27,7 @@ import { WalletProvider } from '@/context/WalletContext';
 import { CategoryProvider } from '@/context/CategoryContext';
 import { LimitProvider } from '@/context/LimitContext';
 import { GoalProvider } from '@/context/GoalContext';
+import { CardProvider } from '@/context/CardContext';
 import { DashboardPreferencesProvider } from '@/context/DashboardPreferencesContext';
 import { useColors } from '@/hooks/useColors';
 
@@ -57,6 +58,8 @@ function RootLayoutNav() {
         <Stack.Screen name="more/limits" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/goals" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/goal/[id]" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="more/cards" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="more/card/[id]" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/dashboard-cards" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="wallets" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />
@@ -82,9 +85,11 @@ function AuthenticatedApp() {
         <CategoryProvider>
           <LimitProvider>
             <GoalProvider>
-              <DashboardPreferencesProvider>
-                <RootLayoutNav />
-              </DashboardPreferencesProvider>
+              <CardProvider>
+                <DashboardPreferencesProvider>
+                  <RootLayoutNav />
+                </DashboardPreferencesProvider>
+              </CardProvider>
             </GoalProvider>
           </LimitProvider>
         </CategoryProvider>
