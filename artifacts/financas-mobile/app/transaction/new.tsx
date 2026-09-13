@@ -364,11 +364,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>O que foi?</Text>
-          <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Descreva e organize este lançamento.</Text>
-
-        <Text style={[styles.label, { color: colors.foreground }]}>Descrição</Text>
+        <Text style={[styles.label, { color: colors.foreground }]}>O que foi?</Text>
         <TextInput
           accessibilityLabel="Descrição"
           testID="description-input"
@@ -380,7 +376,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           style={[styles.textInput, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }]}
         />
 
-        <Text style={[styles.label, { color: colors.foreground }]}>Categoria</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Selecionar categoria"
@@ -388,6 +383,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           disabled={categoriesLoading}
           onPress={() => setCategoryPickerOpen(true)}
           style={({ pressed }) => [
+            styles.formField,
             styles.dateInputShell,
             { backgroundColor: colors.card, borderColor: colors.input },
             categoriesLoading && styles.disabled,
@@ -398,12 +394,11 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <Text style={[styles.dateInput, { color: categoryId ? colors.foreground : colors.mutedForeground }]}>
             {categoriesLoading
               ? 'Carregando categorias...'
-              : categories.find((item) => item.id === categoryId)?.name ?? 'Sem categoria'}
+              : categories.find((item) => item.id === categoryId)?.name ?? 'Selecione uma categoria'}
           </Text>
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-        <Text style={[styles.label, { color: colors.foreground }]}>{type === 'transfer' ? 'Carteira de origem' : 'Carteira'}</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Selecionar carteira"
@@ -414,6 +409,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             setWalletPickerOpen(true);
           }}
           style={({ pressed }) => [
+            styles.formField,
             styles.dateInputShell,
             { backgroundColor: colors.card, borderColor: colors.input },
             (walletsLoading || wallets.length === 0) && styles.disabled,
@@ -435,7 +431,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
 
         {type === 'expense' ? (
           <>
-            <Text style={[styles.label, { color: colors.foreground }]}>Cartão</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Selecionar cartão para a despesa"
@@ -443,6 +438,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               disabled={cardsLoading}
               onPress={() => setCardPickerOpen(true)}
               style={({ pressed }) => [
+                styles.formField,
                 styles.dateInputShell,
                 { backgroundColor: colors.card, borderColor: colors.input },
                 cardsLoading && styles.disabled,
@@ -451,7 +447,9 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             >
               <Feather name="credit-card" size={17} color={cardId ? colors.primary : colors.mutedForeground} />
               <Text style={[styles.dateInput, { color: cardId ? colors.foreground : colors.mutedForeground }]}>
-                {cardsLoading ? 'Carregando cartões...' : cards.find((card) => card.id === cardId)?.name ?? 'Não usar cartão'}
+                {cardsLoading
+                  ? 'Carregando cartões...'
+                  : cards.find((card) => card.id === cardId)?.name ?? 'Selecione um cartão (opcional)'}
               </Text>
               <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
             </Pressable>
@@ -460,7 +458,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
 
         {type === 'transfer' ? (
           <>
-            <Text style={[styles.label, { color: colors.foreground }]}>Carteira de destino</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Selecionar carteira de destino"
@@ -471,6 +468,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 setWalletPickerOpen(true);
               }}
               style={({ pressed }) => [
+                styles.formField,
                 styles.dateInputShell,
                 { backgroundColor: colors.card, borderColor: colors.input },
                 (walletsLoading || wallets.length < 2) && styles.disabled,
@@ -496,7 +494,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             ) : null}
           </>
         ) : null}
-        </View>
 
         <Pressable
           accessibilityRole="button"
@@ -1096,6 +1093,7 @@ const styles = StyleSheet.create({
   bottomSaveText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   intro: { fontSize: 13, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: 10, marginBottom: 18 },
   label: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 6, marginTop: 14 },
+  formField: { marginTop: 10 },
   sectionCard: { borderRadius: 10, borderWidth: 1, padding: 12, marginTop: 16 },
   sectionHeader: { minHeight: 62, borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 },
   sectionTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
