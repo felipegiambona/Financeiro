@@ -27,6 +27,10 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
   const { wallets, loading: walletsLoading } = useWallets();
   const [mode, setMode] = useState<GateMode>('checking');
   const [step, setStep] = useState<OnboardingStep>('wallet');
+  const hasAutomaticPlaceholder = wallets.length === 1
+    && wallets[0].isDefault
+    && wallets[0].title === 'Carteira padrão'
+    && wallets[0].initialBalance === 0;
 
   useEffect(() => {
     if (!session?.userId || walletsLoading) return;
@@ -35,7 +39,8 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
     void AsyncStorage.multiGet([keys.complete, keys.started, keys.step]).then(async (entries) => {
       if (!active) return;
       const values = new Map(entries);
-      if (values.get(keys.complete) === 'true') {
+      const shouldStartOnboarding = wallets.length === 0 || hasAutomaticPlaceholder;
+      if (!shouldStartOnboarding && values.get(keys.complete) === 'true') {
         setMode('app');
         return;
       }
@@ -50,20 +55,23 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
         setMode('onboarding');
         return;
       }
+      if (shouldStartOnboarding) {
+        await AsyncStorage.multiSet([[keys.started, 'true'], [keys.step, 'wallet']]);
+        if (active) setMode('onboarding');
+        return;
+      }
       if (wallets.length > 0) {
         await AsyncStorage.setItem(keys.complete, 'true');
         if (active) setMode('app');
         return;
       }
-      await AsyncStorage.multiSet([[keys.started, 'true'], [keys.step, 'wallet']]);
-      if (active) setMode('onboarding');
     }).catch(() => {
-      if (active) setMode(wallets.length > 0 ? 'app' : 'onboarding');
+      if (active) setMode(wallets.length > 0 && !hasAutomaticPlaceholder ? 'app' : 'onboarding');
     });
     return () => {
       active = false;
     };
-  }, [session?.userId, wallets.length, walletsLoading]);
+  }, [hasAutomaticPlaceholder, session?.userId, wallets.length, walletsLoading]);
 
   const handleStepChange = (nextStep: OnboardingStep) => {
     if (!session?.userId) return;

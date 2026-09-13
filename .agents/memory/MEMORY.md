@@ -4,3 +4,4 @@
 - [Android Expo file sharing](expo-sharing-android.md) — convert private file URIs to content URIs before sharing from Expo Go.
 - [PanResponder and Animated events](pan-responder-animated-event.md) — RN 0.86 native Animated events are not callable PanResponder callbacks; use an explicit move handler.
 - [Goal movement model](goal-movement-model.md) — direct goal adjustments are separate movements; linked income and expense entries remain financial transactions.
+- [Onboarding wallet detection](onboarding-default-wallet.md) — read-only wallet and transaction loads must not create the default wallet before first-access setup.

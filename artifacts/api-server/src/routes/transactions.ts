@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Response } from "express";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
-import { cardsTable, categoriesTable, db, goalsTable, transactionsTable } from "@workspace/db";
+import { cardsTable, categoriesTable, db, goalsTable, transactionsTable, walletsTable } from "@workspace/db";
 import {
   CreateTransactionBody,
   CreateTransactionResponse,
@@ -54,10 +54,14 @@ function userIdFrom(req: unknown): string {
 
 router.get("/transactions", async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
-  const defaultWallet = await ensureDefaultWallet(userId);
-  await db.update(transactionsTable)
-    .set({ walletId: defaultWallet.id })
-    .where(and(eq(transactionsTable.userId, userId), isNull(transactionsTable.walletId)));
+  const [defaultWallet] = await db.select({ id: walletsTable.id }).from(walletsTable)
+    .where(and(eq(walletsTable.userId, userId), eq(walletsTable.isDefault, true)))
+    .limit(1);
+  if (defaultWallet) {
+    await db.update(transactionsTable)
+      .set({ walletId: defaultWallet.id })
+      .where(and(eq(transactionsTable.userId, userId), isNull(transactionsTable.walletId)));
+  }
   const rows = await db.select().from(transactionsTable)
     .where(eq(transactionsTable.userId, userId))
     .orderBy(desc(transactionsTable.date), desc(transactionsTable.createdAt));

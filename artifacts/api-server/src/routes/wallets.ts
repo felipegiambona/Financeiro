@@ -89,7 +89,6 @@ async function standardizeWalletIcons(userId: string) {
 
 router.get("/wallets", async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
-  await ensureDefaultWallet(userId);
   await standardizeWalletIcons(userId);
   const rows = await db.select().from(walletsTable)
     .where(eq(walletsTable.userId, userId))
@@ -104,13 +103,36 @@ router.post("/wallets", async (req, res): Promise<void> => {
     return;
   }
   const userId = userIdFrom(req);
-  await ensureDefaultWallet(userId);
+  const existing = await db.select({
+    id: walletsTable.id,
+    title: walletsTable.title,
+    initialBalance: walletsTable.initialBalance,
+    isDefault: walletsTable.isDefault,
+  }).from(walletsTable)
+    .where(eq(walletsTable.userId, userId))
+    .limit(1);
+  const placeholder = existing[0]?.isDefault
+    && existing[0].title === "Carteira padrão"
+    && Number(existing[0].initialBalance) === 0
+    ? existing[0]
+    : null;
+  if (placeholder) {
+    const [updated] = await db.update(walletsTable).set({
+      title: parsed.data.title,
+      initialBalance: String(parsed.data.initialBalance),
+    }).where(and(
+      eq(walletsTable.id, placeholder.id),
+      eq(walletsTable.userId, userId),
+    )).returning();
+    res.status(201).json(serializeWallet(updated));
+    return;
+  }
   const [row] = await db.insert(walletsTable).values({
     title: parsed.data.title,
     userId,
     initialBalance: String(parsed.data.initialBalance),
     icon: "wallet-outline",
-    isDefault: false,
+    isDefault: existing.length === 0,
   }).returning();
   res.status(201).json(serializeWallet(row));
 });
