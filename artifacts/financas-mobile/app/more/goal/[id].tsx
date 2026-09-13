@@ -7,6 +7,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorState } from '@/components/StateView';
 import { useGoals } from '@/context/GoalContext';
+import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
 import { createGoalMovement, getGoal } from '@/services/goalRepository';
 import { calculateGoalProgress } from '@/services/goalRules';
@@ -39,6 +40,7 @@ export default function GoalDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { goals, refresh: refreshGoals } = useGoals();
+  const { refresh: refreshTransactions } = useFinance();
   const [detail, setDetail] = useState<GoalDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +97,7 @@ export default function GoalDetailScreen() {
         ...(description.trim() ? { description: description.trim() } : {}),
         date: createLocalIsoDate(),
       });
-      await refreshGoals();
+      await Promise.all([refreshGoals(), refreshTransactions()]);
       setMovementType(null);
       await loadDetail();
     } catch {
@@ -179,8 +181,8 @@ export default function GoalDetailScreen() {
               onPress={() => openMovement('contribution')}
               style={({ pressed }) => [styles.actionButton, { backgroundColor: colors.income }, pressed && styles.pressed]}
             >
-              <Feather name="plus" size={17} color={colors.primaryForeground} />
-              <Text style={[styles.actionText, { color: colors.primaryForeground }]}>Incluir valor</Text>
+              <Feather name="plus" size={17} color={colors.accentForeground} />
+              <Text style={[styles.actionText, { color: colors.accentForeground }]}>Incluir valor</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"

@@ -16,6 +16,7 @@ import {
   UpdateGoalResponse,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { ensureDefaultWallet } from "./wallets";
 
 const router: IRouter = Router();
 router.use("/goals", requireAuth);
@@ -193,7 +194,37 @@ router.post("/goals/:id/movements", async (req, res): Promise<void> => {
       res.status(400).json({ error: "Withdrawal exceeds saved amount" });
       return;
     }
+
+    const wallet = await ensureDefaultWallet(userId);
+    const description = body.data.description?.trim() || "Retirada da meta";
+    const [transaction] = await db.insert(transactionsTable).values({
+      userId,
+      walletId: wallet.id,
+      destinationWalletId: null,
+      categoryId: null,
+      goalId: goal.id,
+      type: "income",
+      amount: String(body.data.amount),
+      description,
+      date: dateOnly(body.data.date ?? new Date()) ?? new Date().toISOString().slice(0, 10),
+      dueDate: null,
+      recurrence: { kind: "none" },
+      paymentStatus: "paid",
+      paymentStatusOverrides: {},
+    }).returning();
+
+    res.status(201).json(CreateGoalMovementResponse.parse({
+      id: transaction.id,
+      goalId: goal.id,
+      type: "withdrawal",
+      amount: Number(transaction.amount),
+      description: transaction.description,
+      date: transaction.date,
+      createdAt: transaction.createdAt.toISOString(),
+    }));
+    return;
   }
+
   const [row] = await db.insert(goalMovementsTable).values({
     userId,
     goalId: goal.id,
