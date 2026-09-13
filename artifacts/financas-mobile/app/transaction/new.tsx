@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome6 } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -337,7 +337,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             }}
             style={({ pressed }) => [styles.calculatorButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
           >
-            <Feather name="grid" size={20} color={colors.foreground} />
+            <FontAwesome6 name="calculator" size={19} color={colors.foreground} />
           </Pressable>
         </View>
 
