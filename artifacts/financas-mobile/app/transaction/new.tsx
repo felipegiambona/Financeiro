@@ -270,7 +270,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         <Pressable accessibilityLabel="Cancelar" onPress={onExit} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
           <Feather name="x" size={20} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.topTitle, { color: colors.foreground }]}>{isEditing ? 'Editar lançamento' : 'Novo lançamento'}</Text>
         <Pressable
           testID="save-transaction-button"
           accessibilityLabel={saving ? 'Salvando lançamento' : isEditing ? 'Salvar alterações' : 'Salvar lançamento'}
@@ -1084,9 +1083,8 @@ const styles = StyleSheet.create({
   notFoundButton: { minHeight: 42, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   notFoundButtonText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   content: { paddingHorizontal: 16 },
-  topBar: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 },
+  topBar: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 16 },
   closeButton: { width: 32, height: 32, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  topTitle: { flex: 1, minWidth: 0, fontSize: 16, fontFamily: 'Inter_700Bold', textAlign: 'center' },
   topSaveButton: { minHeight: 34, maxWidth: 154, borderRadius: 7, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   topSaveText: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_700Bold', flexShrink: 1 },
   bottomSaveButton: { minHeight: 46, borderRadius: 8, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
