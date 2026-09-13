@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -156,7 +156,7 @@ export default function WalletsScreen() {
                     onPress={() => openEdit(wallet)}
                     style={({ pressed }) => [styles.iconButton, { borderColor: colors.border }, pressed && styles.pressed]}
                   >
-                    <MaterialCommunityIcons name="pencil-outline" size={16} color={colors.foreground} />
+                    <Feather name="edit-2" size={16} color={colors.foreground} />
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
@@ -165,7 +165,7 @@ export default function WalletsScreen() {
                     onPress={() => confirmDelete(wallet)}
                     style={({ pressed }) => [styles.iconButton, { borderColor: colors.border }, pressed && styles.pressed]}
                   >
-                    <MaterialCommunityIcons name="trash-can-outline" size={16} color={colors.expense} />
+                    <Feather name="trash-2" size={16} color={colors.expense} />
                   </Pressable>
                 </View>
               </View>
@@ -197,7 +197,7 @@ export default function WalletsScreen() {
                   </Text>
                 </View>
                 <Pressable accessibilityLabel="Fechar" onPress={closeModal} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
-                  <MaterialCommunityIcons name="close" size={18} color={colors.foreground} />
+                  <Feather name="x" size={18} color={colors.foreground} />
                 </Pressable>
               </View>
 

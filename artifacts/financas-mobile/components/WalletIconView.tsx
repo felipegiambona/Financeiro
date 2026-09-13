@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import type { WalletIcon } from '@/types/wallet';
 
 export function WalletIconView({
@@ -9,5 +9,5 @@ export function WalletIconView({
   size?: number;
   color: string;
 }) {
-  return <MaterialCommunityIcons name="wallet-outline" size={size} color={color} />;
+  return <Feather name="briefcase" size={size} color={color} />;
 }
