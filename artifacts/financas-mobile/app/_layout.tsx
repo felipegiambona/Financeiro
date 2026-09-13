@@ -121,21 +121,15 @@ function ThemedApp() {
         key={`navigation-bar-${resolvedColorScheme}`}
         style={navigationBarStyle}
       />
-      <ErrorBoundary>
-        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
-          <ClerkLoaded>
-            <QueryClientProvider client={queryClient}>
-              <GestureHandlerRootView style={[styles.root, { backgroundColor: colors.background }]}>
-                <KeyboardProvider>
-                  <AuthProvider>
-                    <AuthenticatedApp />
-                  </AuthProvider>
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </QueryClientProvider>
-          </ClerkLoaded>
-        </ClerkProvider>
-      </ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={[styles.root, { backgroundColor: colors.background }]}>
+          <KeyboardProvider>
+            <AuthProvider>
+              <AuthenticatedApp />
+            </AuthProvider>
+          </KeyboardProvider>
+        </GestureHandlerRootView>
+      </QueryClientProvider>
     </View>
   );
 }
@@ -158,9 +152,15 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <ThemedApp />
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
+          <ClerkLoaded>
+            <ThemeProvider>
+              <ThemedApp />
+            </ThemeProvider>
+          </ClerkLoaded>
+        </ClerkProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }

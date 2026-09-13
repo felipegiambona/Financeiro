@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { OnboardingFlow, type OnboardingStep } from '@/components/OnboardingFlow';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 
@@ -24,6 +25,7 @@ function storageKeys(userId: string) {
 export function OnboardingGate({ children }: React.PropsWithChildren) {
   const colors = useColors();
   const { session } = useAuth();
+  const { setOnboardingActive } = useTheme();
   const { wallets, loading: walletsLoading } = useWallets();
   const [mode, setMode] = useState<GateMode>('checking');
   const [step, setStep] = useState<OnboardingStep>('name');
@@ -31,6 +33,12 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
     && wallets[0].isDefault
     && wallets[0].title === 'Carteira padrão'
     && wallets[0].initialBalance === 0;
+
+  useEffect(() => {
+    const active = Boolean(session?.userId) && mode !== 'app';
+    setOnboardingActive(active);
+    return () => setOnboardingActive(false);
+  }, [mode, session?.userId, setOnboardingActive]);
 
   useEffect(() => {
     if (!session?.userId || walletsLoading) return;
