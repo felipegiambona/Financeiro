@@ -213,7 +213,7 @@ export default function GoalDetailScreen() {
             return (
               <View key={`${entry.source}-${entry.id}`} style={[styles.historyRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.historyIcon, { backgroundColor: contribution ? colors.income : colors.secondary }]}>
-                  <Feather name={contribution ? 'arrow-down-left' : 'arrow-up-right'} size={16} color={contribution ? colors.primaryForeground : colors.foreground} />
+                  <Feather name={contribution ? 'arrow-down-left' : 'arrow-up-right'} size={16} color={contribution ? colors.accentForeground : colors.foreground} />
                 </View>
                 <View style={styles.historyCopy}>
                   <Text style={[styles.historyTitle, { color: colors.foreground }]}>{historyTitle(entry)}</Text>
