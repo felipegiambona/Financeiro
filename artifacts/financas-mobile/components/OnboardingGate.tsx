@@ -9,7 +9,7 @@ import { useColors } from '@/hooks/useColors';
 type GateMode = 'checking' | 'onboarding' | 'app';
 
 function isOnboardingStep(value: string | null): value is OnboardingStep {
-  return value === 'wallet' || value === 'goal' || value === 'limit' || value === 'card';
+  return value === 'name' || value === 'wallet' || value === 'goal' || value === 'limit' || value === 'card';
 }
 
 function storageKeys(userId: string) {
@@ -26,7 +26,7 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
   const { session } = useAuth();
   const { wallets, loading: walletsLoading } = useWallets();
   const [mode, setMode] = useState<GateMode>('checking');
-  const [step, setStep] = useState<OnboardingStep>('wallet');
+  const [step, setStep] = useState<OnboardingStep>('name');
   const hasAutomaticPlaceholder = wallets.length === 1
     && wallets[0].isDefault
     && wallets[0].title === 'Carteira padrão'
@@ -46,7 +46,7 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
       }
       if (values.get(keys.started) === 'true') {
         const storedStep = values.get(keys.step) ?? null;
-        const savedStep = isOnboardingStep(storedStep) ? storedStep : 'wallet';
+        const savedStep = isOnboardingStep(storedStep) ? storedStep : wallets.length === 0 ? 'name' : 'wallet';
         const resumedStep = savedStep === 'wallet' && wallets.length > 0 ? 'goal' : savedStep;
         if (resumedStep !== savedStep) {
           await AsyncStorage.setItem(keys.step, resumedStep);
@@ -56,7 +56,7 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
         return;
       }
       if (shouldStartOnboarding) {
-        await AsyncStorage.multiSet([[keys.started, 'true'], [keys.step, 'wallet']]);
+        await AsyncStorage.multiSet([[keys.started, 'true'], [keys.step, 'name']]);
         if (active) setMode('onboarding');
         return;
       }

@@ -8,13 +8,15 @@ import { useCards } from '@/context/CardContext';
 import { useCategories } from '@/context/CategoryContext';
 import { useGoals } from '@/context/GoalContext';
 import { useLimits } from '@/context/LimitContext';
+import { useAuth } from '@/context/AuthContext';
 import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
+import { CATEGORY_COLORS } from '@/types/category';
 import { LIMIT_PERIODS, type LimitPeriod } from '@/types/limit';
 import { createLocalIsoDate } from '@/utils/date';
 import { formatAmountInput, parseAmountInput } from '@/utils/currency';
 
-export type OnboardingStep = 'wallet' | 'goal' | 'limit' | 'card';
+export type OnboardingStep = 'name' | 'wallet' | 'goal' | 'limit' | 'card';
 
 interface OnboardingFlowProps {
   initialStep: OnboardingStep;
@@ -22,7 +24,7 @@ interface OnboardingFlowProps {
   onComplete: () => void;
 }
 
-const STEPS: OnboardingStep[] = ['wallet', 'goal', 'limit', 'card'];
+const STEPS: OnboardingStep[] = ['name', 'wallet', 'goal', 'limit', 'card'];
 
 function formatDateInput(date: Date): string {
   return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
@@ -37,7 +39,10 @@ function StepProgress({ step, colors }: { step: OnboardingStep; colors: ReturnTy
           key={item}
           style={[
             styles.progressSegment,
-            { backgroundColor: index <= currentIndex ? colors.primary : colors.border },
+            {
+              backgroundColor: index <= currentIndex ? colors.primary : colors.border,
+              opacity: index < currentIndex ? 0.48 : 1,
+            },
           ]}
         />
       ))}
@@ -155,6 +160,9 @@ export function OnboardingFlow({ initialStep, onStepChange, onComplete }: Onboar
         </View>
         <StepProgress step={step} colors={colors} />
 
+        {step === 'name' ? (
+          <NameStep colors={colors} onContinue={() => goTo('wallet')} setError={setError} error={error} />
+        ) : null}
         {step === 'wallet' ? (
           <WalletStep colors={colors} onContinue={() => goTo('goal')} setError={setError} error={error} />
         ) : null}
@@ -175,6 +183,53 @@ type StepProps = {
   setError: (message: string) => void;
   error: string;
 };
+
+function NameStep({ colors, onContinue, setError, error }: StepProps & { onContinue: () => void }) {
+  const { session, updateProfile } = useAuth();
+  const [name, setName] = useState(session?.name.split(' ')[0] ?? '');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const firstName = name.trim();
+    if (!firstName) {
+      setError('Informe seu nome.');
+      return;
+    }
+    try {
+      setSaving(true);
+      setError('');
+      await updateProfile(firstName);
+      onContinue();
+    } catch {
+      setError('Não foi possível salvar seu nome. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <StepHeader
+        eyebrow="VAMOS COMEÇAR"
+        title="Como podemos te chamar?"
+        description="Seu nome aparecerá na saudação e deixará sua experiência mais pessoal."
+        colors={colors}
+      />
+      <FieldLabel colors={colors}>Seu nome</FieldLabel>
+      <TextInput
+        autoCapitalize="words"
+        autoFocus
+        placeholder="Ex.: Felipe"
+        placeholderTextColor={colors.mutedForeground}
+        value={name}
+        onChangeText={setName}
+        style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
+      />
+      <ErrorMessage message={error} colors={colors} />
+      <ContinueButton label={saving ? 'Salvando...' : 'Continuar'} onPress={() => void save()} colors={colors} disabled={saving} />
+    </>
+  );
+}
 
 function StepHeader({
   eyebrow,
@@ -362,11 +417,12 @@ function GoalStep({ colors, onContinue, setError, error }: StepProps & { onConti
 }
 
 function LimitStep({ colors, onContinue, setError, error }: StepProps & { onContinue: () => void }) {
-  const { categories, loading: categoriesLoading, createCategory } = useCategories();
+  const { categories, loading: categoriesLoading, createCategory, updateCategory } = useCategories();
   const { createLimit } = useLimits();
   const [choice, setChoice] = useState<'question' | 'form'>('question');
   const [categoryId, setCategoryId] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryColor, setCategoryColor] = useState<string>(CATEGORY_COLORS[0]);
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState<LimitPeriod>('monthly');
   const [saving, setSaving] = useState(false);
@@ -382,12 +438,16 @@ function LimitStep({ colors, onContinue, setError, error }: StepProps & { onCont
       setError('');
       let selectedCategoryId = categoryId;
       if (!selectedCategoryId && newCategoryName.trim()) {
-        const category = await createCategory({ name: newCategoryName.trim() });
+        const category = await createCategory({ name: newCategoryName.trim(), color: categoryColor });
         selectedCategoryId = category.id;
       }
       if (!selectedCategoryId) {
         setError('Selecione uma categoria ou crie uma nova.');
         return;
+      }
+      const selectedCategory = categories.find((category) => category.id === selectedCategoryId);
+      if (selectedCategory && selectedCategory.color !== categoryColor) {
+        await updateCategory(selectedCategoryId, { color: categoryColor });
       }
       await createLimit({ categoryId: selectedCategoryId, description: null, amount: numericAmount, period });
       onContinue();
@@ -424,7 +484,10 @@ function LimitStep({ colors, onContinue, setError, error }: StepProps & { onCont
                   <Pressable
                     key={category.id}
                     accessibilityRole="button"
-                    onPress={() => setCategoryId(category.id)}
+                    onPress={() => {
+                      setCategoryId(category.id);
+                      setCategoryColor(category.color);
+                    }}
                     style={({ pressed }) => [
                       styles.optionChip,
                       { backgroundColor: selected ? colors.primary : colors.card, borderColor: selected ? colors.primary : colors.border },
@@ -447,6 +510,27 @@ function LimitStep({ colors, onContinue, setError, error }: StepProps & { onCont
               style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
             />
           ) : null}
+          <FieldLabel colors={colors}>Cor da categoria</FieldLabel>
+          <View style={styles.colorOptions}>
+            {CATEGORY_COLORS.map((option) => {
+              const selected = categoryColor === option;
+              return (
+                <Pressable
+                  key={option}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`Selecionar cor ${option}`}
+                  onPress={() => setCategoryColor(option)}
+                  style={[
+                    styles.colorOption,
+                    { backgroundColor: option, borderColor: selected ? colors.foreground : 'transparent' },
+                  ]}
+                >
+                  {selected ? <Feather name="check" size={15} color={colors.primaryForeground} /> : null}
+                </Pressable>
+              );
+            })}
+          </View>
           <FieldLabel colors={colors}>Valor do limite</FieldLabel>
           <View style={[styles.amountShell, { backgroundColor: colors.card, borderColor: colors.input }]}>
             <Text style={[styles.currency, { color: colors.mutedForeground }]}>R$</Text>
@@ -633,6 +717,8 @@ const styles = StyleSheet.create({
   optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   optionChip: { minHeight: 38, borderRadius: 8, borderWidth: 1, paddingHorizontal: 11, alignItems: 'center', justifyContent: 'center' },
   optionChipText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+  colorOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 2 },
+  colorOption: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   helper: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 4 },
   twoColumns: { flexDirection: 'row', gap: 10 },
   column: { flex: 1 },
