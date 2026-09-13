@@ -76,6 +76,9 @@ function ClassicTabLayout() {
         tabBarActiveTintColor: isDark ? colors.accent : colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarShowLabel: false,
+        tabBarIconStyle: {
+          marginTop: 4,
+        },
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
