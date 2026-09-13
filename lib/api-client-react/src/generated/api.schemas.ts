@@ -379,3 +379,89 @@ export interface GoalUpdate {
   deadline?: string | null;
 }
 
+export type GoalHistoryEntryType = typeof GoalHistoryEntryType[keyof typeof GoalHistoryEntryType];
+
+
+export const GoalHistoryEntryType = {
+  contribution: 'contribution',
+  withdrawal: 'withdrawal',
+} as const;
+
+export type GoalHistoryEntrySource = typeof GoalHistoryEntrySource[keyof typeof GoalHistoryEntrySource];
+
+
+export const GoalHistoryEntrySource = {
+  transaction: 'transaction',
+  manual: 'manual',
+} as const;
+
+export type GoalHistoryEntryPaymentStatus = typeof GoalHistoryEntryPaymentStatus[keyof typeof GoalHistoryEntryPaymentStatus];
+
+
+export const GoalHistoryEntryPaymentStatus = {
+  paid: 'paid',
+  unpaid: 'unpaid',
+} as const;
+
+export type GoalHistoryEntryTransactionType = typeof GoalHistoryEntryTransactionType[keyof typeof GoalHistoryEntryTransactionType] | null;
+
+
+export const GoalHistoryEntryTransactionType = {
+  income: 'income',
+  expense: 'expense',
+} as const;
+
+export interface GoalHistoryEntry {
+  id: string;
+  type: GoalHistoryEntryType;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  description: string;
+  date: string;
+  source: GoalHistoryEntrySource;
+  paymentStatus: GoalHistoryEntryPaymentStatus;
+  transactionType?: GoalHistoryEntryTransactionType;
+  createdAt: string;
+}
+
+export interface GoalDetail {
+  goal: Goal;
+  history: GoalHistoryEntry[];
+}
+
+export type GoalMovementType = typeof GoalMovementType[keyof typeof GoalMovementType];
+
+
+export const GoalMovementType = {
+  contribution: 'contribution',
+  withdrawal: 'withdrawal',
+} as const;
+
+export interface GoalMovement {
+  id: string;
+  goalId: string;
+  type: GoalMovementType;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  description: string;
+  date: string;
+  createdAt: string;
+}
+
+export type GoalMovementInputType = typeof GoalMovementInputType[keyof typeof GoalMovementInputType];
+
+
+export const GoalMovementInputType = {
+  contribution: 'contribution',
+  withdrawal: 'withdrawal',
+} as const;
+
+export interface GoalMovementInput {
+  type: GoalMovementInputType;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  /** @minLength 1 */
+  description?: string;
+  date?: string;
+}
+

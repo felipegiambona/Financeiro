@@ -22,3 +22,4 @@ export * from "./wallets";
 export * from "./categories";
 export * from "./limits";
 export * from "./goals";
+export * from "./goalMovements";

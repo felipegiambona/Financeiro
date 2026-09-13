@@ -480,6 +480,43 @@ export const CreateGoalResponse = zod.object({
 })
 
 
+export const GetGoalParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const getGoalResponseGoalTargetAmountExclusiveMin = 0;
+
+export const getGoalResponseGoalSavedAmountMin = 0;
+
+export const getGoalResponseHistoryItemAmountExclusiveMin = 0;
+
+
+
+export const GetGoalResponse = zod.object({
+  "goal": zod.object({
+  "id": zod.string().uuid(),
+  "title": zod.string(),
+  "targetAmount": zod.number().gt(getGoalResponseGoalTargetAmountExclusiveMin),
+  "savedAmount": zod.number().min(getGoalResponseGoalSavedAmountMin),
+  "imageData": zod.string().nullable(),
+  "deadline": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "history": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "type": zod.enum(['contribution', 'withdrawal']),
+  "amount": zod.number().gt(getGoalResponseHistoryItemAmountExclusiveMin),
+  "description": zod.string(),
+  "date": zod.coerce.date(),
+  "source": zod.enum(['transaction', 'manual']),
+  "paymentStatus": zod.enum(['paid', 'unpaid']),
+  "transactionType": zod.enum(['income', 'expense']).nullish(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
 export const UpdateGoalParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
@@ -519,6 +556,37 @@ export const DeleteGoalParams = zod.object({
 })
 
 export const DeleteGoalResponse = zod.void()
+
+
+export const CreateGoalMovementParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createGoalMovementBodyAmountExclusiveMin = 0;
+
+
+
+
+export const CreateGoalMovementBody = zod.object({
+  "type": zod.enum(['contribution', 'withdrawal']),
+  "amount": zod.number().gt(createGoalMovementBodyAmountExclusiveMin),
+  "description": zod.string().min(1).optional(),
+  "date": zod.coerce.date().optional()
+})
+
+export const createGoalMovementResponseAmountExclusiveMin = 0;
+
+
+
+export const CreateGoalMovementResponse = zod.object({
+  "id": zod.string().uuid(),
+  "goalId": zod.string().uuid(),
+  "type": zod.enum(['contribution', 'withdrawal']),
+  "amount": zod.number().gt(createGoalMovementResponseAmountExclusiveMin),
+  "description": zod.string(),
+  "date": zod.coerce.date(),
+  "createdAt": zod.coerce.date()
+})
 
 
 export const UpdateWalletParams = zod.object({

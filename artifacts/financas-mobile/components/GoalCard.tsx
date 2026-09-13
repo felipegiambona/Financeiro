@@ -12,16 +12,22 @@ interface GoalCardProps {
   percentage: number;
   progress: number;
   remaining: number;
+  onPress?: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export function GoalCard({ goal, savedAmount, percentage, progress, remaining, onEdit, onDelete }: GoalCardProps) {
+export function GoalCard({ goal, savedAmount, percentage, progress, remaining, onPress, onEdit, onDelete }: GoalCardProps) {
   const colors = useColors();
   const completed = percentage >= 100;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <Pressable
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? `Abrir detalhes da meta ${goal.title}` : undefined}
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: colors.border }, onPress && pressed && styles.pressed]}
+    >
       <View style={styles.header}>
         {goal.imageData ? (
           <Image source={{ uri: goal.imageData }} style={styles.image} />
@@ -60,7 +66,7 @@ export function GoalCard({ goal, savedAmount, percentage, progress, remaining, o
           {completed ? 'Meta alcançada' : `${formatCurrency(remaining)} restante`}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

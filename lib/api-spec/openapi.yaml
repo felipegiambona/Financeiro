@@ -334,6 +334,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/Goal"
   /goals/{id}:
+    get:
+      operationId: getGoal
+      tags: [goals]
+      parameters:
+        - $ref: "#/components/parameters/GoalId"
+      responses:
+        "200":
+          description: Savings goal details and history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoalDetail"
+        "404":
+          description: Not found
     patch:
       operationId: updateGoal
       tags: [goals]
@@ -362,6 +376,29 @@ paths:
       responses:
         "204":
           description: Goal removed
+        "404":
+          description: Not found
+  /goals/{id}/movements:
+    post:
+      operationId: createGoalMovement
+      tags: [goals]
+      parameters:
+        - $ref: "#/components/parameters/GoalId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalMovementInput"
+      responses:
+        "201":
+          description: Goal movement created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoalMovement"
+        "400":
+          description: Invalid movement
         "404":
           description: Not found
   /wallets/{id}:
@@ -736,4 +773,59 @@ components:
         targetAmount: { type: number, exclusiveMinimum: 0 }
         imageData: { type: ["string", "null"] }
         deadline: { type: ["string", "null"], format: date }
+    GoalDetail:
+      type: object
+      required: [goal, history]
+      properties:
+        goal:
+          $ref: "#/components/schemas/Goal"
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoalHistoryEntry"
+    GoalHistoryEntry:
+      type: object
+      required: [id, type, amount, description, date, source, paymentStatus, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        type:
+          type: string
+          enum: [contribution, withdrawal]
+        amount: { type: number, exclusiveMinimum: 0 }
+        description: { type: string }
+        date: { type: string, format: date }
+        source:
+          type: string
+          enum: [transaction, manual]
+        paymentStatus:
+          type: string
+          enum: [paid, unpaid]
+        transactionType:
+          type: string
+          enum: [income, expense]
+          nullable: true
+        createdAt: { type: string, format: date-time }
+    GoalMovement:
+      type: object
+      required: [id, goalId, type, amount, description, date, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        goalId: { type: string, format: uuid }
+        type:
+          type: string
+          enum: [contribution, withdrawal]
+        amount: { type: number, exclusiveMinimum: 0 }
+        description: { type: string }
+        date: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    GoalMovementInput:
+      type: object
+      required: [type, amount]
+      properties:
+        type:
+          type: string
+          enum: [contribution, withdrawal]
+        amount: { type: number, exclusiveMinimum: 0 }
+        description: { type: string, minLength: 1 }
+        date: { type: string, format: date }
 

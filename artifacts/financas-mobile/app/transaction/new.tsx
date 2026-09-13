@@ -96,7 +96,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const { createTransaction, updateTransaction } = useFinance();
   const { categories, loading: categoriesLoading, createCategory } = useCategories();
   const { wallets, loading: walletsLoading } = useWallets();
-  const { goals } = useGoals();
+  const { goals, refresh: refreshGoals } = useGoals();
   const isEditing = Boolean(transaction);
   const defaultWallet = wallets.find((wallet) => wallet.isDefault) ?? wallets[0];
   const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
@@ -206,7 +206,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           description: description.trim(),
           walletId,
           categoryId,
-          goalId: type === 'expense' ? goalId : null,
+          goalId: type === 'expense' || type === 'income' ? goalId : null,
           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
           recurrence: recurrenceValue,
@@ -219,13 +219,14 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           amount: numericAmount,
           description,
           categoryId,
-          goalId: type === 'expense' ? goalId : null,
+          goalId: type === 'expense' || type === 'income' ? goalId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
           recurrence: recurrenceValue,
           paymentStatus,
         });
       }
+      await refreshGoals();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onExit();
     } catch {
@@ -295,7 +296,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 testID={`${option}-type-option`}
                 onPress={() => {
                   setType(option);
-                  if (option !== 'expense') setGoalId(null);
+                  if (option === 'transfer') setGoalId(null);
                   if (option === 'transfer' && (!destinationWalletId || destinationWalletId === walletId)) {
                     setDestinationWalletId(wallets.find((wallet) => wallet.id !== walletId)?.id ?? '');
                   }
@@ -372,12 +373,12 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-        {type === 'expense' ? (
+        {type === 'expense' || type === 'income' ? (
           <>
             <Text style={[styles.label, { color: colors.foreground }]}>Meta</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Selecionar meta para esta despesa"
+              accessibilityLabel={`Selecionar meta para esta ${type === 'income' ? 'receita' : 'despesa'}`}
               testID="goal-select"
               onPress={() => setGoalPickerOpen(true)}
               style={({ pressed }) => [styles.dateInputShell, { backgroundColor: colors.card, borderColor: colors.input }, pressed && styles.pressed]}
@@ -389,7 +390,9 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
             </Pressable>
             <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
-              Despesas pagas associadas a uma meta entram automaticamente no valor guardado.
+              {type === 'income'
+                ? 'Receitas pagas associadas a uma meta registram uma retirada do valor guardado.'
+                : 'Despesas pagas associadas a uma meta entram automaticamente no valor guardado.'}
             </Text>
           </>
         ) : null}
@@ -746,7 +749,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         <View style={styles.modalRoot}>
           <Pressable accessibilityLabel="Fechar seletor de meta" onPress={() => setGoalPickerOpen(false)} style={StyleSheet.absoluteFill} />
           <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Meta da despesa</Text>
+            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Meta do lançamento</Text>
             <Pressable
               testID="goal-option-none"
               onPress={() => {
@@ -787,7 +790,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               );
             })}
             {goals.length === 0 ? (
-              <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>Crie uma meta em Mais para associá-la a esta despesa.</Text>
+              <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>Crie uma meta em Mais para associá-la a este lançamento.</Text>
             ) : null}
           </View>
         </View>

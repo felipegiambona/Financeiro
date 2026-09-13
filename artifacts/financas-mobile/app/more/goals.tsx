@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,6 +51,9 @@ export default function GoalsScreen() {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Goal | null>(null);
+  useFocusEffect(React.useCallback(() => {
+    void refresh();
+  }, [refresh]));
 
   const openEditor = (goal?: Goal) => {
     setEditingGoal(goal ?? null);
@@ -316,6 +319,7 @@ function ScrollContent({
             key={goal.id}
             goal={goal}
             {...progress}
+            onPress={() => router.push({ pathname: '/more/goal/[id]', params: { id: goal.id } })}
             onEdit={() => onEdit(goal)}
             onDelete={() => onDelete(goal)}
           />

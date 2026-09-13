@@ -56,6 +56,7 @@ function RootLayoutNav() {
         <Stack.Screen name="more/categories" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/limits" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/goals" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="more/goal/[id]" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/dashboard-cards" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="wallets" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ headerShown: false, presentation: 'card' }} />

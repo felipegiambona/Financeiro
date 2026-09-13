@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,9 +30,12 @@ export default function DashboardScreen() {
   const { wallets, loading: walletsLoading } = useWallets();
   const { categories } = useCategories();
   const { limits, loading: limitsLoading } = useLimits();
-  const { goals, loading: goalsLoading } = useGoals();
+  const { goals, loading: goalsLoading, refresh: refreshGoals } = useGoals();
   const { session, signOut } = useAuth();
   const { visibility } = useDashboardPreferences();
+  useFocusEffect(useCallback(() => {
+    void refreshGoals();
+  }, [refreshGoals]));
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -226,6 +230,7 @@ export default function DashboardScreen() {
                     key={goal.id}
                     goal={goal}
                     {...progress}
+                    onPress={() => router.push({ pathname: '/more/goal/[id]', params: { id: goal.id } })}
                     onEdit={() => router.push({ pathname: '/more/goals', params: { editId: goal.id } })}
                     onDelete={() => router.push({ pathname: '/more/goals', params: { deleteId: goal.id } })}
                   />

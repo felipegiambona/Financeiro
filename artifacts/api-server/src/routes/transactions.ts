@@ -95,8 +95,8 @@ router.post("/transactions", async (req, res): Promise<void> => {
   if (parsed.data.goalId) {
     const [goal] = await db.select({ id: goalsTable.id }).from(goalsTable)
       .where(and(eq(goalsTable.id, parsed.data.goalId), eq(goalsTable.userId, userId)));
-    if (!goal || parsed.data.type !== "expense") {
-      res.status(400).json({ error: "Invalid goal contribution" });
+    if (!goal || (parsed.data.type !== "expense" && parsed.data.type !== "income")) {
+      res.status(400).json({ error: "Invalid goal transaction" });
       return;
     }
   }
@@ -171,8 +171,8 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
   if (effectiveGoalId) {
     const [goal] = await db.select({ id: goalsTable.id }).from(goalsTable)
       .where(and(eq(goalsTable.id, effectiveGoalId), eq(goalsTable.userId, userId)));
-    if (!goal || effectiveType !== "expense") {
-      res.status(400).json({ error: "Invalid goal contribution" });
+    if (!goal || (effectiveType !== "expense" && effectiveType !== "income")) {
+      res.status(400).json({ error: "Invalid goal transaction" });
       return;
     }
   }
