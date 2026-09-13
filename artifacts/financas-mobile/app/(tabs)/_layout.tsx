@@ -20,13 +20,11 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
         />
-        <NativeTabs.Trigger.Label>Dashboard</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="transactions">
         <NativeTabs.Trigger.Icon
           sf={{ default: 'list.bullet', selected: 'list.bullet' }}
         />
-        <NativeTabs.Trigger.Label>Transações</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="new">
         <NativeTabs.Trigger.Icon
@@ -37,13 +35,11 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Icon
           sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }}
         />
-        <NativeTabs.Trigger.Label>Gráficos</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <NativeTabs.Trigger.Icon
           sf={{ default: 'ellipsis.circle', selected: 'ellipsis.circle.fill' }}
         />
-        <NativeTabs.Trigger.Label>Mais</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -79,6 +75,7 @@ function ClassicTabLayout() {
       screenOptions={{
         tabBarActiveTintColor: isDark ? colors.accent : colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarShowLabel: false,
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
@@ -111,9 +108,9 @@ function ClassicTabLayout() {
           title: 'Dashboard',
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
+              <SymbolView name="house" tintColor={color} size={28} />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <Feather name="home" size={28} color={color} />
             ),
         }}
       />
@@ -123,9 +120,9 @@ function ClassicTabLayout() {
           title: 'Transações',
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="list.bullet" tintColor={color} size={23} />
+              <SymbolView name="list.bullet" tintColor={color} size={28} />
             ) : (
-              <Feather name="list" size={22} color={color} />
+              <Feather name="list" size={28} color={color} />
             ),
         }}
       />
@@ -142,9 +139,9 @@ function ClassicTabLayout() {
           title: 'Gráficos',
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="chart.bar" tintColor={color} size={23} />
+              <SymbolView name="chart.bar" tintColor={color} size={28} />
             ) : (
-              <Feather name="bar-chart-2" size={22} color={color} />
+              <Feather name="bar-chart-2" size={28} color={color} />
             ),
         }}
       />
@@ -154,9 +151,9 @@ function ClassicTabLayout() {
           title: 'Mais',
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="ellipsis.circle" tintColor={color} size={23} />
+              <SymbolView name="ellipsis.circle" tintColor={color} size={28} />
             ) : (
-              <Feather name="more-horizontal" size={22} color={color} />
+              <Feather name="more-horizontal" size={28} color={color} />
             ),
         }}
       />
