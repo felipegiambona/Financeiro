@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Response } from "express";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
-import { categoriesTable, db, goalsTable, transactionsTable } from "@workspace/db";
+import { cardsTable, categoriesTable, db, goalsTable, transactionsTable } from "@workspace/db";
 import {
   CreateTransactionBody,
   CreateTransactionResponse,
@@ -100,10 +100,24 @@ router.post("/transactions", async (req, res): Promise<void> => {
       return;
     }
   }
+  if (parsed.data.cardId) {
+    if (parsed.data.type !== "expense") {
+      res.status(400).json({ error: "Cards can only be linked to expenses" });
+      return;
+    }
+    const [card] = await db.select({ id: cardsTable.id }).from(cardsTable)
+      .where(and(eq(cardsTable.id, parsed.data.cardId), eq(cardsTable.userId, userId)));
+    if (!card) {
+      res.status(400).json({ error: "Card not found" });
+      return;
+    }
+  }
   const [row] = await db.insert(transactionsTable).values({
     ...parsed.data,
     userId,
     walletId: wallet.id,
+    cardId: parsed.data.type === "expense" ? parsed.data.cardId ?? null : null,
+    cardEntryType: "purchase",
     destinationWalletId: parsed.data.type === "transfer" ? destinationWallet?.id : null,
     categoryId: parsed.data.categoryId ?? null,
     goalId: parsed.data.goalId ?? null,
@@ -135,6 +149,7 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     destinationWalletId,
     categoryId,
     goalId,
+    cardId,
     type,
     paymentStatus,
     ...otherUpdates
@@ -167,6 +182,17 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
       return;
     }
   }
+  const effectiveCardId = effectiveType === "expense"
+    ? cardId === undefined ? current.cardId : cardId
+    : null;
+  if (effectiveCardId) {
+    const [card] = await db.select({ id: cardsTable.id }).from(cardsTable)
+      .where(and(eq(cardsTable.id, effectiveCardId), eq(cardsTable.userId, userId)));
+    if (!card) {
+      res.status(400).json({ error: "Card not found" });
+      return;
+    }
+  }
   const effectiveGoalId = goalId === undefined ? current.goalId : goalId;
   if (effectiveGoalId) {
     const [goal] = await db.select({ id: goalsTable.id }).from(goalsTable)
@@ -182,6 +208,10 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     ...(date === undefined ? {} : { date: dateOnly(date) }),
     ...(dueDate === undefined ? {} : { dueDate: dateOnly(dueDate) }),
     ...(walletId === undefined ? {} : { walletId: wallet.id }),
+    ...((cardId !== undefined || type !== undefined) ? {
+      cardId: effectiveCardId,
+      cardEntryType: effectiveCardId ? "purchase" : current.cardEntryType,
+    } : {}),
     ...(type === undefined ? {} : { type }),
     ...(paymentStatus === undefined ? {} : { paymentStatus }),
     ...(categoryId === undefined ? {} : { categoryId }),

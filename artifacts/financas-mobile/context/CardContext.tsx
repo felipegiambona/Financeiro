@@ -7,6 +7,7 @@ import {
   updateCard as updatePersistedCard,
 } from '@/services/cardRepository';
 import type { Card, CardUpdate, NewCardInput } from '@/types/card';
+import { useFinance } from '@/context/FinanceContext';
 
 interface CardContextValue {
   cards: Card[];
@@ -22,6 +23,7 @@ interface CardContextValue {
 const CardContext = createContext<CardContextValue | null>(null);
 
 export function CardProvider({ children }: React.PropsWithChildren) {
+  const { refresh: refreshFinance } = useFinance();
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,12 +84,13 @@ export function CardProvider({ children }: React.PropsWithChildren) {
       setError(null);
       const updated = await persistCardInvoice(id);
       setCards((current) => current.map((card) => card.id === id ? updated : card));
+      await refreshFinance();
       return updated;
     } catch {
       setError('Não foi possível pagar a fatura.');
       throw new Error('Não foi possível pagar a fatura.');
     }
-  }, []);
+  }, [refreshFinance]);
 
   const value = useMemo(
     () => ({ cards, loading, error, refresh, createCard, updateCard, deleteCard, payCardInvoice }),

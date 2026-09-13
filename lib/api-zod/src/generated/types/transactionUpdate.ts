@@ -12,6 +12,7 @@ import type { TransactionUpdateType } from './transactionUpdateType';
 
 export interface TransactionUpdate {
   walletId?: string;
+  cardId?: string | null;
   destinationWalletId?: string | null;
   categoryId?: string | null;
   goalId?: string | null;

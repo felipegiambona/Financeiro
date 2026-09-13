@@ -101,6 +101,7 @@ export function FinanceProvider({ children }: React.PropsWithChildren) {
     ids: string[],
     updates: {
       walletId?: string;
+      cardId?: string | null;
       categoryId?: string | null;
       dueDate?: string | null;
       paymentStatus?: PaymentStatus;

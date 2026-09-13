@@ -7,6 +7,9 @@
  */
 
 export * from './card';
+export * from './cardHistoryItem';
+export * from './cardHistoryItemKind';
+export * from './cardHistoryItemPaymentStatus';
 export * from './cardInput';
 export * from './cardUpdate';
 export * from './category';
@@ -46,6 +49,7 @@ export * from './transaction';
 export * from './transactionBatchDelete';
 export * from './transactionBatchUpdate';
 export * from './transactionBatchUpdatePaymentStatus';
+export * from './transactionCardEntryType';
 export * from './transactionInput';
 export * from './transactionInputPaymentStatus';
 export * from './transactionInputType';

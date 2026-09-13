@@ -21,6 +21,7 @@ import type {
 
 import type {
   Card,
+  CardHistoryItem,
   CardInput,
   CardUpdate,
   Category,
@@ -2160,6 +2161,77 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getPayCardInvoiceMutationOptions(options));
     }
+
+export const getGetCardHistoryUrl = (id: string,) => {
+
+
+
+
+  return `/api/cards/${id}/history`
+}
+
+export const getCardHistory = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CardHistoryItem[]> => {
+
+  return customFetch<CardHistoryItem[]>(getGetCardHistoryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCardHistoryQueryKey = (id: string,) => {
+    return [
+    `/api/cards/${id}/history`
+    ] as const;
+    }
+
+
+export const getGetCardHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getCardHistory>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCardHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCardHistoryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCardHistory>>> = ({ signal }) => getCardHistory(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCardHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCardHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getCardHistory>>>
+export type GetCardHistoryQueryError = ErrorType<void>
+
+
+
+export function useGetCardHistory<TData = Awaited<ReturnType<typeof getCardHistory>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCardHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCardHistoryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getUpdateWalletUrl = (id: string,) => {
 

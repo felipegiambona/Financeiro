@@ -11,6 +11,7 @@ import { useFinance } from '@/context/FinanceContext';
 import { useCategories } from '@/context/CategoryContext';
 import { useWallets } from '@/context/WalletContext';
 import { useGoals } from '@/context/GoalContext';
+import { useCards } from '@/context/CardContext';
 import { useColors } from '@/hooks/useColors';
 import { CalculatorModal } from '@/components/CalculatorModal';
 import {
@@ -97,12 +98,14 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const { categories, loading: categoriesLoading, createCategory } = useCategories();
   const { wallets, loading: walletsLoading } = useWallets();
   const { goals, refresh: refreshGoals } = useGoals();
+  const { cards, loading: cardsLoading } = useCards();
   const isEditing = Boolean(transaction);
   const defaultWallet = wallets.find((wallet) => wallet.isDefault) ?? wallets[0];
   const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
   const [amount, setAmount] = useState(transaction ? transaction.amount.toFixed(2).replace('.', ',') : '');
   const [description, setDescription] = useState(transaction?.description ?? '');
   const [walletId, setWalletId] = useState(transaction?.walletId ?? '');
+  const [cardId, setCardId] = useState<string | null>(transaction?.cardId ?? null);
   const [destinationWalletId, setDestinationWalletId] = useState(transaction?.destinationWalletId ?? '');
   const [dueDate, setDueDate] = useState(transaction?.dueDate ? toDateInput(transaction.dueDate) : '');
   const [recurrence, setRecurrence] = useState<RecurrenceKind>(transaction?.recurrence.kind ?? 'none');
@@ -115,6 +118,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [amountMode, setAmountMode] = useState<InstallmentAmountMode>(transaction?.recurrence.amountMode ?? 'installment');
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
+  const [cardPickerOpen, setCardPickerOpen] = useState(false);
   const [walletPickerTarget, setWalletPickerTarget] = useState<'source' | 'destination'>('source');
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(transaction?.paymentStatus ?? 'paid');
@@ -206,6 +210,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           amount: numericAmount,
           description: description.trim(),
           walletId,
+          cardId: type === 'expense' ? cardId : null,
           categoryId,
           goalId: type === 'expense' || type === 'income' ? goalId : null,
           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
@@ -219,6 +224,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           type,
           amount: numericAmount,
           description,
+          cardId: type === 'expense' ? cardId : null,
           categoryId,
           goalId: type === 'expense' || type === 'income' ? goalId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
@@ -297,6 +303,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 onPress={() => {
                   setType(option);
                   if (option === 'transfer') setGoalId(null);
+                  if (option !== 'expense') setCardId(null);
                   if (option === 'transfer' && (!destinationWalletId || destinationWalletId === walletId)) {
                     setDestinationWalletId(wallets.find((wallet) => wallet.id !== walletId)?.id ?? '');
                   }
@@ -425,6 +432,31 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           </Text>
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
+
+        {type === 'expense' ? (
+          <>
+            <Text style={[styles.label, { color: colors.foreground }]}>Cartão</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Selecionar cartão para a despesa"
+              testID="card-select"
+              disabled={cardsLoading}
+              onPress={() => setCardPickerOpen(true)}
+              style={({ pressed }) => [
+                styles.dateInputShell,
+                { backgroundColor: colors.card, borderColor: colors.input },
+                cardsLoading && styles.disabled,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Feather name="credit-card" size={17} color={cardId ? colors.primary : colors.mutedForeground} />
+              <Text style={[styles.dateInput, { color: cardId ? colors.foreground : colors.mutedForeground }]}>
+                {cardsLoading ? 'Carregando cartões...' : cards.find((card) => card.id === cardId)?.name ?? 'Não usar cartão'}
+              </Text>
+              <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+            </Pressable>
+          </>
+        ) : null}
 
         {type === 'transfer' ? (
           <>
@@ -975,6 +1007,61 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 </Pressable>
               );
             })}
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={cardPickerOpen}
+        onRequestClose={() => setCardPickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable accessibilityLabel="Fechar seletor de cartão" onPress={() => setCardPickerOpen(false)} style={StyleSheet.absoluteFill} />
+          <View style={[styles.unitMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.unitMenuTitle, { color: colors.foreground }]}>Cartão da despesa</Text>
+            <Pressable
+              testID="card-option-none"
+              onPress={() => {
+                setCardId(null);
+                setCardPickerOpen(false);
+              }}
+              style={({ pressed }) => [
+                styles.unitMenuOption,
+                { borderColor: cardId === null ? colors.primary : colors.border, backgroundColor: cardId === null ? colors.primary : colors.card },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.unitMenuOptionText, { color: cardId === null ? colors.primaryForeground : colors.foreground }]}>Não usar cartão</Text>
+              {cardId === null ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+            </Pressable>
+            {cards.map((card) => {
+              const active = card.id === cardId;
+              return (
+                <Pressable
+                  key={card.id}
+                  testID={`card-option-${card.id}`}
+                  onPress={() => {
+                    setCardId(card.id);
+                    setCardPickerOpen(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.unitMenuOption,
+                    { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.categoryMenuLabel}>
+                    <Feather name="credit-card" size={16} color={active ? colors.primaryForeground : colors.mutedForeground} />
+                    <Text numberOfLines={1} style={[styles.unitMenuOptionText, styles.categoryMenuText, { color: active ? colors.primaryForeground : colors.foreground }]}>{card.name}</Text>
+                  </View>
+                  {active ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+                </Pressable>
+              );
+            })}
+            {cards.length === 0 ? (
+              <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>Cadastre um cartão em Mais para associá-lo a esta despesa.</Text>
+            ) : null}
           </View>
         </View>
       </Modal>

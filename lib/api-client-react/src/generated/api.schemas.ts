@@ -96,6 +96,14 @@ export interface Recurrence {
   amountMode?: RecurrenceAmountMode;
 }
 
+export type TransactionCardEntryType = typeof TransactionCardEntryType[keyof typeof TransactionCardEntryType];
+
+
+export const TransactionCardEntryType = {
+  purchase: 'purchase',
+  invoice_payment: 'invoice_payment',
+} as const;
+
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];
 
 
@@ -118,6 +126,8 @@ export type TransactionPaymentStatusOverrides = {[key: string]: 'paid' | 'unpaid
 export interface Transaction {
   id: string;
   walletId: string;
+  cardId: string | null;
+  cardEntryType: TransactionCardEntryType;
   destinationWalletId: string | null;
   categoryId: string | null;
   goalId?: string | null;
@@ -152,6 +162,7 @@ export const TransactionInputPaymentStatus = {
 
 export interface TransactionInput {
   walletId?: string;
+  cardId?: string | null;
   destinationWalletId?: string | null;
   categoryId?: string | null;
   goalId?: string | null;
@@ -187,6 +198,7 @@ export type TransactionUpdatePaymentStatusOverrides = {[key: string]: 'paid' | '
 
 export interface TransactionUpdate {
   walletId?: string;
+  cardId?: string | null;
   destinationWalletId?: string | null;
   categoryId?: string | null;
   goalId?: string | null;
@@ -509,10 +521,7 @@ export interface CardInput {
      */
   closingDay: number;
   /** @minimum 0 */
-  currentInvoiceAmount?: number;
-  /** @minimum 0 */
   availableLimit?: number | null;
-  invoiceStatus?: InvoiceStatus;
 }
 
 export interface CardUpdate {
@@ -529,9 +538,33 @@ export interface CardUpdate {
      */
   closingDay?: number;
   /** @minimum 0 */
-  currentInvoiceAmount?: number;
-  /** @minimum 0 */
   availableLimit?: number | null;
-  invoiceStatus?: InvoiceStatus;
+}
+
+export type CardHistoryItemKind = typeof CardHistoryItemKind[keyof typeof CardHistoryItemKind];
+
+
+export const CardHistoryItemKind = {
+  transaction: 'transaction',
+  closure: 'closure',
+} as const;
+
+export type CardHistoryItemPaymentStatus = typeof CardHistoryItemPaymentStatus[keyof typeof CardHistoryItemPaymentStatus];
+
+
+export const CardHistoryItemPaymentStatus = {
+  paid: 'paid',
+  unpaid: 'unpaid',
+} as const;
+
+export interface CardHistoryItem {
+  id: string;
+  kind: CardHistoryItemKind;
+  description: string;
+  /** @minimum 0 */
+  amount: number;
+  date: string;
+  paymentStatus: CardHistoryItemPaymentStatus;
+  categoryName?: string | null;
 }
 

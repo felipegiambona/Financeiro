@@ -26,6 +26,8 @@ export const listTransactionsResponseAmountExclusiveMin = 0;
 export const ListTransactionsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
+  "cardId": zod.string().uuid().nullable(),
+  "cardEntryType": zod.enum(['purchase', 'invoice_payment']),
   "destinationWalletId": zod.string().uuid().nullable(),
   "categoryId": zod.string().uuid().nullable(),
   "goalId": zod.string().uuid().nullish(),
@@ -62,6 +64,7 @@ export const createTransactionBodyAmountExclusiveMin = 0;
 
 export const CreateTransactionBody = zod.object({
   "walletId": zod.string().uuid().optional(),
+  "cardId": zod.string().uuid().nullish(),
   "destinationWalletId": zod.string().uuid().nullish(),
   "categoryId": zod.string().uuid().nullish(),
   "goalId": zod.string().uuid().nullish(),
@@ -94,6 +97,8 @@ export const createTransactionResponseAmountExclusiveMin = 0;
 export const CreateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
+  "cardId": zod.string().uuid().nullable(),
+  "cardEntryType": zod.enum(['purchase', 'invoice_payment']),
   "destinationWalletId": zod.string().uuid().nullable(),
   "categoryId": zod.string().uuid().nullable(),
   "goalId": zod.string().uuid().nullish(),
@@ -136,6 +141,7 @@ export const updateTransactionBodyAmountExclusiveMin = 0;
 
 export const UpdateTransactionBody = zod.object({
   "walletId": zod.string().uuid().optional(),
+  "cardId": zod.string().uuid().nullish(),
   "destinationWalletId": zod.string().uuid().nullish(),
   "categoryId": zod.string().uuid().nullish(),
   "goalId": zod.string().uuid().nullish(),
@@ -169,6 +175,8 @@ export const updateTransactionResponseAmountExclusiveMin = 0;
 export const UpdateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
+  "cardId": zod.string().uuid().nullable(),
+  "cardEntryType": zod.enum(['purchase', 'invoice_payment']),
   "destinationWalletId": zod.string().uuid().nullable(),
   "categoryId": zod.string().uuid().nullable(),
   "goalId": zod.string().uuid().nullish(),
@@ -220,6 +228,8 @@ export const updateTransactionOccurrencePaymentStatusResponseAmountExclusiveMin 
 export const UpdateTransactionOccurrencePaymentStatusResponse = zod.object({
   "id": zod.string().uuid(),
   "walletId": zod.string().uuid(),
+  "cardId": zod.string().uuid().nullable(),
+  "cardEntryType": zod.enum(['purchase', 'invoice_payment']),
   "destinationWalletId": zod.string().uuid().nullable(),
   "categoryId": zod.string().uuid().nullable(),
   "goalId": zod.string().uuid().nullish(),
@@ -618,8 +628,6 @@ export const createCardBodyDueDayMax = 31;
 
 export const createCardBodyClosingDayMax = 31;
 
-export const createCardBodyCurrentInvoiceAmountMin = 0;
-
 export const createCardBodyAvailableLimitMin = 0;
 
 
@@ -628,9 +636,7 @@ export const CreateCardBody = zod.object({
   "name": zod.string().min(1),
   "dueDay": zod.number().int().min(1).max(createCardBodyDueDayMax),
   "closingDay": zod.number().int().min(1).max(createCardBodyClosingDayMax),
-  "currentInvoiceAmount": zod.number().min(createCardBodyCurrentInvoiceAmountMin).optional(),
-  "availableLimit": zod.number().min(createCardBodyAvailableLimitMin).nullish(),
-  "invoiceStatus": zod.enum(['open', 'closed']).optional()
+  "availableLimit": zod.number().min(createCardBodyAvailableLimitMin).nullish()
 })
 
 export const createCardResponseDueDayMax = 31;
@@ -692,8 +698,6 @@ export const updateCardBodyDueDayMax = 31;
 
 export const updateCardBodyClosingDayMax = 31;
 
-export const updateCardBodyCurrentInvoiceAmountMin = 0;
-
 export const updateCardBodyAvailableLimitMin = 0;
 
 
@@ -702,9 +706,7 @@ export const UpdateCardBody = zod.object({
   "name": zod.string().min(1).optional(),
   "dueDay": zod.number().int().min(1).max(updateCardBodyDueDayMax).optional(),
   "closingDay": zod.number().int().min(1).max(updateCardBodyClosingDayMax).optional(),
-  "currentInvoiceAmount": zod.number().min(updateCardBodyCurrentInvoiceAmountMin).optional(),
-  "availableLimit": zod.number().min(updateCardBodyAvailableLimitMin).nullish(),
-  "invoiceStatus": zod.enum(['open', 'closed']).optional()
+  "availableLimit": zod.number().min(updateCardBodyAvailableLimitMin).nullish()
 })
 
 export const updateCardResponseDueDayMax = 31;
@@ -762,6 +764,26 @@ export const PayCardInvoiceResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
+
+
+export const GetCardHistoryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const getCardHistoryResponseAmountMin = 0;
+
+
+
+export const GetCardHistoryResponseItem = zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['transaction', 'closure']),
+  "description": zod.string(),
+  "amount": zod.number().min(getCardHistoryResponseAmountMin),
+  "date": zod.coerce.date(),
+  "paymentStatus": zod.enum(['paid', 'unpaid']),
+  "categoryName": zod.string().nullish()
+})
+export const GetCardHistoryResponse = zod.array(GetCardHistoryResponseItem)
 
 
 export const UpdateWalletParams = zod.object({

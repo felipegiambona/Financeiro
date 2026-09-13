@@ -5,7 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { InvoiceStatus } from './invoiceStatus';
 
 export interface CardUpdate {
   /** @minLength 1 */
@@ -21,8 +20,5 @@ export interface CardUpdate {
      */
   closingDay?: number;
   /** @minimum 0 */
-  currentInvoiceAmount?: number;
-  /** @minimum 0 */
   availableLimit?: number | null;
-  invoiceStatus?: InvoiceStatus;
 }

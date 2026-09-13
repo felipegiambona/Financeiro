@@ -36,7 +36,9 @@ function walletTransactionValue(transaction: Transaction, walletId: string): num
     if (transaction.destinationWalletId === walletId) return transaction.amount;
     return 0;
   }
-  return transaction.walletId === walletId ? transactionValue(transaction) : 0;
+  if (transaction.walletId !== walletId) return 0;
+  if (transaction.type === 'expense' && transaction.cardId && transaction.cardEntryType !== 'invoice_payment') return 0;
+  return transactionValue(transaction);
 }
 
 function isOnOrBefore(transaction: Transaction, endDate: Date): boolean {

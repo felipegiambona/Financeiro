@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreditCardCard } from '@/components/CreditCardCard';
 import { EmptyState, LoadingState } from '@/components/StateView';
@@ -9,6 +9,9 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { useCards } from '@/context/CardContext';
 import { useColors } from '@/hooks/useColors';
 import { formatCurrency } from '@/utils/currency';
+import { getCardHistory } from '@/services/cardRepository';
+import { formatDate, formatMonthYearLabel } from '@/utils/date';
+import type { CardHistoryItem } from '@/types/card';
 
 export default function CardDetailsScreen() {
   const colors = useColors();
@@ -16,11 +19,26 @@ export default function CardDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { cards, loading, refresh, deleteCard, payCardInvoice } = useCards();
   const [paying, setPaying] = useState(false);
+  const [history, setHistory] = useState<CardHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const card = cards.find((item) => item.id === id);
+
+  const loadHistory = useCallback(async () => {
+    if (!id) return;
+    try {
+      setHistoryLoading(true);
+      setHistory(await getCardHistory(id));
+    } catch {
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [id]);
 
   useFocusEffect(useCallback(() => {
     void refresh();
-  }, [refresh]));
+    void loadHistory();
+  }, [loadHistory, refresh]));
 
   const handlePay = () => {
     if (!card) return;
@@ -34,6 +52,7 @@ export default function CardDetailsScreen() {
           onPress: () => {
             setPaying(true);
             void payCardInvoice(card.id)
+              .then(() => loadHistory())
               .catch(() => Alert.alert('Não foi possível pagar', 'Tente novamente.'))
               .finally(() => setPaying(false));
           },
@@ -64,7 +83,10 @@ export default function CardDetailsScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <View style={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 32 }]}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 32 }]}
+        showsVerticalScrollIndicator={false}
+      >
         <ScreenHeader
           eyebrow="Organização"
           title={card?.name ?? 'Detalhes do cartão'}
@@ -95,6 +117,44 @@ export default function CardDetailsScreen() {
               <InfoRow label="Limite disponível" value={card.availableLimit == null ? 'Não informado' : formatCurrency(card.availableLimit)} colors={colors} />
               <InfoRow label="Status da fatura" value={card.invoiceStatus === 'closed' ? 'Fechada' : 'Aberta'} colors={colors} last />
             </View>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+              Histórico de {formatMonthYearLabel(new Date())}
+            </Text>
+            <View style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {historyLoading ? (
+                <Text style={[styles.historyState, { color: colors.mutedForeground }]}>Carregando histórico...</Text>
+              ) : history.length === 0 ? (
+                <Text style={[styles.historyState, { color: colors.mutedForeground }]}>Nenhum lançamento nesta fatura.</Text>
+              ) : history.map((item, index) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.historyRow,
+                    index < history.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
+                  ]}
+                >
+                  <View style={[styles.historyIcon, { backgroundColor: item.kind === 'closure' ? colors.pendingSoft : colors.secondary }]}>
+                    <Feather name={item.kind === 'closure' ? 'lock' : 'file-text'} size={14} color={item.kind === 'closure' ? colors.pending : colors.foreground} />
+                  </View>
+                  <View style={styles.historyCopy}>
+                    <Text style={[styles.historyDescription, { color: colors.foreground }]}>{item.description}</Text>
+                    <Text style={[styles.historyDate, { color: colors.mutedForeground }]}>
+                      {formatDate(item.date)}{item.categoryName ? ` · ${item.categoryName}` : ''}
+                    </Text>
+                  </View>
+                  {item.kind === 'closure' ? (
+                    <Text style={[styles.closureLabel, { color: colors.pending }]}>Fechada</Text>
+                  ) : (
+                    <View style={styles.historyAmount}>
+                      <Text style={[styles.historyValue, { color: colors.expense }]}>-{formatCurrency(item.amount)}</Text>
+                      <Text style={[styles.historyStatus, { color: item.paymentStatus === 'paid' ? colors.paid : colors.pending }]}>
+                        {item.paymentStatus === 'paid' ? 'Pago' : 'Não pago'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Excluir cartão ${card.name}`}
@@ -107,7 +167,7 @@ export default function CardDetailsScreen() {
             </Pressable>
           </>
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -140,6 +200,17 @@ const styles = StyleSheet.create({
   infoRow: { minHeight: 43, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14 },
   infoLabel: { fontSize: 11, fontFamily: 'Inter_400Regular' },
   infoValue: { flex: 1, textAlign: 'right', fontSize: 12, fontFamily: 'Inter_700Bold' },
+  historyCard: { borderWidth: 1, borderRadius: 9, paddingHorizontal: 13 },
+  historyState: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 16, textAlign: 'center' },
+  historyRow: { minHeight: 61, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  historyIcon: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  historyCopy: { flex: 1, minWidth: 0 },
+  historyDescription: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  historyDate: { fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  historyAmount: { alignItems: 'flex-end' },
+  historyValue: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  historyStatus: { fontSize: 9, fontFamily: 'Inter_600SemiBold', marginTop: 3 },
+  closureLabel: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   deleteButton: { minHeight: 44, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 18 },
   deleteText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   pressed: { opacity: 0.72 },

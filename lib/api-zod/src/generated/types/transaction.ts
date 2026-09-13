@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Recurrence } from './recurrence';
+import type { TransactionCardEntryType } from './transactionCardEntryType';
 import type { TransactionPaymentStatus } from './transactionPaymentStatus';
 import type { TransactionPaymentStatusOverrides } from './transactionPaymentStatusOverrides';
 import type { TransactionType } from './transactionType';
@@ -13,6 +14,8 @@ import type { TransactionType } from './transactionType';
 export interface Transaction {
   id: string;
   walletId: string;
+  cardId: string | null;
+  cardEntryType: TransactionCardEntryType;
   destinationWalletId: string | null;
   categoryId: string | null;
   goalId?: string | null;

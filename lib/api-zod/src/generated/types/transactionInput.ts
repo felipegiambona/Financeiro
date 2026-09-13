@@ -11,6 +11,7 @@ import type { TransactionInputType } from './transactionInputType';
 
 export interface TransactionInput {
   walletId?: string;
+  cardId?: string | null;
   destinationWalletId?: string | null;
   categoryId?: string | null;
   goalId?: string | null;

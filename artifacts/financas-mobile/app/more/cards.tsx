@@ -9,7 +9,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useCards } from '@/context/CardContext';
 import { useColors } from '@/hooks/useColors';
-import type { Card, InvoiceStatus } from '@/types/card';
+import type { Card } from '@/types/card';
 import { formatAmountInput, formatAmountValue, parseAmountInput } from '@/utils/currency';
 
 export default function CardsScreen() {
@@ -23,9 +23,7 @@ export default function CardsScreen() {
   const [name, setName] = useState('');
   const [dueDay, setDueDay] = useState('');
   const [closingDay, setClosingDay] = useState('');
-  const [currentInvoiceAmount, setCurrentInvoiceAmount] = useState('');
   const [availableLimit, setAvailableLimit] = useState('');
-  const [invoiceStatus, setInvoiceStatus] = useState<InvoiceStatus>('open');
   const [saving, setSaving] = useState(false);
   const [payingCardId, setPayingCardId] = useState<string | null>(null);
 
@@ -51,9 +49,7 @@ export default function CardsScreen() {
     setName(card?.name ?? '');
     setDueDay(card ? String(card.dueDay) : '');
     setClosingDay(card ? String(card.closingDay) : '');
-    setCurrentInvoiceAmount(card ? formatAmountValue(card.currentInvoiceAmount) : '');
     setAvailableLimit(card?.availableLimit == null ? '' : formatAmountValue(card.availableLimit));
-    setInvoiceStatus(card?.invoiceStatus ?? 'open');
     setEditorOpen(true);
   };
 
@@ -65,7 +61,6 @@ export default function CardsScreen() {
     const trimmedName = name.trim();
     const parsedDueDay = Number(dueDay);
     const parsedClosingDay = Number(closingDay);
-    const invoiceAmount = currentInvoiceAmount.trim() ? parseAmountInput(currentInvoiceAmount) : 0;
     const limitAmount = availableLimit.trim() ? parseAmountInput(availableLimit) : null;
 
     if (!trimmedName) {
@@ -80,7 +75,7 @@ export default function CardsScreen() {
       Alert.alert('Fechamento inválido', 'Informe um dia entre 1 e 31.');
       return;
     }
-    if (!Number.isFinite(invoiceAmount) || invoiceAmount < 0 || (limitAmount !== null && (!Number.isFinite(limitAmount) || limitAmount < 0))) {
+    if (limitAmount !== null && (!Number.isFinite(limitAmount) || limitAmount < 0)) {
       Alert.alert('Valor inválido', 'Confira os valores informados.');
       return;
     }
@@ -91,9 +86,7 @@ export default function CardsScreen() {
         name: trimmedName,
         dueDay: parsedDueDay,
         closingDay: parsedClosingDay,
-        currentInvoiceAmount: invoiceAmount,
         availableLimit: limitAmount,
-        invoiceStatus,
       };
       if (editingCard) await updateCard(editingCard.id, input);
       else await createCard(input);
@@ -212,17 +205,6 @@ export default function CardsScreen() {
                 </View>
               </View>
 
-              <Text style={[styles.label, { color: colors.foreground }]}>Valor da fatura atual</Text>
-              <TextInput
-                accessibilityLabel="Valor da fatura atual"
-                keyboardType="decimal-pad"
-                placeholder="0,00"
-                placeholderTextColor={colors.mutedForeground}
-                value={currentInvoiceAmount}
-                onChangeText={(value) => setCurrentInvoiceAmount(formatAmountInput(value))}
-                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
-              />
-
               <Text style={[styles.label, { color: colors.foreground }]}>Limite disponível</Text>
               <TextInput
                 accessibilityLabel="Limite disponível"
@@ -233,26 +215,6 @@ export default function CardsScreen() {
                 onChangeText={(value) => setAvailableLimit(formatAmountInput(value))}
                 style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
               />
-
-              <Text style={[styles.label, { color: colors.foreground }]}>Status da fatura</Text>
-              <View style={styles.statusOptions}>
-                {(['open', 'closed'] as InvoiceStatus[]).map((option) => {
-                  const selected = invoiceStatus === option;
-                  return (
-                    <Pressable
-                      key={option}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected }}
-                      onPress={() => setInvoiceStatus(option)}
-                      style={[styles.statusOption, { backgroundColor: selected ? colors.primary : colors.card, borderColor: selected ? colors.primary : colors.border }]}
-                    >
-                      <Text style={[styles.statusOptionText, { color: selected ? colors.primaryForeground : colors.foreground }]}>
-                        {option === 'open' ? 'Aberta' : 'Fechada'}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
 
               <Pressable disabled={saving} onPress={() => void saveCard()} style={({ pressed }) => [styles.saveButton, { backgroundColor: colors.primary }, saving && styles.disabled, pressed && styles.pressed]}>
                 <Text style={[styles.saveText, { color: colors.primaryForeground }]}>{saving ? 'Salvando...' : editingCard ? 'Salvar alterações' : 'Criar cartão'}</Text>
@@ -281,9 +243,6 @@ const styles = StyleSheet.create({
   input: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   fieldsRow: { flexDirection: 'row', gap: 10 },
   dayField: { flex: 1 },
-  statusOptions: { flexDirection: 'row', gap: 8 },
-  statusOption: { flex: 1, minHeight: 40, borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  statusOptionText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   saveButton: { minHeight: 46, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 22 },
   saveText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   disabled: { opacity: 0.5 },
