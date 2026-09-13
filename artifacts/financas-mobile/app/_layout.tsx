@@ -30,6 +30,7 @@ import { GoalProvider } from '@/context/GoalContext';
 import { CardProvider } from '@/context/CardContext';
 import { DashboardPreferencesProvider } from '@/context/DashboardPreferencesContext';
 import { useColors } from '@/hooks/useColors';
+import { OnboardingGate } from '@/components/OnboardingGate';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -87,7 +88,9 @@ function AuthenticatedApp() {
             <GoalProvider>
               <CardProvider>
                 <DashboardPreferencesProvider>
-                  <RootLayoutNav />
+                  <OnboardingGate>
+                    <RootLayoutNav />
+                  </OnboardingGate>
                 </DashboardPreferencesProvider>
               </CardProvider>
             </GoalProvider>
