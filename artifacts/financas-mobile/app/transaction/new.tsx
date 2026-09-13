@@ -1099,7 +1099,7 @@ const styles = StyleSheet.create({
   segmentText: { flexShrink: 1, fontSize: 11, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
   inputShell: { minHeight: 56, paddingHorizontal: 0, flexDirection: 'row', alignItems: 'center' },
   currencyPrefix: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginRight: 6 },
-  amountInput: { flex: 1, fontSize: 30, fontFamily: 'Inter_700Bold', paddingVertical: 0 },
+  amountInput: { flex: 1, fontSize: 39, fontFamily: 'Inter_700Bold', paddingVertical: 0 },
   calculatorButton: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   textInput: { minHeight: 48, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   dateInputShell: { minHeight: 46, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 9 },
