@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useCallback, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -32,6 +32,7 @@ const DASHBOARD_CARD_GAP = 24;
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const { transactions, loading, error, refresh } = useFinance();
   const { wallets, loading: walletsLoading } = useWallets();
   const { categories } = useCategories();
@@ -47,6 +48,7 @@ export default function DashboardScreen() {
     refresh: refreshInvestments,
   } = useInvestments();
   const { visibility } = useDashboardPreferences();
+  const dashboardCardWidth = Math.max(240, Math.min(420, windowWidth - 72));
   useFocusEffect(useCallback(() => {
     void refreshGoals();
     void refreshCards();
@@ -292,7 +294,7 @@ export default function DashboardScreen() {
                       key={goal.id}
                       goal={goal}
                       {...progress}
-                      style={styles.dashboardCarouselCard}
+                      style={[styles.dashboardCarouselCard, { width: dashboardCardWidth }]}
                       onPress={() => router.push({ pathname: '/more/goal/[id]', params: { id: goal.id } })}
                       onEdit={() => router.push({ pathname: '/more/goals', params: { editId: goal.id } })}
                       onDelete={() => router.push({ pathname: '/more/goals', params: { deleteId: goal.id } })}
@@ -303,7 +305,11 @@ export default function DashboardScreen() {
                     accessibilityLabel="Criar nova meta"
                     testID="dashboard-new-goal-card"
                     onPress={() => router.push({ pathname: '/more/goals', params: { openNew: '1' } })}
-                    style={({ pressed }) => [styles.dashboardAddCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                    style={({ pressed }) => [
+                      styles.dashboardAddCard,
+                      { backgroundColor: colors.card, borderColor: colors.border, width: dashboardCardWidth },
+                      pressed && styles.pressed,
+                    ]}
                   >
                     <View style={[styles.dashboardAddIcon, { backgroundColor: colors.secondary }]}>
                       <Feather name="plus" size={19} color={colors.foreground} />
@@ -346,7 +352,7 @@ export default function DashboardScreen() {
                       limit={limit}
                       categoryName={categoryName}
                       usage={usage}
-                      style={styles.dashboardCarouselCard}
+                      style={[styles.dashboardCarouselCard, { width: dashboardCardWidth }]}
                       onPress={() => router.push('/more/limits')}
                       onEdit={() => router.push({ pathname: '/more/limits', params: { editId: limit.id } })}
                       onDelete={() => router.push({ pathname: '/more/limits', params: { deleteId: limit.id } })}
@@ -357,7 +363,11 @@ export default function DashboardScreen() {
                     accessibilityLabel="Criar novo limite"
                     testID="dashboard-new-limit-card"
                     onPress={() => router.push({ pathname: '/more/limits', params: { openNew: '1' } })}
-                    style={({ pressed }) => [styles.dashboardAddCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                    style={({ pressed }) => [
+                      styles.dashboardAddCard,
+                      { backgroundColor: colors.card, borderColor: colors.border, width: dashboardCardWidth },
+                      pressed && styles.pressed,
+                    ]}
                   >
                     <View style={[styles.dashboardAddIcon, { backgroundColor: colors.secondary }]}>
                       <Feather name="plus" size={19} color={colors.foreground} />
@@ -406,7 +416,7 @@ export default function DashboardScreen() {
                     <CreditCardCard
                       key={card.id}
                       card={card}
-                      style={styles.dashboardCarouselCard}
+                      style={[styles.dashboardCarouselCard, { width: dashboardCardWidth }]}
                       onPress={() => router.push({ pathname: '/more/card/[id]', params: { id: card.id } })}
                       onPay={() => handlePayCard(card.id, card.name)}
                     />
@@ -416,7 +426,11 @@ export default function DashboardScreen() {
                     accessibilityLabel="Criar novo cartão"
                     testID="dashboard-new-card-card"
                     onPress={() => router.push({ pathname: '/more/cards', params: { openNew: '1' } })}
-                    style={({ pressed }) => [styles.dashboardAddCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                    style={({ pressed }) => [
+                      styles.dashboardAddCard,
+                      { backgroundColor: colors.card, borderColor: colors.border, width: dashboardCardWidth },
+                      pressed && styles.pressed,
+                    ]}
                   >
                     <View style={[styles.dashboardAddIcon, { backgroundColor: colors.secondary }]}>
                       <Feather name="plus" size={19} color={colors.foreground} />
