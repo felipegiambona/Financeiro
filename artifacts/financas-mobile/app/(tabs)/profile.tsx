@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useColors } from '@/hooks/useColors';
+import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 
 const MENU_ITEMS = [
   {
@@ -44,6 +45,12 @@ const MENU_ITEMS = [
     icon: 'credit-card',
   },
   {
+    key: 'investments',
+    title: 'Investimentos',
+    description: 'Acompanhe sua carteira pessoal e rentabilidade',
+    icon: 'trending-up',
+  },
+  {
     key: 'settings',
     title: 'Configurações',
     description: 'Aparência e preferências do app',
@@ -54,6 +61,8 @@ const MENU_ITEMS = [
 export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { activeProfile } = useFinancialProfiles();
+  const menuItems = MENU_ITEMS.filter((item) => item.key !== 'investments' || activeProfile?.type === 'personal');
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -66,7 +75,7 @@ export default function MoreScreen() {
           Acesse configurações e recursos da sua conta.
         </Text>
         <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {MENU_ITEMS.map((item, index) => (
+          {menuItems.map((item, index) => (
             <React.Fragment key={item.key}>
               {index > 0 ? <View style={[styles.divider, { backgroundColor: colors.border }]} /> : null}
               <Pressable
@@ -86,6 +95,8 @@ export default function MoreScreen() {
                           ? '/more/goals'
                           : item.key === 'cards'
                             ? '/more/cards'
+                          : item.key === 'investments'
+                            ? '/more/investments'
                           : '/more/settings',
                 )}
                 style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}

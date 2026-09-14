@@ -17,6 +17,180 @@ export const HealthCheckResponse = zod.object({
 })
 
 
+export const ListFinancialProfilesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "type": zod.enum(['personal', 'business']),
+  "name": zod.string(),
+  "businessName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListFinancialProfilesResponse = zod.array(ListFinancialProfilesResponseItem)
+
+
+
+
+
+export const CreateFinancialProfileBody = zod.object({
+  "type": zod.enum(['personal', 'business']),
+  "name": zod.string().min(1),
+  "businessName": zod.string().optional()
+})
+
+export const CreateFinancialProfileResponse = zod.object({
+  "id": zod.string().uuid(),
+  "type": zod.enum(['personal', 'business']),
+  "name": zod.string(),
+  "businessName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const DeleteFinancialProfileParams = zod.object({
+  "profileId": zod.coerce.string().uuid()
+})
+
+export const DeleteFinancialProfileResponse = zod.void()
+
+
+export const listInvestmentsResponseQuantityMin = 0;
+
+export const listInvestmentsResponseAveragePriceMin = 0;
+
+export const listInvestmentsResponseInvestedAmountMin = 0;
+
+export const listInvestmentsResponseCurrentValueMin = 0;
+
+
+
+export const ListInvestmentsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "ticker": zod.string().nullable(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
+  "institution": zod.string().nullable(),
+  "quantity": zod.number().min(listInvestmentsResponseQuantityMin),
+  "averagePrice": zod.number().min(listInvestmentsResponseAveragePriceMin),
+  "investedAmount": zod.number().min(listInvestmentsResponseInvestedAmountMin),
+  "currentValue": zod.number().min(listInvestmentsResponseCurrentValueMin),
+  "returnAmount": zod.number(),
+  "returnPercentage": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListInvestmentsResponse = zod.array(ListInvestmentsResponseItem)
+
+
+
+export const createInvestmentBodyQuantityMin = 0;
+
+export const createInvestmentBodyAveragePriceMin = 0;
+
+export const createInvestmentBodyInvestedAmountMin = 0;
+
+export const createInvestmentBodyCurrentValueMin = 0;
+
+
+
+export const CreateInvestmentBody = zod.object({
+  "name": zod.string().min(1),
+  "ticker": zod.string().optional(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
+  "institution": zod.string().optional(),
+  "quantity": zod.number().min(createInvestmentBodyQuantityMin),
+  "averagePrice": zod.number().min(createInvestmentBodyAveragePriceMin),
+  "investedAmount": zod.number().min(createInvestmentBodyInvestedAmountMin),
+  "currentValue": zod.number().min(createInvestmentBodyCurrentValueMin)
+})
+
+export const createInvestmentResponseQuantityMin = 0;
+
+export const createInvestmentResponseAveragePriceMin = 0;
+
+export const createInvestmentResponseInvestedAmountMin = 0;
+
+export const createInvestmentResponseCurrentValueMin = 0;
+
+
+
+export const CreateInvestmentResponse = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "ticker": zod.string().nullable(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
+  "institution": zod.string().nullable(),
+  "quantity": zod.number().min(createInvestmentResponseQuantityMin),
+  "averagePrice": zod.number().min(createInvestmentResponseAveragePriceMin),
+  "investedAmount": zod.number().min(createInvestmentResponseInvestedAmountMin),
+  "currentValue": zod.number().min(createInvestmentResponseCurrentValueMin),
+  "returnAmount": zod.number(),
+  "returnPercentage": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const UpdateInvestmentParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+export const updateInvestmentBodyQuantityMin = 0;
+
+export const updateInvestmentBodyAveragePriceMin = 0;
+
+export const updateInvestmentBodyInvestedAmountMin = 0;
+
+export const updateInvestmentBodyCurrentValueMin = 0;
+
+
+
+export const UpdateInvestmentBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "ticker": zod.string().nullish(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']).optional(),
+  "institution": zod.string().nullish(),
+  "quantity": zod.number().min(updateInvestmentBodyQuantityMin).optional(),
+  "averagePrice": zod.number().min(updateInvestmentBodyAveragePriceMin).optional(),
+  "investedAmount": zod.number().min(updateInvestmentBodyInvestedAmountMin).optional(),
+  "currentValue": zod.number().min(updateInvestmentBodyCurrentValueMin).optional()
+})
+
+export const updateInvestmentResponseQuantityMin = 0;
+
+export const updateInvestmentResponseAveragePriceMin = 0;
+
+export const updateInvestmentResponseInvestedAmountMin = 0;
+
+export const updateInvestmentResponseCurrentValueMin = 0;
+
+
+
+export const UpdateInvestmentResponse = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "ticker": zod.string().nullable(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
+  "institution": zod.string().nullable(),
+  "quantity": zod.number().min(updateInvestmentResponseQuantityMin),
+  "averagePrice": zod.number().min(updateInvestmentResponseAveragePriceMin),
+  "investedAmount": zod.number().min(updateInvestmentResponseInvestedAmountMin),
+  "currentValue": zod.number().min(updateInvestmentResponseCurrentValueMin),
+  "returnAmount": zod.number(),
+  "returnPercentage": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const DeleteInvestmentParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteInvestmentResponse = zod.void()
+
+
 export const listTransactionsResponseAmountExclusiveMin = 0;
 
 

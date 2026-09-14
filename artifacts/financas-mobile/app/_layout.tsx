@@ -32,6 +32,7 @@ import { DashboardPreferencesProvider } from '@/context/DashboardPreferencesCont
 import { useColors } from '@/hooks/useColors';
 import { OnboardingGate } from '@/components/OnboardingGate';
 import { FinancialProfileProvider, useFinancialProfiles } from '@/context/FinancialProfileContext';
+import { InvestmentProvider } from '@/context/InvestmentContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -61,6 +62,7 @@ function RootLayoutNav() {
         <Stack.Screen name="more/goals" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/goal/[id]" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/cards" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="more/investments" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/card/[id]" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/dashboard-cards" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="wallets" options={{ headerShown: false, presentation: 'card' }} />
@@ -98,11 +100,13 @@ function ProfileScopedProviders() {
           <LimitProvider>
             <GoalProvider>
               <CardProvider>
-                <DashboardPreferencesProvider>
-                  <OnboardingGate>
-                    <RootLayoutNav />
-                  </OnboardingGate>
-                </DashboardPreferencesProvider>
+                <InvestmentProvider>
+                  <DashboardPreferencesProvider>
+                    <OnboardingGate>
+                      <RootLayoutNav />
+                    </OnboardingGate>
+                  </DashboardPreferencesProvider>
+                </InvestmentProvider>
               </CardProvider>
             </GoalProvider>
           </LimitProvider>

@@ -14,6 +14,7 @@ const financialTables = [
   "finance_limits",
   "finance_goals",
   "finance_cards",
+  "finance_investments",
   "finance_categories",
   "finance_wallets",
 ];
@@ -564,6 +565,48 @@ describe("financial profile deletion isolation", () => {
     assertStatus(createdBusiness, 201);
     const businessProfile = createdBusiness.body;
 
+    const personalInvestment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/investments",
+      {
+        method: "POST",
+        body: {
+          name: "Tesouro Selic",
+          ticker: "TESOURO",
+          assetType: "fixed_income",
+          institution: "Corretora Pessoal",
+          quantity: 10,
+          averagePrice: 100,
+          investedAmount: 1000,
+          currentValue: 1100,
+        },
+      },
+    );
+    assertStatus(personalInvestment, 201);
+    assert.equal(personalInvestment.body.returnAmount, 100);
+    assert.equal(personalInvestment.body.returnPercentage, 10);
+
+    const updatedPersonalInvestment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/investments/${personalInvestment.body.id}`,
+      {
+        method: "PATCH",
+        body: { currentValue: 1080 },
+      },
+    );
+    assertStatus(updatedPersonalInvestment, 200);
+    assert.equal(updatedPersonalInvestment.body.returnAmount, 80);
+    assert.equal(updatedPersonalInvestment.body.returnPercentage, 8);
+
+    const businessInvestments = await profileRequest(
+      identity.token,
+      businessProfile.id,
+      "/investments",
+    );
+    assertStatus(businessInvestments, 403);
+
     const profilesWithBusiness = await apiRequest(identity.token, "/financial-profiles");
     assertStatus(profilesWithBusiness, 200);
     assert.deepEqual(
@@ -598,6 +641,16 @@ describe("financial profile deletion isolation", () => {
     const personalBeforeDeletion = await readFinancialFixture(
       identity.token,
       personalProfile.id,
+    );
+    const personalInvestmentsBeforeDeletion = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/investments",
+    );
+    assertStatus(personalInvestmentsBeforeDeletion, 200);
+    assert.deepEqual(
+      personalInvestmentsBeforeDeletion.body.map((investment) => investment.id),
+      [personalInvestment.body.id],
     );
     const businessBeforeDeletion = await readFinancialFixture(
       identity.token,
@@ -680,6 +733,31 @@ describe("financial profile deletion isolation", () => {
       );
       assertStatus(deletedBusinessData, 403);
     }
+    const personalInvestmentsAfterBusinessDeletion = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/investments",
+    );
+    assertStatus(personalInvestmentsAfterBusinessDeletion, 200);
+    assert.deepEqual(
+      personalInvestmentsAfterBusinessDeletion.body.map((investment) => investment.id),
+      [personalInvestment.body.id],
+    );
+
+    const deletedPersonalInvestment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/investments/${personalInvestment.body.id}`,
+      { method: "DELETE" },
+    );
+    assertStatus(deletedPersonalInvestment, 204);
+    const emptyPersonalInvestments = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/investments",
+    );
+    assertStatus(emptyPersonalInvestments, 200);
+    assert.deepEqual(emptyPersonalInvestments.body, []);
 
     const deletedPersonal = await apiRequest(
       identity.token,

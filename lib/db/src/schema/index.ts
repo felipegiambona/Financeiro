@@ -25,3 +25,4 @@ export * from "./goals";
 export * from "./goalMovements";
 export * from "./cards";
 export * from "./financialProfiles";
+export * from "./investments";

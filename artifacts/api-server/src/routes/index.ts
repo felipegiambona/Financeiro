@@ -8,11 +8,13 @@ import limitsRouter from "./limits";
 import goalsRouter from "./goals";
 import cardsRouter from "./cards";
 import financialProfilesRouter from "./financialProfiles";
+import investmentsRouter from "./investments";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(financialProfilesRouter);
+router.use(investmentsRouter);
 router.use(transactionsRouter);
 router.use(walletsRouter);
 router.use(accountRouter);

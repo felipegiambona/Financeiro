@@ -16,6 +16,7 @@ import type { NextFunction, Request, Response } from "express";
 export interface AuthenticatedRequest extends Request {
   userId: string;
   profileId?: string;
+  profileType?: "personal" | "business";
   scopedUserId?: string;
 }
 
@@ -78,6 +79,7 @@ export async function resolveFinancialProfile(req: Request, res: Response, next:
   });
 
   authenticated.profileId = profile.id;
+  authenticated.profileType = profile.type;
   authenticated.scopedUserId = scopedUserId;
   next();
 }
@@ -90,6 +92,12 @@ export function profileIdFrom(req: unknown): string {
   const profileId = (req as AuthenticatedRequest).profileId;
   if (!profileId) throw new Error("Financial profile was not resolved");
   return profileId;
+}
+
+export function financialProfileTypeFrom(req: unknown): "personal" | "business" {
+  const profileType = (req as AuthenticatedRequest).profileType;
+  if (!profileType) throw new Error("Financial profile was not resolved");
+  return profileType;
 }
 
 export function scopedUserIdFrom(req: unknown): string {

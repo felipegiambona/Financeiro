@@ -7,6 +7,7 @@ import {
   financialProfilesTable,
   goalMovementsTable,
   goalsTable,
+  investmentsTable,
   limitsTable,
   transactionsTable,
   walletsTable,
@@ -124,6 +125,10 @@ router.delete("/financial-profiles/:profileId", async (req, res): Promise<void> 
     await tx.delete(cardsTable).where(or(
       eq(cardsTable.profileId, profile.id),
       eq(cardsTable.userId, scopedUserId),
+    ));
+    await tx.delete(investmentsTable).where(or(
+      eq(investmentsTable.profileId, profile.id),
+      eq(investmentsTable.userId, scopedUserId),
     ));
     await tx.delete(categoriesTable).where(or(
       eq(categoriesTable.profileId, profile.id),

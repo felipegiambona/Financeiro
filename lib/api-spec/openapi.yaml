@@ -26,6 +26,8 @@ tags:
     description: Authenticated account management operations
   - name: financial-profiles
     description: Financial profile management operations
+  - name: investments
+    description: Personal investment portfolio operations
 paths:
   /healthz:
     get:
@@ -87,6 +89,78 @@ paths:
           description: The personal profile cannot be deleted
         "404":
           description: Financial profile not found
+  /investments:
+    get:
+      operationId: listInvestments
+      tags: [investments]
+      responses:
+        "200":
+          description: Personal investment portfolio
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Investment"
+        "403":
+          description: Investments are only available for personal profiles
+    post:
+      operationId: createInvestment
+      tags: [investments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentInput"
+      responses:
+        "201":
+          description: Investment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investment"
+        "400":
+          description: Invalid investment
+        "403":
+          description: Investments are only available for personal profiles
+  /investments/{id}:
+    patch:
+      operationId: updateInvestment
+      tags: [investments]
+      parameters:
+        - $ref: "#/components/parameters/InvestmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentUpdate"
+      responses:
+        "200":
+          description: Investment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investment"
+        "400":
+          description: Invalid investment
+        "403":
+          description: Investments are only available for personal profiles
+        "404":
+          description: Investment not found
+    delete:
+      operationId: deleteInvestment
+      tags: [investments]
+      parameters:
+        - $ref: "#/components/parameters/InvestmentId"
+      responses:
+        "204":
+          description: Investment removed
+        "403":
+          description: Investments are only available for personal profiles
+        "404":
+          description: Investment not found
   /transactions:
     get:
       operationId: listTransactions
@@ -679,6 +753,13 @@ components:
       schema:
         type: string
         format: uuid
+    InvestmentId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     FinancialProfile:
       type: object
@@ -701,6 +782,52 @@ components:
           enum: [personal, business]
         name: { type: string, minLength: 1 }
         businessName: { type: string }
+    Investment:
+      type: object
+      required: [id, name, ticker, assetType, institution, quantity, averagePrice, investedAmount, currentValue, returnAmount, returnPercentage, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        ticker: { type: ["string", "null"] }
+        assetType:
+          type: string
+          enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+        institution: { type: ["string", "null"] }
+        quantity: { type: number, minimum: 0 }
+        averagePrice: { type: number, minimum: 0 }
+        investedAmount: { type: number, minimum: 0 }
+        currentValue: { type: number, minimum: 0 }
+        returnAmount: { type: number }
+        returnPercentage: { type: number }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    InvestmentInput:
+      type: object
+      required: [name, assetType, quantity, averagePrice, investedAmount, currentValue]
+      properties:
+        name: { type: string, minLength: 1 }
+        ticker: { type: string }
+        assetType:
+          type: string
+          enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+        institution: { type: string }
+        quantity: { type: number, minimum: 0 }
+        averagePrice: { type: number, minimum: 0 }
+        investedAmount: { type: number, minimum: 0 }
+        currentValue: { type: number, minimum: 0 }
+    InvestmentUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        ticker: { type: ["string", "null"] }
+        assetType:
+          type: string
+          enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+        institution: { type: ["string", "null"] }
+        quantity: { type: number, minimum: 0 }
+        averagePrice: { type: number, minimum: 0 }
+        investedAmount: { type: number, minimum: 0 }
+        currentValue: { type: number, minimum: 0 }
     HealthStatus:
       type: object
       properties:

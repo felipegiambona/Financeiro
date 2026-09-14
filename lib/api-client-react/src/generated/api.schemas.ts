@@ -5,6 +5,134 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type FinancialProfileType = typeof FinancialProfileType[keyof typeof FinancialProfileType];
+
+
+export const FinancialProfileType = {
+  personal: 'personal',
+  business: 'business',
+} as const;
+
+export interface FinancialProfile {
+  id: string;
+  type: FinancialProfileType;
+  name: string;
+  /** @nullable */
+  businessName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type FinancialProfileInputType = typeof FinancialProfileInputType[keyof typeof FinancialProfileInputType];
+
+
+export const FinancialProfileInputType = {
+  personal: 'personal',
+  business: 'business',
+} as const;
+
+export interface FinancialProfileInput {
+  type: FinancialProfileInputType;
+  /** @minLength 1 */
+  name: string;
+  businessName?: string;
+}
+
+export type InvestmentAssetType = typeof InvestmentAssetType[keyof typeof InvestmentAssetType];
+
+
+export const InvestmentAssetType = {
+  stock: 'stock',
+  fii: 'fii',
+  etf: 'etf',
+  fund: 'fund',
+  fixed_income: 'fixed_income',
+  crypto: 'crypto',
+  other: 'other',
+} as const;
+
+export interface Investment {
+  id: string;
+  name: string;
+  /** @nullable */
+  ticker: string | null;
+  assetType: InvestmentAssetType;
+  /** @nullable */
+  institution: string | null;
+  /** @minimum 0 */
+  quantity: number;
+  /** @minimum 0 */
+  averagePrice: number;
+  /** @minimum 0 */
+  investedAmount: number;
+  /** @minimum 0 */
+  currentValue: number;
+  returnAmount: number;
+  returnPercentage: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type InvestmentInputAssetType = typeof InvestmentInputAssetType[keyof typeof InvestmentInputAssetType];
+
+
+export const InvestmentInputAssetType = {
+  stock: 'stock',
+  fii: 'fii',
+  etf: 'etf',
+  fund: 'fund',
+  fixed_income: 'fixed_income',
+  crypto: 'crypto',
+  other: 'other',
+} as const;
+
+export interface InvestmentInput {
+  /** @minLength 1 */
+  name: string;
+  ticker?: string;
+  assetType: InvestmentInputAssetType;
+  institution?: string;
+  /** @minimum 0 */
+  quantity: number;
+  /** @minimum 0 */
+  averagePrice: number;
+  /** @minimum 0 */
+  investedAmount: number;
+  /** @minimum 0 */
+  currentValue: number;
+}
+
+export type InvestmentUpdateAssetType = typeof InvestmentUpdateAssetType[keyof typeof InvestmentUpdateAssetType];
+
+
+export const InvestmentUpdateAssetType = {
+  stock: 'stock',
+  fii: 'fii',
+  etf: 'etf',
+  fund: 'fund',
+  fixed_income: 'fixed_income',
+  crypto: 'crypto',
+  other: 'other',
+} as const;
+
+export interface InvestmentUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @nullable */
+  ticker?: string | null;
+  assetType?: InvestmentUpdateAssetType;
+  /** @nullable */
+  institution?: string | null;
+  /** @minimum 0 */
+  quantity?: number;
+  /** @minimum 0 */
+  averagePrice?: number;
+  /** @minimum 0 */
+  investedAmount?: number;
+  /** @minimum 0 */
+  currentValue?: number;
+}
+
 export interface HealthStatus {
   status: string;
 }
