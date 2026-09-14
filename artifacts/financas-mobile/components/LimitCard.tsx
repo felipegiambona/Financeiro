@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import type { Limit } from '@/types/limit';
 import type { LimitUsage } from '@/services/limitRules';
 import { formatCurrency } from '@/utils/currency';
@@ -14,15 +14,16 @@ interface LimitCardProps {
   onPress?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function LimitCard({ limit, categoryName, usage, onPress, onEdit, onDelete }: LimitCardProps) {
+export function LimitCard({ limit, categoryName, usage, onPress, onEdit, onDelete, style }: LimitCardProps) {
   const colors = useColors();
   const periodLabel = LIMIT_PERIODS.find((period) => period.value === limit.period)?.label ?? 'Período';
   const exceeded = usage.remaining < 0;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style]}>
       <View style={styles.header}>
           <Pressable
             disabled={!onPress}

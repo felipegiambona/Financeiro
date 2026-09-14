@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { formatCurrency } from '@/utils/currency';
 import { formatDate } from '@/utils/date';
@@ -15,9 +15,10 @@ interface GoalCardProps {
   onPress?: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function GoalCard({ goal, savedAmount, percentage, progress, remaining, onPress, onEdit, onDelete }: GoalCardProps) {
+export function GoalCard({ goal, savedAmount, percentage, progress, remaining, onPress, onEdit, onDelete, style }: GoalCardProps) {
   const colors = useColors();
   const completed = percentage >= 100;
 
@@ -26,7 +27,7 @@ export function GoalCard({ goal, savedAmount, percentage, progress, remaining, o
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={onPress ? `Abrir detalhes da meta ${goal.title}` : undefined}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: colors.border }, onPress && pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style, onPress && pressed && styles.pressed]}
     >
       <View style={styles.header}>
         {goal.imageData ? (

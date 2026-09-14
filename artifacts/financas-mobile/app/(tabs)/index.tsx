@@ -27,6 +27,8 @@ import { calculateGoalProgress } from '@/services/goalRules';
 import { getPendingTransactionOccurrences } from '@/services/pendingNotifications';
 import { formatCurrency } from '@/utils/currency';
 
+const DASHBOARD_CARD_GAP = 24;
+
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -261,11 +263,12 @@ export default function DashboardScreen() {
                   <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                 </Pressable>
               ) : (
-                goalCards.map(({ goal, ...progress }) => (
+                  goalCards.map(({ goal, ...progress }, index) => (
                   <GoalCard
                     key={goal.id}
                     goal={goal}
                     {...progress}
+                    style={{ marginBottom: index === goalCards.length - 1 ? 0 : DASHBOARD_CARD_GAP }}
                     onPress={() => router.push({ pathname: '/more/goal/[id]', params: { id: goal.id } })}
                     onEdit={() => router.push({ pathname: '/more/goals', params: { editId: goal.id } })}
                     onDelete={() => router.push({ pathname: '/more/goals', params: { deleteId: goal.id } })}
@@ -298,12 +301,13 @@ export default function DashboardScreen() {
                   <Text style={[styles.limitState, { color: colors.mutedForeground }]}>Crie um limite para acompanhar seus gastos.</Text>
                 </View>
               ) : (
-                limitCards.map(({ limit, categoryName, usage }) => (
+                limitCards.map(({ limit, categoryName, usage }, index) => (
                   <LimitCard
                     key={limit.id}
                     limit={limit}
                     categoryName={categoryName}
                     usage={usage}
+                    style={{ marginBottom: index === limitCards.length - 1 ? 0 : DASHBOARD_CARD_GAP }}
                       onPress={() => router.push('/more/limits')}
                     onEdit={() => router.push({ pathname: '/more/limits', params: { editId: limit.id } })}
                     onDelete={() => router.push({ pathname: '/more/limits', params: { deleteId: limit.id } })}
@@ -344,10 +348,11 @@ export default function DashboardScreen() {
                   <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                 </Pressable>
               ) : (
-                cards.map((card) => (
+                cards.map((card, index) => (
                   <CreditCardCard
                     key={card.id}
                     card={card}
+                    style={{ marginBottom: index === cards.length - 1 ? 0 : DASHBOARD_CARD_GAP }}
                     onPress={() => router.push({ pathname: '/more/card/[id]', params: { id: card.id } })}
                     onPay={() => handlePayCard(card.id, card.name)}
                   />

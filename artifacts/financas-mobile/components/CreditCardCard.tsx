@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { formatCurrency } from '@/utils/currency';
 import type { Card } from '@/types/card';
@@ -10,9 +10,10 @@ interface CreditCardCardProps {
   onPress?: () => void;
   onPay?: () => void;
   paying?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function CreditCardCard({ card, onPress, onPay, paying = false }: CreditCardCardProps) {
+export function CreditCardCard({ card, onPress, onPay, paying = false, style }: CreditCardCardProps) {
   const colors = useColors();
   const isClosed = card.invoiceStatus === 'closed';
   const Wrapper = onPress ? Pressable : View;
@@ -26,10 +27,11 @@ export function CreditCardCard({ card, onPress, onPay, paying = false }: CreditC
         style: ({ pressed }: { pressed: boolean }) => [
           styles.card,
           { backgroundColor: colors.card, borderColor: colors.border },
+          style,
           pressed && styles.pressed,
         ],
       } : {
-        style: [styles.card, { backgroundColor: colors.card, borderColor: colors.border }],
+        style: [styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style],
       })}
     >
       <View style={styles.header}>
