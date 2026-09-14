@@ -17,6 +17,19 @@
 //   export type InsertPost = z.infer<typeof insertPostSchema>;
 //   export type Post = typeof postsTable.$inferSelect;
 
+import {
+  assertFinancialEntityScopeContract,
+  financialEntityTables,
+} from "./financialEntities";
+import { cardsTable } from "./cards";
+import { categoriesTable } from "./categories";
+import { goalMovementsTable } from "./goalMovements";
+import { goalsTable } from "./goals";
+import { investmentsTable } from "./investments";
+import { limitsTable } from "./limits";
+import { transactionsTable } from "./transactions";
+import { walletsTable } from "./wallets";
+
 export * from "./transactions";
 export * from "./wallets";
 export * from "./categories";
@@ -27,3 +40,22 @@ export * from "./cards";
 export * from "./financialProfiles";
 export * from "./investments";
 export * from "./financialEntities";
+
+/**
+ * All profile-scoped financial tables exported by this schema barrel.
+ *
+ * Keep this list in sync when adding a new finance_* table so the cleanup
+ * registry fails fast if its scope contract is incomplete.
+ */
+export const financialSchemaTables = [
+  { name: "finance_transactions", table: transactionsTable },
+  { name: "finance_goal_movements", table: goalMovementsTable },
+  { name: "finance_limits", table: limitsTable },
+  { name: "finance_goals", table: goalsTable },
+  { name: "finance_cards", table: cardsTable },
+  { name: "finance_investments", table: investmentsTable },
+  { name: "finance_categories", table: categoriesTable },
+  { name: "finance_wallets", table: walletsTable },
+] as const;
+
+assertFinancialEntityScopeContract(financialSchemaTables, financialEntityTables);
