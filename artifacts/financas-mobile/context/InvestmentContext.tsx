@@ -18,44 +18,17 @@ import {
   type InvestmentUpdate,
 } from '@workspace/api-client-react';
 import { useFinancialProfiles } from '@/context/FinancialProfileContext';
+import {
+  addRecentInvestmentAsset,
+  MAX_RECENT_INVESTMENT_ASSETS,
+  parseRecentInvestmentAssets,
+  recentInvestmentAssetKey,
+  recentInvestmentAssetsStorageKey,
+  removeRecentInvestmentAsset,
+  type RecentInvestmentAsset,
+} from '@/context/recentInvestmentAssets';
 
-export type RecentInvestmentAsset = InvestmentSearchResult;
-
-export const MAX_RECENT_INVESTMENT_ASSETS = 8;
-
-const RECENT_INVESTMENT_ASSETS_KEY_PREFIX = '@financas-mobile/recent-investment-assets:';
-const INVESTMENT_ASSET_TYPES = new Set<InvestmentSearchResult['assetType']>([
-  'stock',
-  'fii',
-  'etf',
-  'fund',
-  'fixed_income',
-  'crypto',
-  'other',
-]);
-
-function recentAssetKey(asset: RecentInvestmentAsset): string {
-  return `${asset.assetType}:${asset.ticker.trim().toLocaleLowerCase() || asset.name.trim().toLocaleLowerCase()}`;
-}
-
-function parseRecentInvestmentAssets(value: string | null): RecentInvestmentAsset[] {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((item): item is RecentInvestmentAsset => (
-        typeof item === 'object'
-        && item !== null
-        && typeof item.name === 'string'
-        && typeof item.ticker === 'string'
-        && INVESTMENT_ASSET_TYPES.has(item.assetType)
-      ))
-      .slice(0, MAX_RECENT_INVESTMENT_ASSETS);
-  } catch {
-    return [];
-  }
-}
+export { MAX_RECENT_INVESTMENT_ASSETS, type RecentInvestmentAsset } from '@/context/recentInvestmentAssets';
 
 function isLegacyFavoriteDraft(investment: Investment): boolean {
   return investment.isFavorite
@@ -95,9 +68,7 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const recentAssetsStorageKey = activeProfile?.type === 'personal' && activeProfile.id
-    ? `${RECENT_INVESTMENT_ASSETS_KEY_PREFIX}${activeProfile.id}`
-    : null;
+  const recentAssetsStorageKey = recentInvestmentAssetsStorageKey(activeProfile);
 
   useEffect(() => {
     let mounted = true;
@@ -123,10 +94,7 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
 
   const rememberRecentAsset = useCallback(async (asset: RecentInvestmentAsset) => {
     if (!recentAssetsStorageKey) return;
-    const next = [
-      asset,
-      ...recentAssetsRef.current.filter((current) => recentAssetKey(current) !== recentAssetKey(asset)),
-    ].slice(0, MAX_RECENT_INVESTMENT_ASSETS);
+    const next = addRecentInvestmentAsset(recentAssetsRef.current, asset);
     recentAssetsRef.current = next;
     setRecentAssets(next);
     try {
@@ -138,7 +106,7 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
 
   const removeRecentAsset = useCallback(async (asset: RecentInvestmentAsset) => {
     if (!recentAssetsStorageKey) return;
-    const next = recentAssetsRef.current.filter((current) => recentAssetKey(current) !== recentAssetKey(asset));
+    const next = removeRecentInvestmentAsset(recentAssetsRef.current, asset);
     recentAssetsRef.current = next;
     setRecentAssets(next);
     try {
