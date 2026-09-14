@@ -16,6 +16,7 @@ interface CreditCardCardProps {
 export function CreditCardCard({ card, onPress, onPay, paying = false, style }: CreditCardCardProps) {
   const colors = useColors();
   const isClosed = card.invoiceStatus === 'closed';
+  const hasInvoiceAmount = card.currentInvoiceAmount > 0;
   const Wrapper = onPress ? Pressable : View;
 
   return (
@@ -68,9 +69,9 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
       {onPay ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Pagar fatura do cartão ${card.name}`}
+          accessibilityLabel={hasInvoiceAmount ? `Pagar fatura do cartão ${card.name}` : `Nenhum lançamento na fatura do cartão ${card.name}`}
           testID={`pay-card-invoice-${card.id}`}
-          disabled={paying || card.currentInvoiceAmount <= 0}
+          disabled={paying || !hasInvoiceAmount}
           onPress={(event) => {
             event.stopPropagation();
             onPay();
@@ -84,7 +85,7 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
         >
           <Feather name="check-circle" size={15} color={colors.foreground} />
           <Text style={[styles.payText, { color: colors.foreground }]}>
-            {paying ? 'Pagando...' : card.currentInvoiceAmount > 0 ? 'Pagar fatura' : 'Fatura paga'}
+            {paying ? 'Pagando...' : hasInvoiceAmount ? 'Pagar fatura' : 'Sem lançamentos'}
           </Text>
         </Pressable>
       ) : null}
