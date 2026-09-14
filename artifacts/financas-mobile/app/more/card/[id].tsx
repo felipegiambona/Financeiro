@@ -193,7 +193,7 @@ function InfoRow({
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: 16 },
+  content: { paddingHorizontal: 16 },
   iconButton: { width: 36, height: 36, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   sectionLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.1, textTransform: 'uppercase', marginTop: 14, marginBottom: 8 },
   infoCard: { borderWidth: 1, borderRadius: 9, paddingHorizontal: 13 },
