@@ -4,6 +4,7 @@ import {
   deleteFinancialProfile,
   listFinancialProfiles,
   setFinancialProfileId,
+  updateFinancialProfile,
   type FinancialProfile,
 } from '@workspace/api-client-react';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -17,6 +18,7 @@ interface FinancialProfileContextValue {
   loading: boolean;
   switchProfile: (profileId: string) => Promise<void>;
   createProfile: (input: { type: 'business'; name: string; businessName: string; imageData?: string | null }, options?: { activate?: boolean }) => Promise<FinancialProfile>;
+  updateProfile: (profileId: string, input: { businessName?: string; imageData?: string | null }) => Promise<FinancialProfile>;
   deleteProfile: (profileId: string) => Promise<void>;
 }
 
@@ -92,6 +94,23 @@ export function FinancialProfileProvider({ children }: React.PropsWithChildren) 
     return created;
   }, [session?.userId]);
 
+  const updateProfile = useCallback(async (
+    profileId: string,
+    input: { businessName?: string; imageData?: string | null },
+  ) => {
+    const current = profiles.find((profile) => profile.id === profileId);
+    if (!current || current.type !== 'business') {
+      throw new Error('Apenas o perfil empresarial pode ser atualizado.');
+    }
+
+    const updated = await updateFinancialProfile(profileId, input);
+    setProfiles((items) => items.map((profile) => profile.id === profileId ? updated : profile));
+    if (activeProfile?.id === profileId) {
+      setActiveProfile(updated);
+    }
+    return updated;
+  }, [activeProfile?.id, profiles]);
+
   const deleteProfile = useCallback(async (profileId: string) => {
     const deletedProfile = profiles.find((profile) => profile.id === profileId);
     if (!deletedProfile || deletedProfile.type !== 'business') {
@@ -123,8 +142,8 @@ export function FinancialProfileProvider({ children }: React.PropsWithChildren) 
   }, [activeProfile, profiles, session?.userId]);
 
   const value = useMemo(
-    () => ({ profiles, activeProfile, loading, switchProfile, createProfile, deleteProfile }),
-    [activeProfile, createProfile, deleteProfile, loading, profiles, switchProfile],
+    () => ({ profiles, activeProfile, loading, switchProfile, createProfile, updateProfile, deleteProfile }),
+    [activeProfile, createProfile, deleteProfile, loading, profiles, switchProfile, updateProfile],
   );
 
   if (loading) {

@@ -103,7 +103,8 @@ export default function InvestmentsScreen() {
   } = useInvestments();
   const routeAssetType = Array.isArray(assetTypeParam) ? assetTypeParam[0] : assetTypeParam;
   const selectedAssetType = ASSET_TYPES.find((item) => item.value === routeAssetType)?.value ?? null;
-  const [favoriteOnly, setFavoriteOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState<'assets' | 'favorites'>('assets');
+  const favoriteOnly = activeTab === 'favorites';
   const filteredInvestments = useMemo(
     () => investments.filter((investment) => (
       (!selectedAssetType || investment.assetType === selectedAssetType)
@@ -286,10 +287,44 @@ export default function InvestmentsScreen() {
           onAction={() => openEditor()}
         />
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>
-          {selectedAssetType
+          {favoriteOnly
+            ? 'Acompanhe os ativos que você marcou como favoritos.'
+            : selectedAssetType
             ? `Exibindo apenas investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.`
             : 'Acompanhe sua carteira pessoal com valor manual ou cotações automáticas.'}
         </Text>
+        <View style={[styles.investmentTabs, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === 'assets' }}
+            accessibilityLabel="Listar ativos"
+            testID="investments-assets-tab"
+            onPress={() => setActiveTab('assets')}
+            style={({ pressed }) => [
+              styles.investmentTab,
+              activeTab === 'assets' && { backgroundColor: colors.card, borderColor: colors.border },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Feather name="briefcase" size={14} color={activeTab === 'assets' ? colors.foreground : colors.mutedForeground} />
+            <Text style={[styles.investmentTabText, { color: activeTab === 'assets' ? colors.foreground : colors.mutedForeground }]}>Ativos</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === 'favorites' }}
+            accessibilityLabel="Listar ativos favoritados"
+            testID="investments-favorites-tab"
+            onPress={() => setActiveTab('favorites')}
+            style={({ pressed }) => [
+              styles.investmentTab,
+              activeTab === 'favorites' && { backgroundColor: colors.card, borderColor: colors.border },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Feather name="star" size={14} color={activeTab === 'favorites' ? colors.foreground : colors.mutedForeground} />
+            <Text style={[styles.investmentTabText, { color: activeTab === 'favorites' ? colors.foreground : colors.mutedForeground }]}>Favoritos</Text>
+          </Pressable>
+        </View>
         {selectedAssetType ? (
           <View style={[styles.activeFilter, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
             <View style={styles.activeFilterCopy}>
@@ -308,23 +343,6 @@ export default function InvestmentsScreen() {
             </Pressable>
           </View>
         ) : null}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ selected: favoriteOnly }}
-          accessibilityLabel={favoriteOnly ? 'Exibindo apenas favoritos' : 'Exibir apenas favoritos'}
-          testID="investments-favorites-filter"
-          onPress={() => setFavoriteOnly((current) => !current)}
-          style={({ pressed }) => [
-            styles.favoriteFilter,
-            { backgroundColor: favoriteOnly ? colors.accent : colors.card, borderColor: favoriteOnly ? colors.accent : colors.border },
-            pressed && styles.pressed,
-          ]}
-        >
-          <Feather name="star" size={14} color={favoriteOnly ? colors.accentForeground : colors.foreground} />
-          <Text style={[styles.favoriteFilterText, { color: favoriteOnly ? colors.accentForeground : colors.foreground }]}>
-            {favoriteOnly ? 'Favoritos selecionados' : 'Mostrar favoritos'}
-          </Text>
-        </Pressable>
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
           <>
             <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
@@ -704,8 +722,9 @@ const styles = StyleSheet.create({
   activeFilter: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 11, paddingRight: 5, marginTop: -7, marginBottom: 12 },
   activeFilterCopy: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   activeFilterText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-  favoriteFilter: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 7, paddingHorizontal: 11, marginTop: -5, marginBottom: 12 },
-  favoriteFilterText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  investmentTabs: { minHeight: 43, borderWidth: 1, borderRadius: 9, flexDirection: 'row', padding: 3, gap: 3, marginTop: -5, marginBottom: 12 },
+  investmentTab: { flex: 1, minHeight: 35, borderWidth: 1, borderColor: 'transparent', borderRadius: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  investmentTabText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   clearFilterButton: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   summaryCard: { minHeight: 166, borderRadius: 9, padding: 17, justifyContent: 'space-between' },
   summaryLabel: { color: '#D4D4D4', fontSize: 12, fontFamily: 'Inter_500Medium' },

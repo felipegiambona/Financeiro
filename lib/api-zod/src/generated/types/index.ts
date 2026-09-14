@@ -19,6 +19,7 @@ export * from './financialProfile';
 export * from './financialProfileInput';
 export * from './financialProfileInputType';
 export * from './financialProfileType';
+export * from './financialProfileUpdate';
 export * from './goal';
 export * from './goalDetail';
 export * from './goalHistoryEntry';

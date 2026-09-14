@@ -9,6 +9,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/context/AuthContext';
 import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 import { useColors } from '@/hooks/useColors';
+import type { FinancialProfile } from '@workspace/api-client-react';
 
 function getInitials(name: string, email: string): string {
   const source = name.trim() || email.split('@')[0] || 'U';
@@ -36,7 +37,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const insets = useSafeAreaInsets();
   const { session, signOut, deleteAccount, updateProfile, updateProfileImage } = useAuth();
   const { user } = useUser();
-  const { profiles, activeProfile, switchProfile, createProfile, deleteProfile } = useFinancialProfiles();
+  const { profiles, activeProfile, switchProfile, createProfile, updateProfile: updateBusinessProfile, deleteProfile } = useFinancialProfiles();
   const name = session?.name || 'Usuário';
   const email = session?.email || 'E-mail não informado';
   const isBusinessProfile = activeProfile?.type === 'business';
@@ -52,6 +53,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const [deletingBusinessProfile, setDeletingBusinessProfile] = useState(false);
   const [deleteBusinessProfileModalOpen, setDeleteBusinessProfileModalOpen] = useState(false);
   const [businessEditorOpen, setBusinessEditorOpen] = useState(false);
+  const [businessProfileBeingEdited, setBusinessProfileBeingEdited] = useState<FinancialProfile | null>(null);
   const [businessNameInput, setBusinessNameInput] = useState('');
   const [businessImageData, setBusinessImageData] = useState<string | null>(null);
   const [savingBusinessProfile, setSavingBusinessProfile] = useState(false);
@@ -105,9 +107,10 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
     }
   };
 
-  const openBusinessEditor = () => {
-    setBusinessNameInput('');
-    setBusinessImageData(null);
+  const openBusinessEditor = (profile?: FinancialProfile) => {
+    setBusinessProfileBeingEdited(profile ?? null);
+    setBusinessNameInput(profile?.businessName ?? '');
+    setBusinessImageData(profile?.imageData ?? null);
     setBusinessEditorOpen(true);
   };
 
@@ -128,7 +131,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
     }
   };
 
-  const handleCreateBusinessProfile = async () => {
+  const handleSaveBusinessProfile = async () => {
     const trimmedName = businessNameInput.trim();
     if (!trimmedName) {
       Alert.alert('Nome obrigatório', 'Informe o nome da empresa.');
@@ -136,15 +139,26 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
     }
     try {
       setSavingBusinessProfile(true);
-      await createProfile({
-        type: 'business',
-        name: 'Empresarial',
-        businessName: trimmedName,
-        imageData: businessImageData,
-      });
+      if (businessProfileBeingEdited) {
+        await updateBusinessProfile(businessProfileBeingEdited.id, {
+          businessName: trimmedName,
+          imageData: businessImageData,
+        });
+      } else {
+        await createProfile({
+          type: 'business',
+          name: 'Empresarial',
+          businessName: trimmedName,
+          imageData: businessImageData,
+        });
+      }
       setBusinessEditorOpen(false);
+      setBusinessProfileBeingEdited(null);
     } catch {
-      Alert.alert('Não foi possível criar o perfil', 'Tente novamente.');
+      Alert.alert(
+        businessProfileBeingEdited ? 'Não foi possível salvar o perfil' : 'Não foi possível criar o perfil',
+        'Tente novamente.',
+      );
     } finally {
       setSavingBusinessProfile(false);
     }
@@ -307,7 +321,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
             <Pressable
               accessibilityRole="button"
               disabled={switchingProfile}
-              onPress={openBusinessEditor}
+              onPress={() => openBusinessEditor()}
               style={({ pressed }) => [styles.addProfileButton, { borderColor: colors.border }, pressed && styles.pressed]}
             >
               <Feather name="plus" size={16} color={colors.foreground} />
@@ -318,24 +332,42 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
             O perfil empresarial é para controle operacional e não substitui ERP, sistema comercial ou sistema contábil.
           </Text>
           {activeProfile?.type === 'business' ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Excluir perfil empresarial"
-              testID="profile-delete-business-button"
-              disabled={switchingProfile || deletingBusinessProfile}
-              onPress={() => setDeleteBusinessProfileModalOpen(true)}
-              style={({ pressed }) => [
-                styles.deleteBusinessProfileButton,
-                { borderColor: colors.expense },
-                (switchingProfile || deletingBusinessProfile) && styles.disabled,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Feather name="trash-2" size={15} color={colors.expense} />
-              <Text style={[styles.deleteBusinessProfileText, { color: colors.expense }]}>
-                {deletingBusinessProfile ? 'Excluindo perfil...' : 'Excluir perfil empresarial'}
-              </Text>
-            </Pressable>
+            <>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Editar perfil empresarial"
+                testID="profile-edit-business-button"
+                disabled={switchingProfile || deletingBusinessProfile || savingBusinessProfile}
+                onPress={() => openBusinessEditor(activeProfile)}
+                style={({ pressed }) => [
+                  styles.editBusinessProfileButton,
+                  { borderColor: colors.border },
+                  (switchingProfile || deletingBusinessProfile || savingBusinessProfile) && styles.disabled,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Feather name="edit-2" size={15} color={colors.foreground} />
+                <Text style={[styles.editBusinessProfileText, { color: colors.foreground }]}>Editar perfil empresarial</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Excluir perfil empresarial"
+                testID="profile-delete-business-button"
+                disabled={switchingProfile || deletingBusinessProfile}
+                onPress={() => setDeleteBusinessProfileModalOpen(true)}
+                style={({ pressed }) => [
+                  styles.deleteBusinessProfileButton,
+                  { borderColor: colors.expense },
+                  (switchingProfile || deletingBusinessProfile) && styles.disabled,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Feather name="trash-2" size={15} color={colors.expense} />
+                <Text style={[styles.deleteBusinessProfileText, { color: colors.expense }]}>
+                  {deletingBusinessProfile ? 'Excluindo perfil...' : 'Excluir perfil empresarial'}
+                </Text>
+              </Pressable>
+            </>
           ) : null}
         </View>
 
@@ -417,16 +449,16 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         errorTitle="Não foi possível excluir o perfil"
         errorMessage="O perfil empresarial não foi excluído. Tente novamente."
       />
-      <Modal animationType="fade" transparent visible={businessEditorOpen} onRequestClose={() => setBusinessEditorOpen(false)}>
+      <Modal animationType="fade" transparent visible={businessEditorOpen} onRequestClose={() => { setBusinessEditorOpen(false); setBusinessProfileBeingEdited(null); }}>
         <View style={styles.modalRoot}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setBusinessEditorOpen(false)} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => { setBusinessEditorOpen(false); setBusinessProfileBeingEdited(null); }} />
           <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderCopy}>
-                <Text style={[styles.modalEyebrow, { color: colors.mutedForeground }]}>Novo perfil</Text>
-                <Text style={[styles.modalTitle, { color: colors.foreground }]}>Perfil empresarial</Text>
+                <Text style={[styles.modalEyebrow, { color: colors.mutedForeground }]}>{businessProfileBeingEdited ? 'Editar perfil' : 'Novo perfil'}</Text>
+                <Text style={[styles.modalTitle, { color: colors.foreground }]}>{businessProfileBeingEdited ? 'Editar perfil empresarial' : 'Perfil empresarial'}</Text>
               </View>
-              <Pressable accessibilityLabel="Fechar criação de perfil empresarial" onPress={() => setBusinessEditorOpen(false)} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
+              <Pressable accessibilityLabel="Fechar edição de perfil empresarial" onPress={() => { setBusinessEditorOpen(false); setBusinessProfileBeingEdited(null); }} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
                 <Feather name="x" size={18} color={colors.foreground} />
               </Pressable>
             </View>
@@ -455,7 +487,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
               <Pressable
                 accessibilityRole="button"
                 disabled={savingBusinessProfile}
-                onPress={() => setBusinessEditorOpen(false)}
+                onPress={() => { setBusinessEditorOpen(false); setBusinessProfileBeingEdited(null); }}
                 style={({ pressed }) => [styles.profileCancelButton, { borderColor: colors.border }, savingBusinessProfile && styles.disabled, pressed && styles.pressed]}
               >
                 <Text style={[styles.profileCancelText, { color: colors.foreground }]}>Cancelar criação</Text>
@@ -464,10 +496,12 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
                 accessibilityRole="button"
                 testID="business-profile-save-button"
                 disabled={savingBusinessProfile}
-                onPress={() => void handleCreateBusinessProfile()}
+                onPress={() => void handleSaveBusinessProfile()}
                 style={({ pressed }) => [styles.profileSaveButton, { backgroundColor: colors.primary }, savingBusinessProfile && styles.disabled, pressed && styles.pressed]}
               >
-                <Text style={[styles.profileSaveText, { color: colors.primaryForeground }]}>{savingBusinessProfile ? 'Criando...' : 'Criar perfil'}</Text>
+                <Text style={[styles.profileSaveText, { color: colors.primaryForeground }]}>
+                  {savingBusinessProfile ? 'Salvando...' : businessProfileBeingEdited ? 'Salvar alterações' : 'Criar perfil'}
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -515,6 +549,8 @@ const styles = StyleSheet.create({
   profileDisclaimer: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular', marginTop: 4 },
   deleteBusinessProfileButton: { minHeight: 40, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 },
   deleteBusinessProfileText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  editBusinessProfileButton: { minHeight: 40, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 },
+  editBusinessProfileText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   profileCancelButton: { flex: 1, minHeight: 42, borderWidth: 1, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   profileSaveButton: { flex: 1, minHeight: 42, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   profileCancelText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },

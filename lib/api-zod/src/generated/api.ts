@@ -50,6 +50,29 @@ export const CreateFinancialProfileResponse = zod.object({
 })
 
 
+export const UpdateFinancialProfileParams = zod.object({
+  "profileId": zod.coerce.string().uuid()
+})
+
+
+
+
+export const UpdateFinancialProfileBody = zod.object({
+  "businessName": zod.string().min(1).optional(),
+  "imageData": zod.string().nullish()
+})
+
+export const UpdateFinancialProfileResponse = zod.object({
+  "id": zod.string().uuid(),
+  "type": zod.enum(['personal', 'business']),
+  "name": zod.string(),
+  "businessName": zod.string().nullable(),
+  "imageData": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
 export const DeleteFinancialProfileParams = zod.object({
   "profileId": zod.coerce.string().uuid()
 })

@@ -42,6 +42,13 @@ export interface FinancialProfileInput {
   imageData?: string | null;
 }
 
+export interface FinancialProfileUpdate {
+  /** @minLength 1 */
+  businessName?: string;
+  /** @nullable */
+  imageData?: string | null;
+}
+
 export type InvestmentQuoteStatus = typeof InvestmentQuoteStatus[keyof typeof InvestmentQuoteStatus];
 
 

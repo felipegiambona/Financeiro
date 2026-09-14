@@ -29,6 +29,7 @@ import type {
   CategoryUpdate,
   FinancialProfile,
   FinancialProfileInput,
+  FinancialProfileUpdate,
   Goal,
   GoalDetail,
   GoalInput,
@@ -296,6 +297,72 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateFinancialProfileMutationOptions(options));
+    }
+
+export const getUpdateFinancialProfileUrl = (profileId: string,) => {
+
+
+
+
+  return `/api/financial-profiles/${profileId}`
+}
+
+export const updateFinancialProfile = async (profileId: string,
+    financialProfileUpdate: FinancialProfileUpdate, options?: Parameters<typeof customFetch>[1]): Promise<FinancialProfile> => {
+
+  return customFetch<FinancialProfile>(getUpdateFinancialProfileUrl(profileId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(financialProfileUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateFinancialProfileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFinancialProfile>>, TError,{profileId: string;data: BodyType<FinancialProfileUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFinancialProfile>>, TError,{profileId: string;data: BodyType<FinancialProfileUpdate>}, TContext> => {
+
+const mutationKey = ['updateFinancialProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFinancialProfile>>, {profileId: string;data: BodyType<FinancialProfileUpdate>}> = (props) => {
+          const {profileId,data} = props ?? {};
+
+          return  updateFinancialProfile(profileId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFinancialProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateFinancialProfile>>>
+    export type UpdateFinancialProfileMutationBody = BodyType<FinancialProfileUpdate>
+    export type UpdateFinancialProfileMutationError = ErrorType<void>
+
+    export const useUpdateFinancialProfile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFinancialProfile>>, TError,{profileId: string;data: BodyType<FinancialProfileUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateFinancialProfile>>,
+        TError,
+        {profileId: string;data: BodyType<FinancialProfileUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateFinancialProfileMutationOptions(options));
     }
 
 export const getDeleteFinancialProfileUrl = (profileId: string,) => {

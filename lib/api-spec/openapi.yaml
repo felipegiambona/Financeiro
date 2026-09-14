@@ -72,6 +72,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/FinancialProfile"
   /financial-profiles/{profileId}:
+    patch:
+      operationId: updateFinancialProfile
+      tags: [financial-profiles]
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinancialProfileUpdate"
+      responses:
+        "200":
+          description: Updated financial profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancialProfile"
+        "400":
+          description: Only business profile fields can be updated
+        "404":
+          description: Financial profile not found
     delete:
       operationId: deleteFinancialProfile
       tags: [financial-profiles]
@@ -826,6 +853,11 @@ components:
           enum: [personal, business]
         name: { type: string, minLength: 1 }
         businessName: { type: string }
+        imageData: { type: ["string", "null"] }
+    FinancialProfileUpdate:
+      type: object
+      properties:
+        businessName: { type: string, minLength: 1 }
         imageData: { type: ["string", "null"] }
     InvestmentQuoteStatus:
       type: string

@@ -80,6 +80,56 @@ router.post("/financial-profiles", async (req, res): Promise<void> => {
   res.status(201).json(toResponse(profile));
 });
 
+router.patch("/financial-profiles/:profileId", async (req, res): Promise<void> => {
+  const userId = userIdFrom(req);
+  const profileId = req.params.profileId;
+  const [profile] = await db.select()
+    .from(financialProfilesTable)
+    .where(and(
+      eq(financialProfilesTable.id, profileId),
+      eq(financialProfilesTable.userId, userId),
+    ))
+    .limit(1);
+
+  if (!profile) {
+    res.status(404).json({ error: "Financial profile not found" });
+    return;
+  }
+  if (profile.type !== "business") {
+    res.status(400).json({ error: "Only business profiles can be updated" });
+    return;
+  }
+
+  const businessName = req.body?.businessName;
+  const imageData = req.body?.imageData;
+  if (businessName !== undefined && (typeof businessName !== "string" || !businessName.trim())) {
+    res.status(400).json({ error: "businessName must not be empty" });
+    return;
+  }
+  if (imageData !== undefined && imageData !== null && typeof imageData !== "string") {
+    res.status(400).json({ error: "imageData must be a string or null" });
+    return;
+  }
+  if (businessName === undefined && imageData === undefined) {
+    res.status(400).json({ error: "Provide businessName or imageData" });
+    return;
+  }
+
+  const [updated] = await db.update(financialProfilesTable)
+    .set({
+      ...(businessName === undefined ? {} : { businessName: businessName.trim() }),
+      ...(imageData === undefined ? {} : { imageData }),
+      updatedAt: new Date(),
+    })
+    .where(and(
+      eq(financialProfilesTable.id, profileId),
+      eq(financialProfilesTable.userId, userId),
+    ))
+    .returning();
+
+  res.json(toResponse(updated));
+});
+
 router.delete("/financial-profiles/:profileId", async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
   const profileId = req.params.profileId;
