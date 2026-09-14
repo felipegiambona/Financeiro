@@ -396,7 +396,7 @@ export default function InvestmentsScreen() {
           eyebrow="Patrimônio"
           title="Investimentos"
           showBack
-          actionLabel={favoriteOnly ? 'Adicionar' : 'Novo'}
+          actionLabel="Novo"
           actionIcon="plus"
           onAction={() => openEditor(undefined, undefined, favoriteOnly)}
         />
