@@ -17,12 +17,16 @@ import {
   resolveFinancialProfile,
   scopedUserIdFrom,
 } from "../middlewares/requireAuth";
+import {
+  currentValueFromQuote,
+  fetchBrapiQuote,
+  QUOTE_SOURCE,
+  refreshInvestmentQuote,
+  type InvestmentQuoteStore,
+} from "../lib/investmentQuotes";
 
 const router: IRouter = Router();
 router.use("/investments", requireAuth, resolveFinancialProfile);
-
-const QUOTE_SOURCE = "BRAPI";
-const QUOTE_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 
 function assertPersonalProfile(req: Request, res: Response): boolean {
   if (financialProfileTypeFrom(req) !== "personal") {
@@ -71,48 +75,8 @@ function toResponse(row: typeof investmentsTable.$inferSelect) {
   };
 }
 
-function quoteIsFresh(row: typeof investmentsTable.$inferSelect): boolean {
-  return row.quoteStatus === "updated"
-    && row.lastQuoteAt !== null
-    && Date.now() - row.lastQuoteAt.getTime() < QUOTE_REFRESH_INTERVAL_MS;
-}
-
-async function fetchQuote(ticker: string): Promise<number> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5_000);
-  try {
-    const response = await fetch(`https://brapi.dev/api/quote/${encodeURIComponent(ticker)}`, {
-      signal: controller.signal,
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) throw new Error(`Quote provider returned ${response.status}`);
-    const payload: unknown = await response.json();
-    if (
-      !payload
-      || typeof payload !== "object"
-      || !("results" in payload)
-      || !Array.isArray(payload.results)
-      || payload.results.length === 0
-    ) {
-      throw new Error("Quote provider returned no results");
-    }
-    const result = payload.results[0];
-    const quote = result && typeof result === "object" && "regularMarketPrice" in result
-      ? result.regularMarketPrice
-      : undefined;
-    if (typeof quote !== "number" || !Number.isFinite(quote) || quote < 0) {
-      throw new Error("Quote provider returned an invalid price");
-    }
-    return quote;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function refreshQuote(row: typeof investmentsTable.$inferSelect) {
-  if (quoteIsFresh(row)) return row;
-
-  if (!row.ticker) {
+const quoteStore: InvestmentQuoteStore = {
+  async markUnavailable(row) {
     const [updated] = await db.update(investmentsTable).set({
       quoteSource: QUOTE_SOURCE,
       quoteStatus: "unavailable",
@@ -122,26 +86,25 @@ async function refreshQuote(row: typeof investmentsTable.$inferSelect) {
       eq(investmentsTable.userId, row.userId),
       eq(investmentsTable.profileId, row.profileId),
     )).returning();
-    return updated ?? row;
-  }
-
-  try {
-    const quotePrice = await fetchQuote(row.ticker);
-    const currentValue = roundMoney(quotePrice * Number(row.quantity));
+    return updated;
+  },
+  async markUpdated(row, quotePrice, quoteAt) {
+    const currentValue = currentValueFromQuote(quotePrice, row.quantity);
     const [updated] = await db.update(investmentsTable).set({
       currentValue: String(currentValue),
       quoteSource: QUOTE_SOURCE,
       quotePrice: String(quotePrice),
       quoteStatus: "updated",
       quoteError: null,
-      lastQuoteAt: new Date(),
+      lastQuoteAt: quoteAt,
     }).where(and(
       eq(investmentsTable.id, row.id),
       eq(investmentsTable.userId, row.userId),
       eq(investmentsTable.profileId, row.profileId),
     )).returning();
-    return updated ?? row;
-  } catch {
+    return updated;
+  },
+  async markError(row) {
     const [updated] = await db.update(investmentsTable).set({
       quoteSource: QUOTE_SOURCE,
       quoteStatus: "error",
@@ -151,8 +114,15 @@ async function refreshQuote(row: typeof investmentsTable.$inferSelect) {
       eq(investmentsTable.userId, row.userId),
       eq(investmentsTable.profileId, row.profileId),
     )).returning();
-    return updated ?? row;
-  }
+    return updated;
+  },
+};
+
+async function refreshQuote(row: typeof investmentsTable.$inferSelect) {
+  return refreshInvestmentQuote(row, {
+    quoteProvider: fetchBrapiQuote,
+    store: quoteStore,
+  });
 }
 
 function optionalText(value: string | null | undefined): string | null {

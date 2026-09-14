@@ -317,6 +317,34 @@ async function prepareLegacyInvestmentFixture(userId, personalProfileId, busines
   );
 }
 
+async function insertAutomaticInvestmentFixture(userId, profileId) {
+  const owner = sqlLiteral(`${userId}::${profileId}`);
+  const profile = sqlLiteral(profileId);
+  const name = `isolated automatic investment ${profileId}`;
+  await runDatabaseQuery(
+    `INSERT INTO finance_investments ` +
+    `(user_id, profile_id, name, ticker, asset_type, institution, quantity, ` +
+    `average_price, invested_amount, current_value, manual_current_value, ` +
+    `valuation_mode, quote_source, quote_price, quote_status, quote_error, last_quote_at) VALUES ` +
+    `(${owner}, ${profile}, ${sqlLiteral(name)}, 'OTHER-PROFILE', 'stock', ` +
+    `'Other Profile Broker', 2, 200, 400, 450, 400, 'automatic', 'BRAPI', ` +
+    `225, 'pending', NULL, '2026-09-13T12:00:00.000Z');`,
+  );
+  return name;
+}
+
+async function readInvestmentDatabaseState(name) {
+  const result = await runDatabaseQuery(
+    `SELECT json_build_object(` +
+    `'currentValue', current_value, ` +
+    `'manualCurrentValue', manual_current_value, ` +
+    `'quoteStatus', quote_status, ` +
+    `'lastQuoteAt', last_quote_at` +
+    `)::text FROM finance_investments WHERE name = ${sqlLiteral(name)};`,
+  );
+  return JSON.parse(result);
+}
+
 async function countRowsForOwner(userId, profileId, table) {
   const scopedOwner = sqlLiteral(`${userId}::${profileId}`);
   const result = await runDatabaseQuery(
@@ -642,6 +670,76 @@ describe("financial profile deletion isolation", () => {
     assertStatus(updatedPersonalInvestment, 200);
     assert.equal(updatedPersonalInvestment.body.returnAmount, 80);
     assert.equal(updatedPersonalInvestment.body.returnPercentage, 8);
+    assert.equal(updatedPersonalInvestment.body.valuationMode, "manual");
+    assert.equal(updatedPersonalInvestment.body.manualCurrentValue, 1080);
+    assert.equal(updatedPersonalInvestment.body.quoteStatus, "not_configured");
+    assert.equal(updatedPersonalInvestment.body.lastQuoteAt, null);
+
+    const automaticPersonalInvestment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/investments/${personalInvestment.body.id}`,
+      {
+        method: "PATCH",
+        body: {
+          ticker: null,
+          valuationMode: "automatic",
+        },
+      },
+    );
+    assertStatus(automaticPersonalInvestment, 200);
+    assert.equal(automaticPersonalInvestment.body.currentValue, 1080);
+    assert.equal(automaticPersonalInvestment.body.manualCurrentValue, 1080);
+    assert.equal(automaticPersonalInvestment.body.quoteStatus, "pending");
+    assert.equal(automaticPersonalInvestment.body.lastQuoteAt, null);
+
+    const otherProfileInvestmentName = await insertAutomaticInvestmentFixture(
+      identity.userId,
+      businessProfile.id,
+    );
+    const otherProfileBeforeRefresh = await readInvestmentDatabaseState(
+      otherProfileInvestmentName,
+    );
+    const refreshedPersonalInvestments = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/investments/refresh",
+      { method: "POST" },
+    );
+    assertStatus(refreshedPersonalInvestments, 200);
+    const refreshedPersonalInvestment = refreshedPersonalInvestments.body.find(
+      (investment) => investment.id === personalInvestment.body.id,
+    );
+    assert.ok(refreshedPersonalInvestment);
+    assert.equal(refreshedPersonalInvestment.currentValue, 1080);
+    assert.equal(refreshedPersonalInvestment.manualCurrentValue, 1080);
+    assert.equal(refreshedPersonalInvestment.quoteStatus, "unavailable");
+    assert.equal(refreshedPersonalInvestment.lastQuoteAt, null);
+    assert.deepEqual(
+      await readInvestmentDatabaseState(otherProfileInvestmentName),
+      otherProfileBeforeRefresh,
+    );
+    await runDatabaseQuery(
+      `DELETE FROM finance_investments WHERE name = ${sqlLiteral(otherProfileInvestmentName)};`,
+    );
+
+    const returnedToManual = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/investments/${personalInvestment.body.id}`,
+      {
+        method: "PATCH",
+        body: { valuationMode: "manual" },
+      },
+    );
+    assertStatus(returnedToManual, 200);
+    assert.equal(returnedToManual.body.currentValue, 1080);
+    assert.equal(returnedToManual.body.manualCurrentValue, 1080);
+    assert.equal(returnedToManual.body.valuationMode, "manual");
+    assert.equal(returnedToManual.body.quoteStatus, "not_configured");
+    assert.equal(returnedToManual.body.quoteSource, null);
+    assert.equal(returnedToManual.body.quotePrice, null);
+    assert.equal(returnedToManual.body.lastQuoteAt, null);
 
     const businessInvestments = await profileRequest(
       identity.token,
