@@ -14,6 +14,17 @@ function isOnboardingStep(value: string | null): value is OnboardingStep {
   return value === 'name' || value === 'profile' || value === 'wallet' || value === 'goal' || value === 'limit' || value === 'card';
 }
 
+function initialStepForProfile(profileType: 'personal' | 'business'): OnboardingStep {
+  return profileType === 'business' ? 'wallet' : 'name';
+}
+
+function normalizeStepForProfile(step: OnboardingStep, profileType: 'personal' | 'business'): OnboardingStep {
+  if (profileType === 'business' && (step === 'name' || step === 'profile')) {
+    return 'wallet';
+  }
+  return step;
+}
+
 function storageKeys(userId: string, profileId: string) {
   const prefix = `financas-mobile:onboarding:${userId}:${profileId}`;
   return {
@@ -56,9 +67,11 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
       }
       if (values.get(keys.started) === 'true') {
         const storedStep = values.get(keys.step) ?? null;
-        const savedStep = isOnboardingStep(storedStep) ? storedStep : wallets.length === 0 ? 'name' : 'wallet';
-        const resumedStep = savedStep === 'wallet' && wallets.length > 0 ? 'goal' : savedStep;
-        if (resumedStep !== savedStep) {
+        const fallbackStep = wallets.length === 0 ? initialStepForProfile(activeProfile.type) : 'wallet';
+        const savedStep = isOnboardingStep(storedStep) ? storedStep : fallbackStep;
+        const normalizedStep = normalizeStepForProfile(savedStep, activeProfile.type);
+        const resumedStep = normalizedStep === 'wallet' && wallets.length > 0 ? 'goal' : normalizedStep;
+        if (resumedStep !== storedStep) {
           await AsyncStorage.setItem(keys.step, resumedStep);
         }
         setStep(resumedStep);
@@ -66,7 +79,9 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
         return;
       }
       if (shouldStartOnboarding) {
-        await AsyncStorage.multiSet([[keys.started, 'true'], [keys.step, 'name']]);
+        const initialStep = initialStepForProfile(activeProfile.type);
+        await AsyncStorage.multiSet([[keys.started, 'true'], [keys.step, initialStep]]);
+        setStep(initialStep);
         if (active) setMode('onboarding');
         return;
       }
@@ -76,7 +91,10 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
         return;
       }
     }).catch(() => {
-      if (active) setMode(wallets.length > 0 && !hasAutomaticPlaceholder ? 'app' : 'onboarding');
+      if (active) {
+        setStep(initialStepForProfile(activeProfile.type));
+        setMode(wallets.length > 0 && !hasAutomaticPlaceholder ? 'app' : 'onboarding');
+      }
     });
     return () => {
       active = false;
