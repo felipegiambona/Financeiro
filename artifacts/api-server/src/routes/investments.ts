@@ -5,7 +5,7 @@ import {
   CreateInvestmentResponse,
   DeleteInvestmentParams,
   ListInvestmentsResponse,
-  InvestmentSearchResponse,
+  SearchInvestmentsResponse,
   UpdateInvestmentBody,
   UpdateInvestmentParams,
   UpdateInvestmentResponse,
@@ -152,7 +152,7 @@ router.get("/investments/search", async (req, res): Promise<void> => {
   }
 
   try {
-    res.json(InvestmentSearchResponse.parse(await searchInvestmentCatalog(query)));
+    res.json(SearchInvestmentsResponse.parse(await searchInvestmentCatalog(query)));
   } catch {
     res.status(502).json({ error: "Investment catalog is temporarily unavailable" });
   }

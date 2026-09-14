@@ -154,6 +154,23 @@ export const CreateInvestmentResponse = zod.object({
 })
 
 
+export const searchInvestmentsQueryQMin = 2;
+export const searchInvestmentsQueryQMax = 40;
+
+
+
+export const SearchInvestmentsQueryParams = zod.object({
+  "q": zod.coerce.string().min(searchInvestmentsQueryQMin).max(searchInvestmentsQueryQMax)
+})
+
+export const SearchInvestmentsResponseItem = zod.object({
+  "name": zod.string(),
+  "ticker": zod.string(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other'])
+})
+export const SearchInvestmentsResponse = zod.array(SearchInvestmentsResponseItem)
+
+
 export const UpdateInvestmentParams = zod.object({
   "id": zod.coerce.string().uuid()
 })

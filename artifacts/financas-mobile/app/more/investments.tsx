@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
@@ -9,7 +9,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useInvestments } from '@/context/InvestmentContext';
 import { useColors } from '@/hooks/useColors';
-import type { Investment, InvestmentAssetType, InvestmentInput, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
+import type { Investment, InvestmentAssetType, InvestmentInput, InvestmentSearchResult, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
 
 const ASSET_TYPES: Array<{ value: InvestmentAssetType; label: string }> = [
@@ -21,69 +21,6 @@ const ASSET_TYPES: Array<{ value: InvestmentAssetType; label: string }> = [
   { value: 'crypto', label: 'Cripto' },
   { value: 'other', label: 'Outros' },
 ];
-
-type AssetSuggestion = {
-  name: string;
-  ticker: string;
-  assetType: InvestmentAssetType;
-};
-
-const ASSET_SUGGESTIONS: AssetSuggestion[] = [
-  { name: 'Petrobras PN', ticker: 'PETR4', assetType: 'stock' },
-  { name: 'Vale ON', ticker: 'VALE3', assetType: 'stock' },
-  { name: 'Itaú Unibanco PN', ticker: 'ITUB4', assetType: 'stock' },
-  { name: 'Banco do Brasil ON', ticker: 'BBAS3', assetType: 'stock' },
-  { name: 'WEG ON', ticker: 'WEGE3', assetType: 'stock' },
-  { name: 'Ambev ON', ticker: 'ABEV3', assetType: 'stock' },
-  { name: 'B3 ON', ticker: 'B3SA3', assetType: 'stock' },
-  { name: 'BB Seguridade ON', ticker: 'BBSE3', assetType: 'stock' },
-  { name: 'Eletrobras ON', ticker: 'ELET3', assetType: 'stock' },
-  { name: 'Localiza ON', ticker: 'RENT3', assetType: 'stock' },
-  { name: 'Raia Drogasil ON', ticker: 'RADL3', assetType: 'stock' },
-  { name: 'Lojas Renner ON', ticker: 'LREN3', assetType: 'stock' },
-  { name: 'Magazine Luiza ON', ticker: 'MGLU3', assetType: 'stock' },
-  { name: 'PRIO ON', ticker: 'PRIO3', assetType: 'stock' },
-  { name: 'Suzano ON', ticker: 'SUZB3', assetType: 'stock' },
-  { name: 'Gerdau PN', ticker: 'GGBR4', assetType: 'stock' },
-  { name: 'JBS ON', ticker: 'JBSS3', assetType: 'stock' },
-  { name: 'Marfrig ON', ticker: 'MRFG3', assetType: 'stock' },
-  { name: 'BOVA11', ticker: 'BOVA11', assetType: 'etf' },
-  { name: 'IVVB11', ticker: 'IVVB11', assetType: 'etf' },
-  { name: 'SMALL11', ticker: 'SMAL11', assetType: 'etf' },
-  { name: 'Trend Nasdaq 100', ticker: 'NASD11', assetType: 'etf' },
-  { name: 'Trend Ouro', ticker: 'GOLD11', assetType: 'etf' },
-  { name: 'WRLD11', ticker: 'WRLD11', assetType: 'etf' },
-  { name: 'HGLG11', ticker: 'HGLG11', assetType: 'fii' },
-  { name: 'MXRF11', ticker: 'MXRF11', assetType: 'fii' },
-  { name: 'KNRI11', ticker: 'KNRI11', assetType: 'fii' },
-  { name: 'BTG Pactual Logística', ticker: 'BTLG11', assetType: 'fii' },
-  { name: 'XP Malls', ticker: 'XPML11', assetType: 'fii' },
-  { name: 'Vinci Shopping Centers', ticker: 'VISC11', assetType: 'fii' },
-  { name: 'CSHG Real Estate', ticker: 'HGRE11', assetType: 'fii' },
-  { name: 'Mauá Capital Recebíveis', ticker: 'MCCI11', assetType: 'fii' },
-  { name: 'Kinea Rendimentos', ticker: 'KNCR11', assetType: 'fii' },
-  { name: 'Kinea Securities', ticker: 'KNSC11', assetType: 'fii' },
-  { name: 'IRDM11', ticker: 'IRDM11', assetType: 'fii' },
-  { name: 'DEVA11', ticker: 'DEVA11', assetType: 'fii' },
-  { name: 'VGHF11', ticker: 'VGHF11', assetType: 'fii' },
-  { name: 'TRX Real Estate', ticker: 'TRXF11', assetType: 'fii' },
-  { name: 'Tesouro Selic', ticker: 'Tesouro Selic', assetType: 'fixed_income' },
-  { name: 'Tesouro IPCA+', ticker: 'Tesouro IPCA+', assetType: 'fixed_income' },
-  { name: 'CDB', ticker: 'CDB', assetType: 'fixed_income' },
-  { name: 'LCI', ticker: 'LCI', assetType: 'fixed_income' },
-  { name: 'LCA', ticker: 'LCA', assetType: 'fixed_income' },
-  { name: 'Bitcoin', ticker: 'BTC', assetType: 'crypto' },
-  { name: 'Ethereum', ticker: 'ETH', assetType: 'crypto' },
-  { name: 'Solana', ticker: 'SOL', assetType: 'crypto' },
-];
-
-function normalizeSearch(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase('pt-BR')
-    .trim();
-}
 
 function assetTypeLabel(type: InvestmentAssetType): string {
   return ASSET_TYPES.find((item) => item.value === type)?.label ?? 'Outros';
@@ -136,11 +73,14 @@ function getInitialForm(investment?: Investment) {
 export default function InvestmentsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { investments, loading, error, refresh, refreshQuotes, createInvestment, updateInvestment, deleteInvestment } = useInvestments();
+  const { investments, loading, error, refresh, refreshQuotes, searchInvestmentAssets, createInvestment, updateInvestment, deleteInvestment } = useInvestments();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [form, setForm] = useState(() => getInitialForm());
   const [nameFocused, setNameFocused] = useState(false);
+  const [assetSuggestions, setAssetSuggestions] = useState<InvestmentSearchResult[]>([]);
+  const [searchingAssets, setSearchingAssets] = useState(false);
+  const searchRequestRef = useRef(0);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [investmentToDelete, setInvestmentToDelete] = useState<Investment | null>(null);
@@ -151,16 +91,30 @@ export default function InvestmentsScreen() {
     result: summary.result + investment.returnAmount,
   }), { invested: 0, current: 0, result: 0 }), [investments]);
   const totalPercentage = totals.invested > 0 ? (totals.result / totals.invested) * 100 : 0;
-  const assetSuggestions = useMemo(() => {
-    const query = normalizeSearch(form.name);
-    if (!nameFocused || !query) return [];
-    return ASSET_SUGGESTIONS
-      .filter((suggestion) => (
-        normalizeSearch(suggestion.name).includes(query)
-        || normalizeSearch(suggestion.ticker).includes(query)
-      ))
-      .slice(0, 6);
-  }, [form.name, nameFocused]);
+  useEffect(() => {
+    const query = form.name.trim();
+    if (!nameFocused || query.length < 2) {
+      searchRequestRef.current += 1;
+      setAssetSuggestions([]);
+      setSearchingAssets(false);
+      return;
+    }
+
+    const requestId = ++searchRequestRef.current;
+    const timeout = setTimeout(async () => {
+      setSearchingAssets(true);
+      try {
+        const results = await searchInvestmentAssets(query);
+        if (requestId === searchRequestRef.current) setAssetSuggestions(results);
+      } catch {
+        if (requestId === searchRequestRef.current) setAssetSuggestions([]);
+      } finally {
+        if (requestId === searchRequestRef.current) setSearchingAssets(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [form.name, nameFocused, searchInvestmentAssets]);
 
   const openEditor = (investment?: Investment) => {
     setEditingInvestment(investment ?? null);
@@ -172,7 +126,7 @@ export default function InvestmentsScreen() {
     if (!saving) setEditorOpen(false);
   };
 
-  const selectAssetSuggestion = (suggestion: AssetSuggestion) => {
+  const selectAssetSuggestion = (suggestion: InvestmentSearchResult) => {
     setForm((current) => ({
       ...current,
       name: suggestion.name,
@@ -424,12 +378,14 @@ export default function InvestmentsScreen() {
                 }}
                 style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
               />
-              {assetSuggestions.length > 0 && (
+              {nameFocused && form.name.trim().length >= 2 && (
                 <View
                   accessibilityLabel="Sugestões de ativos"
                   style={[styles.suggestionList, { backgroundColor: colors.card, borderColor: colors.border }]}
                 >
-                  {assetSuggestions.map((suggestion) => (
+                  {searchingAssets ? (
+                    <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Buscando ativos...</Text>
+                  ) : assetSuggestions.length > 0 ? assetSuggestions.map((suggestion) => (
                     <Pressable
                       key={suggestion.ticker}
                       accessibilityRole="button"
@@ -444,7 +400,9 @@ export default function InvestmentsScreen() {
                       </View>
                       <Text style={[styles.suggestionType, { color: colors.mutedForeground }]}>{assetTypeLabel(suggestion.assetType)}</Text>
                     </Pressable>
-                  ))}
+                  )) : (
+                    <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Nenhum resultado. Você pode cadastrar manualmente.</Text>
+                  )}
                 </View>
               )}
               <View style={styles.fieldsRow}>
@@ -619,6 +577,7 @@ const styles = StyleSheet.create({
   modeDescription: { fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 4 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   suggestionList: { borderWidth: 1, borderRadius: 8, marginTop: 6, overflow: 'hidden' },
+  suggestionState: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingHorizontal: 11, paddingVertical: 11 },
   suggestionItem: { minHeight: 47, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 11, paddingVertical: 7 },
   suggestionCopy: { flex: 1, minWidth: 0 },
   suggestionName: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },

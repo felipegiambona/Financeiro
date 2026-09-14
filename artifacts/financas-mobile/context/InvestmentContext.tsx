@@ -4,9 +4,11 @@ import {
   deleteInvestment as removeInvestment,
   listInvestments,
   refreshInvestmentQuotes as persistInvestmentQuotes,
+  searchInvestments as searchRemoteInvestments,
   updateInvestment as updatePersistedInvestment,
   type Investment,
   type InvestmentInput,
+  type InvestmentSearchResult,
   type InvestmentUpdate,
 } from '@workspace/api-client-react';
 import { useFinancialProfiles } from '@/context/FinancialProfileContext';
@@ -17,6 +19,7 @@ interface InvestmentContextValue {
   error: string | null;
   refresh: () => Promise<void>;
   refreshQuotes: () => Promise<void>;
+  searchInvestmentAssets: (query: string) => Promise<InvestmentSearchResult[]>;
   createInvestment: (input: InvestmentInput) => Promise<Investment>;
   updateInvestment: (id: string, updates: InvestmentUpdate) => Promise<Investment>;
   deleteInvestment: (id: string) => Promise<void>;
@@ -72,6 +75,11 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
     }
   }, []);
 
+  const searchInvestmentAssets = useCallback(async (query: string) => {
+    if (activeProfile?.type !== 'personal') return [];
+    return searchRemoteInvestments({ q: query });
+  }, [activeProfile?.type]);
+
   const createInvestment = useCallback(async (input: InvestmentInput) => {
     try {
       setError(null);
@@ -108,8 +116,8 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   const value = useMemo(
-    () => ({ investments, loading, error, refresh, refreshQuotes, createInvestment, updateInvestment, deleteInvestment }),
-    [createInvestment, deleteInvestment, error, investments, loading, refresh, refreshQuotes, updateInvestment],
+    () => ({ investments, loading, error, refresh, refreshQuotes, searchInvestmentAssets, createInvestment, updateInvestment, deleteInvestment }),
+    [createInvestment, deleteInvestment, error, investments, loading, refresh, refreshQuotes, searchInvestmentAssets, updateInvestment],
   );
 
   return <InvestmentContext.Provider value={value}>{children}</InvestmentContext.Provider>;

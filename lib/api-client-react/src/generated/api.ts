@@ -38,6 +38,7 @@ import type {
   HealthStatus,
   Investment,
   InvestmentInput,
+  InvestmentSearchResult,
   InvestmentUpdate,
   Limit,
   LimitInput,
@@ -45,6 +46,7 @@ import type {
   PaymentStatusUpdate,
   ProfileImageUpdate,
   ProfileUpdate,
+  SearchInvestmentsParams,
   Transaction,
   TransactionBatchDelete,
   TransactionBatchUpdate,
@@ -496,6 +498,84 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getCreateInvestmentMutationOptions(options));
     }
+
+export const getSearchInvestmentsUrl = (params: SearchInvestmentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/investments/search?${stringifiedParams}` : `/api/investments/search`
+}
+
+export const searchInvestments = async (params: SearchInvestmentsParams, options?: Parameters<typeof customFetch>[1]): Promise<InvestmentSearchResult[]> => {
+
+  return customFetch<InvestmentSearchResult[]>(getSearchInvestmentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchInvestmentsQueryKey = (params?: SearchInvestmentsParams,) => {
+    return [
+    `/api/investments/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchInvestmentsQueryOptions = <TData = Awaited<ReturnType<typeof searchInvestments>>, TError = ErrorType<void>>(params: SearchInvestmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchInvestments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchInvestmentsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchInvestments>>> = ({ signal }) => searchInvestments(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchInvestments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchInvestmentsQueryResult = NonNullable<Awaited<ReturnType<typeof searchInvestments>>>
+export type SearchInvestmentsQueryError = ErrorType<void>
+
+
+
+export function useSearchInvestments<TData = Awaited<ReturnType<typeof searchInvestments>>, TError = ErrorType<void>>(
+ params: SearchInvestmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchInvestments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchInvestmentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getUpdateInvestmentUrl = (id: string,) => {
 

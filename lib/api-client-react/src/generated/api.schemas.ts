@@ -107,6 +107,25 @@ export interface Investment {
   updatedAt: string;
 }
 
+export type InvestmentSearchResultAssetType = typeof InvestmentSearchResultAssetType[keyof typeof InvestmentSearchResultAssetType];
+
+
+export const InvestmentSearchResultAssetType = {
+  stock: 'stock',
+  fii: 'fii',
+  etf: 'etf',
+  fund: 'fund',
+  fixed_income: 'fixed_income',
+  crypto: 'crypto',
+  other: 'other',
+} as const;
+
+export interface InvestmentSearchResult {
+  name: string;
+  ticker: string;
+  assetType: InvestmentSearchResultAssetType;
+}
+
 export type InvestmentInputAssetType = typeof InvestmentInputAssetType[keyof typeof InvestmentInputAssetType];
 
 
@@ -731,4 +750,12 @@ export interface CardHistoryItem {
   paymentStatus: CardHistoryItemPaymentStatus;
   categoryName?: string | null;
 }
+
+export type SearchInvestmentsParams = {
+/**
+ * @minLength 2
+ * @maxLength 40
+ */
+q: string;
+};
 
