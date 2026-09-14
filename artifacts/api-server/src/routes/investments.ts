@@ -209,7 +209,7 @@ router.post("/investments", async (req, res): Promise<void> => {
     valuationMode,
     quoteSource: valuationMode === "automatic" ? quoteSourceForAssetType(parsed.data.assetType) : null,
     quoteStatus: valuationMode === "automatic" ? "pending" : "not_configured",
-    isFavorite: false,
+    isFavorite: parsed.data.isFavorite ?? false,
   }).returning();
   res.status(201).json(CreateInvestmentResponse.parse(toResponse(row)));
 });

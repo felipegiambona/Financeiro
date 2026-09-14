@@ -189,6 +189,7 @@ export interface InvestmentInput {
   investedAmount: number;
   /** @minimum 0 */
   currentValue: number;
+  isFavorite?: boolean;
   valuationMode?: InvestmentValuationMode;
 }
 

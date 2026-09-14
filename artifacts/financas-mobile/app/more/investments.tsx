@@ -105,6 +105,10 @@ export default function InvestmentsScreen() {
   const selectedAssetType = ASSET_TYPES.find((item) => item.value === routeAssetType)?.value ?? null;
   const [activeTab, setActiveTab] = useState<'assets' | 'favorites'>('assets');
   const favoriteOnly = activeTab === 'favorites';
+  const [favoriteSearchQuery, setFavoriteSearchQuery] = useState('');
+  const [favoriteSearchResults, setFavoriteSearchResults] = useState<InvestmentSearchResult[]>([]);
+  const [favoriteSearchLoading, setFavoriteSearchLoading] = useState(false);
+  const favoriteSearchRequestRef = useRef(0);
   const filteredInvestments = useMemo(
     () => investments.filter((investment) => (
       (!selectedAssetType || investment.assetType === selectedAssetType)
@@ -122,6 +126,7 @@ export default function InvestmentsScreen() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [investmentToDelete, setInvestmentToDelete] = useState<Investment | null>(null);
+  const [favoriteOnCreate, setFavoriteOnCreate] = useState(false);
   const quoteGuidance = QUOTE_GUIDANCE[form.assetType];
 
   const totals = useMemo(() => filteredInvestments.reduce((summary, investment) => ({
@@ -145,6 +150,27 @@ export default function InvestmentsScreen() {
       !recentKeys.has(`${suggestion.assetType}:${suggestion.ticker.trim().toLocaleLowerCase() || suggestion.name.trim().toLocaleLowerCase()}`)
     ));
   }, [assetSuggestions, matchingRecentAssets]);
+  const favoriteExistingMatches = useMemo(() => {
+    const query = favoriteSearchQuery.trim().toLocaleLowerCase();
+    if (!favoriteOnly || query.length < 2) return [];
+    return investments.filter((investment) => (
+      !investment.isFavorite
+      && (
+        investment.name.toLocaleLowerCase().includes(query)
+        || (investment.ticker ?? '').toLocaleLowerCase().includes(query)
+      )
+    ));
+  }, [favoriteOnly, favoriteSearchQuery, investments]);
+  const favoriteExistingKeys = useMemo(
+    () => new Set(favoriteExistingMatches.map((investment) => `${investment.assetType}:${(investment.ticker ?? '').trim().toLocaleLowerCase() || investment.name.trim().toLocaleLowerCase()}`)),
+    [favoriteExistingMatches],
+  );
+  const favoriteCatalogSuggestions = useMemo(
+    () => favoriteSearchResults.filter((suggestion) => (
+      !favoriteExistingKeys.has(`${suggestion.assetType}:${suggestion.ticker.trim().toLocaleLowerCase() || suggestion.name.trim().toLocaleLowerCase()}`)
+    )),
+    [favoriteExistingKeys, favoriteSearchResults],
+  );
 
   useEffect(() => {
     const query = form.name.trim();
@@ -171,9 +197,41 @@ export default function InvestmentsScreen() {
     return () => clearTimeout(timeout);
   }, [form.name, nameFocused, searchInvestmentAssets]);
 
-  const openEditor = (investment?: Investment) => {
+  useEffect(() => {
+    const query = favoriteSearchQuery.trim();
+    if (!favoriteOnly || query.length < 2) {
+      favoriteSearchRequestRef.current += 1;
+      setFavoriteSearchResults([]);
+      setFavoriteSearchLoading(false);
+      return;
+    }
+
+    const requestId = ++favoriteSearchRequestRef.current;
+    const timeout = setTimeout(async () => {
+      setFavoriteSearchLoading(true);
+      try {
+        const results = await searchInvestmentAssets(query);
+        if (requestId === favoriteSearchRequestRef.current) setFavoriteSearchResults(results);
+      } catch {
+        if (requestId === favoriteSearchRequestRef.current) setFavoriteSearchResults([]);
+      } finally {
+        if (requestId === favoriteSearchRequestRef.current) setFavoriteSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [favoriteOnly, favoriteSearchQuery, searchInvestmentAssets]);
+
+  const openEditor = (investment?: Investment, prefill?: InvestmentSearchResult, markAsFavorite = false) => {
     setEditingInvestment(investment ?? null);
-    setForm(getInitialForm(investment));
+    const initialForm = getInitialForm(investment);
+    setForm(prefill && !investment ? {
+      ...initialForm,
+      name: prefill.name,
+      ticker: prefill.ticker,
+      assetType: prefill.assetType,
+    } : initialForm);
+    setFavoriteOnCreate(!investment && markAsFavorite);
     setEditorOpen(true);
   };
 
@@ -201,6 +259,15 @@ export default function InvestmentsScreen() {
     }));
     void rememberRecentAsset(asset).catch(() => undefined);
     setNameFocused(false);
+  };
+
+  const addExistingFavorite = async (investment: Investment) => {
+    try {
+      await toggleFavorite(investment.id);
+      setFavoriteSearchQuery('');
+    } catch {
+      Alert.alert('Não foi possível adicionar favorito', 'Tente novamente.');
+    }
   };
 
   const saveInvestment = async () => {
@@ -236,6 +303,7 @@ export default function InvestmentsScreen() {
       investedAmount,
       currentValue,
       valuationMode: form.valuationMode,
+      isFavorite: editingInvestment?.isFavorite ?? favoriteOnCreate,
     };
     try {
       setSaving(true);
@@ -251,6 +319,7 @@ export default function InvestmentsScreen() {
         assetType: form.assetType,
       });
       setEditorOpen(false);
+      setFavoriteOnCreate(false);
       if (form.valuationMode === 'automatic') {
         void refreshQuotes().catch(() => undefined);
       }
@@ -282,9 +351,9 @@ export default function InvestmentsScreen() {
           eyebrow="Patrimônio"
           title="Investimentos"
           showBack
-          actionLabel="Novo"
+          actionLabel={favoriteOnly ? 'Adicionar' : 'Novo'}
           actionIcon="plus"
-          onAction={() => openEditor()}
+          onAction={() => openEditor(undefined, undefined, favoriteOnly)}
         />
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>
           {favoriteOnly
@@ -325,6 +394,91 @@ export default function InvestmentsScreen() {
             <Text style={[styles.investmentTabText, { color: activeTab === 'favorites' ? colors.foreground : colors.mutedForeground }]}>Favoritos</Text>
           </Pressable>
         </View>
+        {favoriteOnly ? (
+          <View style={[styles.favoriteAddPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.favoriteAddHeader}>
+              <View style={styles.favoriteAddCopy}>
+                <Text style={[styles.favoriteAddTitle, { color: colors.foreground }]}>Adicionar favorito</Text>
+                <Text style={[styles.favoriteAddHint, { color: colors.mutedForeground }]}>
+                  Busque um ativo para favoritar ou cadastrar já marcado como favorito.
+                </Text>
+              </View>
+              <Feather name="star" size={16} color={colors.accent} />
+            </View>
+            <TextInput
+              accessibilityLabel="Buscar ativo para adicionar aos favoritos"
+              testID="favorite-asset-search-input"
+              value={favoriteSearchQuery}
+              onChangeText={setFavoriteSearchQuery}
+              placeholder="Nome, ticker ou código do ativo"
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="none"
+              style={[styles.input, styles.favoriteSearchInput, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
+            />
+            {favoriteSearchQuery.trim().length >= 2 ? (
+              <View style={[styles.favoriteSearchResults, { borderColor: colors.border }]}>
+                {favoriteSearchLoading ? (
+                  <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Buscando ativos...</Text>
+                ) : favoriteExistingMatches.length === 0 && favoriteCatalogSuggestions.length === 0 ? (
+                  <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Nenhum ativo encontrado.</Text>
+                ) : (
+                  <>
+                    {favoriteExistingMatches.length > 0 ? (
+                      <>
+                        <Text style={[styles.suggestionSectionLabel, { color: colors.mutedForeground }]}>Seus ativos</Text>
+                        {favoriteExistingMatches.map((investment) => (
+                          <Pressable
+                            key={investment.id}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Adicionar ${investment.name} aos favoritos`}
+                            onPress={() => void addExistingFavorite(investment)}
+                            style={({ pressed }) => [styles.favoriteSearchRow, { borderBottomColor: colors.border }, pressed && styles.pressed]}
+                          >
+                            <View style={styles.suggestionCopy}>
+                              <Text numberOfLines={1} style={[styles.suggestionName, { color: colors.foreground }]}>{investment.name}</Text>
+                              <Text style={[styles.suggestionMeta, { color: colors.mutedForeground }]}>
+                                {investment.ticker || assetTypeLabel(investment.assetType)}
+                              </Text>
+                            </View>
+                            <View style={styles.favoriteSearchAction}>
+                              <Feather name="star" size={14} color={colors.accent} />
+                              <Text style={[styles.favoriteSearchActionText, { color: colors.foreground }]}>Adicionar</Text>
+                            </View>
+                          </Pressable>
+                        ))}
+                      </>
+                    ) : null}
+                    {favoriteCatalogSuggestions.length > 0 ? (
+                      <>
+                        <Text style={[styles.suggestionSectionLabel, { color: colors.mutedForeground }]}>Catálogo</Text>
+                        {favoriteCatalogSuggestions.map((suggestion) => (
+                          <Pressable
+                            key={`${suggestion.assetType}:${suggestion.ticker}:${suggestion.name}`}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Cadastrar ${suggestion.name} como favorito`}
+                            onPress={() => openEditor(undefined, suggestion, true)}
+                            style={({ pressed }) => [styles.favoriteSearchRow, { borderBottomColor: colors.border }, pressed && styles.pressed]}
+                          >
+                            <View style={styles.suggestionCopy}>
+                              <Text numberOfLines={1} style={[styles.suggestionName, { color: colors.foreground }]}>{suggestion.name}</Text>
+                              <Text style={[styles.suggestionMeta, { color: colors.mutedForeground }]}>
+                                {suggestion.ticker || assetTypeLabel(suggestion.assetType)}
+                              </Text>
+                            </View>
+                            <View style={styles.favoriteSearchAction}>
+                              <Feather name="plus" size={14} color={colors.foreground} />
+                              <Text style={[styles.favoriteSearchActionText, { color: colors.foreground }]}>Cadastrar</Text>
+                            </View>
+                          </Pressable>
+                        ))}
+                      </>
+                    ) : null}
+                  </>
+                )}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
         {selectedAssetType ? (
           <View style={[styles.activeFilter, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
             <View style={styles.activeFilterCopy}>
@@ -725,6 +879,16 @@ const styles = StyleSheet.create({
   investmentTabs: { minHeight: 43, borderWidth: 1, borderRadius: 9, flexDirection: 'row', padding: 3, gap: 3, marginTop: -5, marginBottom: 12 },
   investmentTab: { flex: 1, minHeight: 35, borderWidth: 1, borderColor: 'transparent', borderRadius: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   investmentTabText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  favoriteAddPanel: { borderWidth: 1, borderRadius: 9, padding: 12, marginBottom: 12 },
+  favoriteAddHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  favoriteAddCopy: { flex: 1, minWidth: 0 },
+  favoriteAddTitle: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  favoriteAddHint: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  favoriteSearchInput: { marginTop: 10 },
+  favoriteSearchResults: { borderWidth: 1, borderRadius: 8, marginTop: 7, overflow: 'hidden' },
+  favoriteSearchRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 11, paddingVertical: 7, borderBottomWidth: 1 },
+  favoriteSearchAction: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  favoriteSearchActionText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   clearFilterButton: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   summaryCard: { minHeight: 166, borderRadius: 9, padding: 17, justifyContent: 'space-between' },
   summaryLabel: { color: '#D4D4D4', fontSize: 12, fontFamily: 'Inter_500Medium' },

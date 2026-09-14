@@ -937,6 +937,7 @@ components:
         averagePrice: { type: number, minimum: 0 }
         investedAmount: { type: number, minimum: 0 }
         currentValue: { type: number, minimum: 0 }
+        isFavorite: { type: boolean, default: false }
         valuationMode:
           $ref: "#/components/schemas/InvestmentValuationMode"
     InvestmentUpdate:

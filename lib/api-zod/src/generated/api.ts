@@ -129,7 +129,7 @@ export const createInvestmentBodyInvestedAmountMin = 0;
 
 export const createInvestmentBodyCurrentValueMin = 0;
 
-
+export const createInvestmentBodyIsFavoriteDefault = false;
 
 export const CreateInvestmentBody = zod.object({
   "name": zod.string().min(1),
@@ -140,6 +140,7 @@ export const CreateInvestmentBody = zod.object({
   "averagePrice": zod.number().min(createInvestmentBodyAveragePriceMin),
   "investedAmount": zod.number().min(createInvestmentBodyInvestedAmountMin),
   "currentValue": zod.number().min(createInvestmentBodyCurrentValueMin),
+  "isFavorite": zod.boolean().default(createInvestmentBodyIsFavoriteDefault),
   "valuationMode": zod.enum(['manual', 'automatic']).optional()
 })
 
