@@ -28,3 +28,10 @@ export async function createFinancialProfile(input: FinancialProfileInput): Prom
     body: JSON.stringify(input),
   });
 }
+
+export async function deleteFinancialProfile(profileId: string): Promise<void> {
+  await customFetch(`/api/financial-profiles/${profileId}`, {
+    method: "DELETE",
+    responseType: "text",
+  });
+}

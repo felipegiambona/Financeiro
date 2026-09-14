@@ -7,4 +7,4 @@ Financial rows keep their Clerk owner, an explicit nullable profileId for schema
 
 **Why:** Existing tables had no migration framework and were keyed only by Clerk userId, so a first-access backfill had to preserve existing rows while preventing profile data leakage.
 
-**How to apply:** New financial endpoints must use the resolved scoped owner/profile context, populate profileId on inserts, and account deletion must remove all composite-scoped rows and profile records.
+**How to apply:** New financial endpoints must use the resolved scoped owner/profile context, populate profileId on inserts, and deletion of a business profile must remove only its scoped rows before returning the user to the personal profile.

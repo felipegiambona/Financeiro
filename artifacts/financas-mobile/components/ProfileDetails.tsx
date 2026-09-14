@@ -36,7 +36,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const insets = useSafeAreaInsets();
   const { session, signOut, deleteAccount, updateProfile, updateProfileImage } = useAuth();
   const { user } = useUser();
-  const { profiles, activeProfile, switchProfile, createProfile } = useFinancialProfiles();
+  const { profiles, activeProfile, switchProfile, createProfile, deleteProfile } = useFinancialProfiles();
   const name = session?.name || 'Usuário';
   const email = session?.email || 'E-mail não informado';
   const initials = useMemo(() => getInitials(name, email), [email, name]);
@@ -46,6 +46,8 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const [profileName, setProfileName] = useState(name);
   const [savingProfile, setSavingProfile] = useState(false);
   const [switchingProfile, setSwitchingProfile] = useState(false);
+  const [deletingBusinessProfile, setDeletingBusinessProfile] = useState(false);
+  const [deleteBusinessProfileModalOpen, setDeleteBusinessProfileModalOpen] = useState(false);
 
   const handleDeleteAccount = async () => {
     setDeletingAccount(true);
@@ -56,6 +58,19 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
       throw new Error('Não foi possível excluir a conta.');
     } finally {
       setDeletingAccount(false);
+    }
+  };
+
+  const handleDeleteBusinessProfile = async () => {
+    if (!activeProfile || activeProfile.type !== 'business') return;
+
+    setDeletingBusinessProfile(true);
+    try {
+      await deleteProfile(activeProfile.id);
+    } catch {
+      throw new Error('Não foi possível excluir o perfil empresarial.');
+    } finally {
+      setDeletingBusinessProfile(false);
     }
   };
 
@@ -247,6 +262,26 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
           <Text style={[styles.profileDisclaimer, { color: colors.mutedForeground }]}>
             O perfil empresarial é para controle operacional e não substitui ERP, sistema comercial ou sistema contábil.
           </Text>
+          {activeProfile?.type === 'business' ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Excluir perfil empresarial"
+              testID="profile-delete-business-button"
+              disabled={switchingProfile || deletingBusinessProfile}
+              onPress={() => setDeleteBusinessProfileModalOpen(true)}
+              style={({ pressed }) => [
+                styles.deleteBusinessProfileButton,
+                { borderColor: colors.expense },
+                (switchingProfile || deletingBusinessProfile) && styles.disabled,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Feather name="trash-2" size={15} color={colors.expense} />
+              <Text style={[styles.deleteBusinessProfileText, { color: colors.expense }]}>
+                {deletingBusinessProfile ? 'Excluindo perfil...' : 'Excluir perfil empresarial'}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Informações da conta</Text>
@@ -317,6 +352,16 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         errorTitle="Não foi possível excluir a conta"
         errorMessage="Sua conta não foi excluída. Tente novamente."
       />
+      <ConfirmationModal
+        visible={deleteBusinessProfileModalOpen}
+        title="Excluir perfil empresarial?"
+        message="As carteiras, lançamentos, categorias, limites, metas e cartões desse perfil serão removidos permanentemente. O perfil pessoal não será afetado."
+        confirmLabel="Excluir perfil"
+        onConfirm={handleDeleteBusinessProfile}
+        onClose={() => setDeleteBusinessProfileModalOpen(false)}
+        errorTitle="Não foi possível excluir o perfil"
+        errorMessage="O perfil empresarial não foi excluído. Tente novamente."
+      />
     </View>
   );
 }
@@ -356,6 +401,8 @@ const styles = StyleSheet.create({
   addProfileButton: { minHeight: 42, borderRadius: 8, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 2 },
   addProfileText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   profileDisclaimer: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular', marginTop: 4 },
+  deleteBusinessProfileButton: { minHeight: 40, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 },
+  deleteBusinessProfileText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   profileCancelButton: { flex: 1, minHeight: 42, borderWidth: 1, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   profileSaveButton: { flex: 1, minHeight: 42, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   profileCancelText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },

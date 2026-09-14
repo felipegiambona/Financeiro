@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createFinancialProfile,
+  deleteFinancialProfile,
   listFinancialProfiles,
   setFinancialProfileId,
   type FinancialProfile,
@@ -16,6 +17,7 @@ interface FinancialProfileContextValue {
   loading: boolean;
   switchProfile: (profileId: string) => Promise<void>;
   createProfile: (input: { type: 'business'; name: string; businessName: string }, options?: { activate?: boolean }) => Promise<FinancialProfile>;
+  deleteProfile: (profileId: string) => Promise<void>;
 }
 
 const FinancialProfileContext = createContext<FinancialProfileContextValue | null>(null);
@@ -84,9 +86,29 @@ export function FinancialProfileProvider({ children }: React.PropsWithChildren) 
     return created;
   }, [session?.userId]);
 
+  const deleteProfile = useCallback(async (profileId: string) => {
+    const deletedProfile = profiles.find((profile) => profile.id === profileId);
+    if (!deletedProfile || deletedProfile.type !== 'business') {
+      throw new Error('Apenas o perfil empresarial pode ser excluído.');
+    }
+
+    await deleteFinancialProfile(profileId);
+    const remainingProfiles = profiles.filter((profile) => profile.id !== profileId);
+    const nextProfile = activeProfile?.id === profileId
+      ? remainingProfiles.find((profile) => profile.type === 'personal') ?? remainingProfiles[0]
+      : activeProfile;
+
+    setProfiles(remainingProfiles);
+    if (activeProfile?.id === profileId && nextProfile && session?.userId) {
+      await AsyncStorage.setItem(`financas-mobile:financial-profile:${session.userId}`, nextProfile.id);
+      setFinancialProfileId(nextProfile.id);
+      setActiveProfile(nextProfile);
+    }
+  }, [activeProfile, profiles, session?.userId]);
+
   const value = useMemo(
-    () => ({ profiles, activeProfile, loading, switchProfile, createProfile }),
-    [activeProfile, createProfile, loading, profiles, switchProfile],
+    () => ({ profiles, activeProfile, loading, switchProfile, createProfile, deleteProfile }),
+    [activeProfile, createProfile, deleteProfile, loading, profiles, switchProfile],
   );
 
   if (loading) {

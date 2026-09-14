@@ -69,6 +69,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FinancialProfile"
+  /financial-profiles/{profileId}:
+    delete:
+      operationId: deleteFinancialProfile
+      tags: [financial-profiles]
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Financial profile deleted
+        "400":
+          description: The personal profile cannot be deleted
+        "404":
+          description: Financial profile not found
   /transactions:
     get:
       operationId: listTransactions
