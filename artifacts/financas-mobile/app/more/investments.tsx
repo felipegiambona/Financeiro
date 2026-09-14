@@ -68,6 +68,10 @@ function quoteStatusText(investment: Investment): string {
   return `${quoteSourceLabel(investment.quoteSource)} · falha em ${formatQuoteDate(investment.lastQuoteAt)}`;
 }
 
+function isFavoriteDraft(investment: Investment): boolean {
+  return investment.quantity === 0 && investment.investedAmount === 0 && investment.currentValue === 0;
+}
+
 function getInitialForm(investment?: Investment) {
   return {
     name: investment?.name ?? '',
@@ -118,6 +122,7 @@ export default function InvestmentsScreen() {
     [favoriteOnly, investments, selectedAssetType],
   );
   const [editorOpen, setEditorOpen] = useState(false);
+  const [favoriteDetails, setFavoriteDetails] = useState<Investment | null>(null);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [form, setForm] = useState(() => getInitialForm());
   const [nameFocused, setNameFocused] = useState(false);
@@ -313,6 +318,16 @@ export default function InvestmentsScreen() {
     setAssetSuggestions([]);
     setSearchingAssets(false);
     setNameFocused(false);
+  };
+
+  const removeFavoriteFromDetails = async () => {
+    if (!favoriteDetails) return;
+    try {
+      await toggleFavorite(favoriteDetails.id);
+      setFavoriteDetails(null);
+    } catch {
+      Alert.alert('Não foi possível remover favorito', 'Tente novamente.');
+    }
   };
 
   const saveInvestment = async () => {
@@ -613,7 +628,33 @@ export default function InvestmentsScreen() {
               </View>
             ) : (
               <View style={styles.list}>
-                {filteredInvestments.map((investment) => (
+                {filteredInvestments.map((investment) => favoriteOnly ? (
+                  <Pressable
+                    key={investment.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver detalhes de ${investment.name}`}
+                    onPress={() => setFavoriteDetails(investment)}
+                    style={({ pressed }) => [styles.investmentCard, styles.favoriteCompactCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                  >
+                    <View style={styles.investmentHeader}>
+                      <View style={styles.investmentIdentity}>
+                        <View style={[styles.investmentIcon, styles.favoriteCompactIcon, { backgroundColor: colors.secondary }]}>
+                          <Feather name="star" size={15} color={colors.accent} />
+                        </View>
+                        <View style={styles.investmentCopy}>
+                          <Text numberOfLines={1} style={[styles.investmentName, { color: colors.foreground }]}>{investment.name}</Text>
+                          <Text numberOfLines={1} style={[styles.investmentMeta, { color: colors.mutedForeground }]}>
+                            {investment.ticker ? `${investment.ticker} · ` : ''}{assetTypeLabel(investment.assetType)}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.favoriteCompactAction}>
+                        <Feather name="star" size={14} color={colors.accent} />
+                        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                      </View>
+                    </View>
+                  </Pressable>
+                ) : (
                   <View key={investment.id} style={[styles.investmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.investmentHeader}>
                       <View style={styles.investmentIdentity}>
@@ -929,6 +970,101 @@ export default function InvestmentsScreen() {
         </View>
       </Modal>
 
+      <Modal
+        animationType="fade"
+        transparent
+        visible={favoriteDetails !== null}
+        onRequestClose={() => setFavoriteDetails(null)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setFavoriteDetails(null)} />
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {favoriteDetails ? (
+              <KeyboardAwareScrollViewCompat
+                style={styles.modalScroll}
+                contentContainerStyle={styles.modalContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.modalHeader}>
+                  <View style={styles.favoriteDetailTitleCopy}>
+                    <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>Favorito</Text>
+                    <Text numberOfLines={2} style={[styles.modalTitle, { color: colors.foreground }]}>{favoriteDetails.name}</Text>
+                  </View>
+                  <Pressable
+                    accessibilityLabel="Fechar detalhes do favorito"
+                    onPress={() => setFavoriteDetails(null)}
+                    style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
+                  >
+                    <Feather name="x" size={18} color={colors.foreground} />
+                  </Pressable>
+                </View>
+                <Text style={[styles.favoriteDetailMeta, { color: colors.mutedForeground }]}>
+                  {favoriteDetails.ticker ? `${favoriteDetails.ticker} · ` : ''}{assetTypeLabel(favoriteDetails.assetType)}
+                  {favoriteDetails.institution ? ` · ${favoriteDetails.institution}` : ''}
+                </Text>
+                <View style={[styles.investmentDetails, { borderTopColor: colors.border }]}>
+                  <View>
+                    <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Quantidade</Text>
+                    <Text style={[styles.detailValue, { color: colors.foreground }]}>{favoriteDetails.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 8 })}</Text>
+                  </View>
+                  <View>
+                    <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Preço médio</Text>
+                    <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(favoriteDetails.averagePrice)}</Text>
+                  </View>
+                  <View style={styles.detailRight}>
+                    <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Valor atual</Text>
+                    <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(favoriteDetails.currentValue)}</Text>
+                  </View>
+                </View>
+                <View style={styles.returnRow}>
+                  <Text style={[styles.returnLabel, { color: colors.mutedForeground }]}>Rentabilidade</Text>
+                  <Text style={[styles.returnValue, { color: favoriteDetails.returnAmount >= 0 ? colors.income : colors.expense }]}>
+                    {formatCurrency(favoriteDetails.returnAmount)} · {formatPercentage(favoriteDetails.returnPercentage)}
+                  </Text>
+                </View>
+                <View style={[styles.quoteRow, { borderTopColor: colors.border }]}>
+                  <Feather
+                    name={favoriteDetails.valuationMode === 'automatic' && favoriteDetails.quoteStatus === 'updated' ? 'check-circle' : 'info'}
+                    size={12}
+                    color={favoriteDetails.quoteStatus === 'error' || favoriteDetails.quoteStatus === 'unavailable' ? colors.expense : colors.mutedForeground}
+                  />
+                  <View style={styles.quoteCopy}>
+                    <Text style={[styles.quoteText, { color: colors.mutedForeground }]}>{quoteStatusText(favoriteDetails)}</Text>
+                    {favoriteDetails.quoteError && favoriteDetails.valuationMode === 'automatic' ? (
+                      <Text style={[styles.quoteError, { color: colors.expense }]}>{favoriteDetails.quoteError}</Text>
+                    ) : null}
+                  </View>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={isFavoriteDraft(favoriteDetails) ? 'Cadastrar favorito na carteira' : 'Editar investimento na carteira'}
+                  onPress={() => {
+                    const investment = favoriteDetails;
+                    setFavoriteDetails(null);
+                    openEditor(investment);
+                  }}
+                  style={({ pressed }) => [styles.favoriteDetailPrimaryAction, { backgroundColor: colors.primary }, pressed && styles.pressed]}
+                >
+                  <Feather name={isFavoriteDraft(favoriteDetails) ? 'plus' : 'edit-2'} size={15} color={colors.primaryForeground} />
+                  <Text style={[styles.saveText, { color: colors.primaryForeground }]}>
+                    {isFavoriteDraft(favoriteDetails) ? 'Cadastrar na carteira' : 'Editar na carteira'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remover ${favoriteDetails.name} dos favoritos`}
+                  onPress={() => void removeFavoriteFromDetails()}
+                  style={({ pressed }) => [styles.favoriteDetailSecondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Feather name="star" size={14} color={colors.foreground} />
+                  <Text style={[styles.favoriteDetailSecondaryText, { color: colors.foreground }]}>Remover dos favoritos</Text>
+                </Pressable>
+              </KeyboardAwareScrollViewCompat>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
       <ConfirmationModal
         visible={investmentToDelete !== null}
         title="Excluir investimento?"
@@ -979,6 +1115,9 @@ const styles = StyleSheet.create({
   emptyActionText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   list: { gap: 10, marginTop: 12 },
   investmentCard: { borderWidth: 1, borderRadius: 9, padding: 13 },
+  favoriteCompactCard: { padding: 10 },
+  favoriteCompactIcon: { width: 31, height: 31, borderRadius: 7 },
+  favoriteCompactAction: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   investmentHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 9 },
   investmentIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 9 },
   investmentIcon: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
@@ -1003,6 +1142,11 @@ const styles = StyleSheet.create({
   modalScroll: { flexShrink: 1 },
   modalContent: { paddingBottom: 1 },
   modalHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 },
+  favoriteDetailTitleCopy: { flex: 1, minWidth: 0, paddingRight: 10 },
+  favoriteDetailMeta: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: -3 },
+  favoriteDetailPrimaryAction: { minHeight: 46, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 22 },
+  favoriteDetailSecondaryAction: { minHeight: 42, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 9 },
+  favoriteDetailSecondaryText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   eyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.1, textTransform: 'uppercase' },
   modalTitle: { fontSize: 19, fontFamily: 'Inter_700Bold', marginTop: 4 },
   closeButton: { width: 32, height: 32, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
