@@ -3,14 +3,18 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import {
   CreateInvestmentBody,
   CreateInvestmentResponse,
+  CreateInvestmentFavoriteBody,
+  CreateInvestmentFavoriteResponse,
   DeleteInvestmentParams,
+  DeleteInvestmentFavoriteParams,
   ListInvestmentsResponse,
+  ListInvestmentFavoritesResponse,
   SearchInvestmentsResponse,
   UpdateInvestmentBody,
   UpdateInvestmentParams,
   UpdateInvestmentResponse,
 } from "@workspace/api-zod";
-import { db, investmentsTable } from "@workspace/db";
+import { db, investmentFavoritesTable, investmentsTable } from "@workspace/db";
 import {
   financialProfileTypeFrom,
   profileIdFrom,
@@ -79,6 +83,17 @@ function toResponse(row: typeof investmentsTable.$inferSelect) {
   };
 }
 
+function toFavoriteResponse(row: typeof investmentFavoritesTable.$inferSelect) {
+  return {
+    id: row.id,
+    name: row.name,
+    ticker: row.ticker,
+    assetType: row.assetType,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
 const quoteStore: InvestmentQuoteStore = {
   async markUnavailable(row, quoteError) {
     const [updated] = await db.update(investmentsTable).set({
@@ -140,6 +155,67 @@ router.get("/investments", async (req, res): Promise<void> => {
     ))
     .orderBy(asc(investmentsTable.createdAt));
   res.json(ListInvestmentsResponse.parse(rows.map(toResponse)));
+});
+
+router.get("/investments/favorites", async (req, res): Promise<void> => {
+  if (!assertPersonalProfile(req, res)) return;
+  const rows = await db.select().from(investmentFavoritesTable)
+    .where(and(
+      eq(investmentFavoritesTable.userId, scopedUserIdFrom(req)),
+      eq(investmentFavoritesTable.profileId, profileIdFrom(req)),
+    ))
+    .orderBy(asc(investmentFavoritesTable.createdAt));
+  res.json(ListInvestmentFavoritesResponse.parse(rows.map(toFavoriteResponse)));
+});
+
+router.post("/investments/favorites", async (req, res): Promise<void> => {
+  if (!assertPersonalProfile(req, res)) return;
+  const parsed = CreateInvestmentFavoriteBody.safeParse(req.body);
+  if (!parsed.success || !parsed.data.name.trim()) {
+    res.status(400).json({ error: parsed.success ? "Investment favorite name is required" : parsed.error.message });
+    return;
+  }
+
+  const ticker = normalizeQuoteIdentifier(parsed.data.assetType, parsed.data.ticker.trim());
+  const existing = await db.select().from(investmentFavoritesTable).where(and(
+    eq(investmentFavoritesTable.userId, scopedUserIdFrom(req)),
+    eq(investmentFavoritesTable.profileId, profileIdFrom(req)),
+    eq(investmentFavoritesTable.name, parsed.data.name.trim()),
+    eq(investmentFavoritesTable.ticker, ticker),
+    eq(investmentFavoritesTable.assetType, parsed.data.assetType),
+  ));
+  if (existing[0]) {
+    res.json(CreateInvestmentFavoriteResponse.parse(toFavoriteResponse(existing[0])));
+    return;
+  }
+
+  const [row] = await db.insert(investmentFavoritesTable).values({
+    userId: scopedUserIdFrom(req),
+    profileId: profileIdFrom(req),
+    name: parsed.data.name.trim(),
+    ticker,
+    assetType: parsed.data.assetType,
+  }).returning();
+  res.status(201).json(CreateInvestmentFavoriteResponse.parse(toFavoriteResponse(row)));
+});
+
+router.delete("/investments/favorites/:id", async (req, res): Promise<void> => {
+  if (!assertPersonalProfile(req, res)) return;
+  const params = DeleteInvestmentFavoriteParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid investment favorite id" });
+    return;
+  }
+  const [row] = await db.delete(investmentFavoritesTable).where(and(
+    eq(investmentFavoritesTable.id, params.data.id),
+    eq(investmentFavoritesTable.userId, scopedUserIdFrom(req)),
+    eq(investmentFavoritesTable.profileId, profileIdFrom(req)),
+  )).returning({ id: investmentFavoritesTable.id });
+  if (!row) {
+    res.status(404).json({ error: "Investment favorite not found" });
+    return;
+  }
+  res.sendStatus(204);
 });
 
 router.get("/investments/search", async (req, res): Promise<void> => {

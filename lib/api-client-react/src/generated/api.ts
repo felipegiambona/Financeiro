@@ -38,6 +38,8 @@ import type {
   GoalUpdate,
   HealthStatus,
   Investment,
+  InvestmentFavorite,
+  InvestmentFavoriteInput,
   InvestmentInput,
   InvestmentSearchResult,
   InvestmentUpdate,
@@ -643,6 +645,207 @@ export function useSearchInvestments<TData = Awaited<ReturnType<typeof searchInv
 
 
 
+
+export const getListInvestmentFavoritesUrl = () => {
+
+
+
+
+  return `/api/investments/favorites`
+}
+
+export const listInvestmentFavorites = async ( options?: Parameters<typeof customFetch>[1]): Promise<InvestmentFavorite[]> => {
+
+  return customFetch<InvestmentFavorite[]>(getListInvestmentFavoritesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInvestmentFavoritesQueryKey = () => {
+    return [
+    `/api/investments/favorites`
+    ] as const;
+    }
+
+
+export const getListInvestmentFavoritesQueryOptions = <TData = Awaited<ReturnType<typeof listInvestmentFavorites>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvestmentFavorites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInvestmentFavoritesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInvestmentFavorites>>> = ({ signal }) => listInvestmentFavorites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInvestmentFavorites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInvestmentFavoritesQueryResult = NonNullable<Awaited<ReturnType<typeof listInvestmentFavorites>>>
+export type ListInvestmentFavoritesQueryError = ErrorType<void>
+
+
+
+export function useListInvestmentFavorites<TData = Awaited<ReturnType<typeof listInvestmentFavorites>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvestmentFavorites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInvestmentFavoritesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateInvestmentFavoriteUrl = () => {
+
+
+
+
+  return `/api/investments/favorites`
+}
+
+export const createInvestmentFavorite = async (investmentFavoriteInput: InvestmentFavoriteInput, options?: Parameters<typeof customFetch>[1]): Promise<InvestmentFavorite> => {
+
+  return customFetch<InvestmentFavorite>(getCreateInvestmentFavoriteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(investmentFavoriteInput)
+  }
+);}
+
+
+
+
+
+export const getCreateInvestmentFavoriteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvestmentFavorite>>, TError,{data: BodyType<InvestmentFavoriteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInvestmentFavorite>>, TError,{data: BodyType<InvestmentFavoriteInput>}, TContext> => {
+
+const mutationKey = ['createInvestmentFavorite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInvestmentFavorite>>, {data: BodyType<InvestmentFavoriteInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInvestmentFavorite(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInvestmentFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof createInvestmentFavorite>>>
+    export type CreateInvestmentFavoriteMutationBody = BodyType<InvestmentFavoriteInput>
+    export type CreateInvestmentFavoriteMutationError = ErrorType<void>
+
+    export const useCreateInvestmentFavorite = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvestmentFavorite>>, TError,{data: BodyType<InvestmentFavoriteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInvestmentFavorite>>,
+        TError,
+        {data: BodyType<InvestmentFavoriteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateInvestmentFavoriteMutationOptions(options));
+    }
+
+export const getDeleteInvestmentFavoriteUrl = (id: string,) => {
+
+
+
+
+  return `/api/investments/favorites/${id}`
+}
+
+export const deleteInvestmentFavorite = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteInvestmentFavoriteUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteInvestmentFavoriteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInvestmentFavorite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteInvestmentFavorite>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteInvestmentFavorite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteInvestmentFavorite>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteInvestmentFavorite(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteInvestmentFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteInvestmentFavorite>>>
+
+    export type DeleteInvestmentFavoriteMutationError = ErrorType<void>
+
+    export const useDeleteInvestmentFavorite = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInvestmentFavorite>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteInvestmentFavorite>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteInvestmentFavoriteMutationOptions(options));
+    }
 
 export const getUpdateInvestmentUrl = (id: string,) => {
 

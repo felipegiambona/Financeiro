@@ -1,13 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  createInvestmentFavorite as persistInvestmentFavorite,
   createInvestment as persistInvestment,
+  deleteInvestmentFavorite as removeInvestmentFavorite,
   deleteInvestment as removeInvestment,
+  listInvestmentFavorites,
   listInvestments,
   refreshInvestmentQuotes as persistInvestmentQuotes,
   searchInvestments as searchRemoteInvestments,
   updateInvestment as updatePersistedInvestment,
   type Investment,
+  type InvestmentFavorite,
+  type InvestmentFavoriteInput,
   type InvestmentInput,
   type InvestmentSearchResult,
   type InvestmentUpdate,
@@ -52,8 +57,17 @@ function parseRecentInvestmentAssets(value: string | null): RecentInvestmentAsse
   }
 }
 
+function isLegacyFavoriteDraft(investment: Investment): boolean {
+  return investment.isFavorite
+    && investment.quantity === 0
+    && investment.averagePrice === 0
+    && investment.investedAmount === 0
+    && investment.currentValue === 0;
+}
+
 interface InvestmentContextValue {
   investments: Investment[];
+  favoriteAssets: InvestmentFavorite[];
   recentAssets: RecentInvestmentAsset[];
   loading: boolean;
   error: string | null;
@@ -63,6 +77,8 @@ interface InvestmentContextValue {
   rememberRecentAsset: (asset: RecentInvestmentAsset) => Promise<void>;
   removeRecentAsset: (asset: RecentInvestmentAsset) => Promise<void>;
   createInvestment: (input: InvestmentInput) => Promise<Investment>;
+  createFavoriteAsset: (input: InvestmentFavoriteInput) => Promise<InvestmentFavorite>;
+  deleteFavoriteAsset: (id: string) => Promise<void>;
   updateInvestment: (id: string, updates: InvestmentUpdate) => Promise<Investment>;
   toggleFavorite: (id: string) => Promise<Investment>;
   deleteInvestment: (id: string) => Promise<void>;
@@ -73,6 +89,7 @@ const InvestmentContext = createContext<InvestmentContextValue | null>(null);
 export function InvestmentProvider({ children }: React.PropsWithChildren) {
   const { activeProfile } = useFinancialProfiles();
   const [investments, setInvestments] = useState<Investment[]>([]);
+  const [favoriteAssets, setFavoriteAssets] = useState<InvestmentFavorite[]>([]);
   const [recentAssets, setRecentAssets] = useState<RecentInvestmentAsset[]>([]);
   const recentAssetsRef = useRef<RecentInvestmentAsset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +151,7 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   const refresh = useCallback(async () => {
     if (activeProfile?.type !== 'personal') {
       setInvestments([]);
+      setFavoriteAssets([]);
       setError(null);
       setLoading(false);
       return;
@@ -142,9 +160,25 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
     try {
       setError(null);
       setLoading(true);
-      const loaded = await listInvestments();
-      setInvestments(loaded);
-      if (loaded.some((investment) => investment.valuationMode === 'automatic')) {
+      const [loaded, loadedFavorites] = await Promise.all([listInvestments(), listInvestmentFavorites()]);
+      const legacyDrafts = loaded.filter(isLegacyFavoriteDraft);
+      let nextFavorites = loadedFavorites;
+      if (legacyDrafts.length > 0) {
+        const migrated = await Promise.all(legacyDrafts.map((investment) => persistInvestmentFavorite({
+          name: investment.name,
+          ticker: investment.ticker ?? '',
+          assetType: investment.assetType,
+        })));
+        nextFavorites = [
+          ...nextFavorites,
+          ...migrated.filter((favorite) => !nextFavorites.some((current) => current.id === favorite.id)),
+        ];
+        await Promise.all(legacyDrafts.map((investment) => removeInvestment(investment.id)));
+      }
+      const portfolio = loaded.filter((investment) => !isLegacyFavoriteDraft(investment));
+      setFavoriteAssets(nextFavorites);
+      setInvestments(portfolio);
+      if (portfolio.some((investment) => investment.valuationMode === 'automatic')) {
         try {
           setInvestments(await persistInvestmentQuotes());
         } catch {
@@ -190,6 +224,31 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
     }
   }, []);
 
+  const createFavoriteAsset = useCallback(async (input: InvestmentFavoriteInput) => {
+    try {
+      setError(null);
+      const created = await persistInvestmentFavorite(input);
+      setFavoriteAssets((current) => current.some((favorite) => favorite.id === created.id)
+        ? current
+        : [...current, created]);
+      return created;
+    } catch {
+      setError('Não foi possível salvar o favorito.');
+      throw new Error('Não foi possível salvar o favorito.');
+    }
+  }, []);
+
+  const deleteFavoriteAsset = useCallback(async (id: string) => {
+    try {
+      setError(null);
+      await removeInvestmentFavorite(id);
+      setFavoriteAssets((current) => current.filter((favorite) => favorite.id !== id));
+    } catch {
+      setError('Não foi possível remover o favorito.');
+      throw new Error('Não foi possível remover o favorito.');
+    }
+  }, []);
+
   const updateInvestment = useCallback(async (id: string, updates: InvestmentUpdate) => {
     try {
       setError(null);
@@ -228,8 +287,8 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   }, [investments]);
 
   const value = useMemo(
-    () => ({ investments, recentAssets, loading, error, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, createInvestment, updateInvestment, toggleFavorite, deleteInvestment }),
-    [createInvestment, deleteInvestment, error, investments, loading, recentAssets, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, toggleFavorite, updateInvestment],
+    () => ({ investments, favoriteAssets, recentAssets, loading, error, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, createInvestment, createFavoriteAsset, deleteFavoriteAsset, updateInvestment, toggleFavorite, deleteInvestment }),
+    [createFavoriteAsset, createInvestment, deleteFavoriteAsset, deleteInvestment, error, favoriteAssets, investments, loading, recentAssets, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, toggleFavorite, updateInvestment],
   );
 
   return <InvestmentContext.Provider value={value}>{children}</InvestmentContext.Provider>;

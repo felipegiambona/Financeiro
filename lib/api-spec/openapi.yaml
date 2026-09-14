@@ -178,6 +178,54 @@ paths:
           description: Investments are only available for personal profiles
         "502":
           description: Investment catalog provider unavailable
+  /investments/favorites:
+    get:
+      operationId: listInvestmentFavorites
+      tags: [investments]
+      responses:
+        "200":
+          description: Saved investment catalog favorites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvestmentFavorite"
+        "403":
+          description: Investments are only available for personal profiles
+    post:
+      operationId: createInvestmentFavorite
+      tags: [investments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentFavoriteInput"
+      responses:
+        "201":
+          description: Investment catalog favorite saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentFavorite"
+        "400":
+          description: Invalid investment favorite
+        "403":
+          description: Investments are only available for personal profiles
+  /investments/favorites/{id}:
+    delete:
+      operationId: deleteInvestmentFavorite
+      tags: [investments]
+      parameters:
+        - $ref: "#/components/parameters/InvestmentFavoriteId"
+      responses:
+        "204":
+          description: Investment catalog favorite removed
+        "403":
+          description: Investments are only available for personal profiles
+        "404":
+          description: Investment catalog favorite not found
   /investments/{id}:
     patch:
       operationId: updateInvestment
@@ -830,6 +878,13 @@ components:
       schema:
         type: string
         format: uuid
+    InvestmentFavoriteId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     FinancialProfile:
       type: object
@@ -914,6 +969,27 @@ components:
       required: [name, ticker, assetType]
       properties:
         name: { type: string }
+        ticker: { type: string }
+        assetType:
+          type: string
+          enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+    InvestmentFavorite:
+      type: object
+      required: [id, name, ticker, assetType, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        ticker: { type: string }
+        assetType:
+          type: string
+          enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    InvestmentFavoriteInput:
+      type: object
+      required: [name, ticker, assetType]
+      properties:
+        name: { type: string, minLength: 1 }
         ticker: { type: string }
         assetType:
           type: string

@@ -200,6 +200,43 @@ export const SearchInvestmentsResponseItem = zod.object({
 export const SearchInvestmentsResponse = zod.array(SearchInvestmentsResponseItem)
 
 
+export const ListInvestmentFavoritesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "ticker": zod.string(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListInvestmentFavoritesResponse = zod.array(ListInvestmentFavoritesResponseItem)
+
+
+
+
+
+export const CreateInvestmentFavoriteBody = zod.object({
+  "name": zod.string().min(1),
+  "ticker": zod.string(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other'])
+})
+
+export const CreateInvestmentFavoriteResponse = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "ticker": zod.string(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const DeleteInvestmentFavoriteParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteInvestmentFavoriteResponse = zod.void()
+
+
 export const UpdateInvestmentParams = zod.object({
   "id": zod.coerce.string().uuid()
 })

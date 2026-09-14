@@ -157,6 +157,48 @@ export interface InvestmentSearchResult {
   assetType: InvestmentSearchResultAssetType;
 }
 
+export type InvestmentFavoriteAssetType = typeof InvestmentFavoriteAssetType[keyof typeof InvestmentFavoriteAssetType];
+
+
+export const InvestmentFavoriteAssetType = {
+  stock: 'stock',
+  fii: 'fii',
+  etf: 'etf',
+  fund: 'fund',
+  fixed_income: 'fixed_income',
+  crypto: 'crypto',
+  other: 'other',
+} as const;
+
+export interface InvestmentFavorite {
+  id: string;
+  name: string;
+  ticker: string;
+  assetType: InvestmentFavoriteAssetType;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type InvestmentFavoriteInputAssetType = typeof InvestmentFavoriteInputAssetType[keyof typeof InvestmentFavoriteInputAssetType];
+
+
+export const InvestmentFavoriteInputAssetType = {
+  stock: 'stock',
+  fii: 'fii',
+  etf: 'etf',
+  fund: 'fund',
+  fixed_income: 'fixed_income',
+  crypto: 'crypto',
+  other: 'other',
+} as const;
+
+export interface InvestmentFavoriteInput {
+  /** @minLength 1 */
+  name: string;
+  ticker: string;
+  assetType: InvestmentFavoriteInputAssetType;
+}
+
 export type InvestmentInputAssetType = typeof InvestmentInputAssetType[keyof typeof InvestmentInputAssetType];
 
 

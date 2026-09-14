@@ -9,7 +9,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useInvestments, type RecentInvestmentAsset } from '@/context/InvestmentContext';
 import { useColors } from '@/hooks/useColors';
-import type { Investment, InvestmentAssetType, InvestmentInput, InvestmentSearchResult, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
+import type { Investment, InvestmentAssetType, InvestmentFavorite, InvestmentInput, InvestmentSearchResult, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
 
 const ASSET_TYPES: Array<{ value: InvestmentAssetType; label: string }> = [
@@ -72,6 +72,38 @@ function isFavoriteDraft(investment: Investment): boolean {
   return investment.quantity === 0 && investment.investedAmount === 0 && investment.currentValue === 0;
 }
 
+type FavoriteDetail = Investment | InvestmentFavorite;
+
+function isPortfolioFavorite(value: FavoriteDetail): value is Investment {
+  return 'quantity' in value;
+}
+
+function catalogFavoriteAsInvestment(favorite: InvestmentFavorite): Investment {
+  return {
+    id: favorite.id,
+    name: favorite.name,
+    ticker: favorite.ticker,
+    assetType: favorite.assetType,
+    institution: null,
+    quantity: 0,
+    averagePrice: 0,
+    investedAmount: 0,
+    currentValue: 0,
+    manualCurrentValue: 0,
+    valuationMode: 'manual',
+    quoteSource: null,
+    quotePrice: null,
+    quoteStatus: 'not_configured',
+    quoteError: null,
+    lastQuoteAt: null,
+    isFavorite: true,
+    returnAmount: 0,
+    returnPercentage: 0,
+    createdAt: favorite.createdAt,
+    updatedAt: favorite.updatedAt,
+  };
+}
+
 function getInitialForm(investment?: Investment) {
   return {
     name: investment?.name ?? '',
@@ -92,6 +124,7 @@ export default function InvestmentsScreen() {
   const { assetType: assetTypeParam } = useLocalSearchParams<{ assetType?: string }>();
   const {
     investments,
+    favoriteAssets,
     recentAssets,
     loading,
     error,
@@ -101,6 +134,8 @@ export default function InvestmentsScreen() {
     rememberRecentAsset,
     removeRecentAsset,
     createInvestment,
+    createFavoriteAsset,
+    deleteFavoriteAsset,
     updateInvestment,
     toggleFavorite,
     deleteInvestment,
@@ -115,14 +150,27 @@ export default function InvestmentsScreen() {
   const [favoriteAddingKey, setFavoriteAddingKey] = useState<string | null>(null);
   const favoriteSearchRequestRef = useRef(0);
   const filteredInvestments = useMemo(
-    () => investments.filter((investment) => (
-      (!selectedAssetType || investment.assetType === selectedAssetType)
-      && (!favoriteOnly || investment.isFavorite)
-    )),
-    [favoriteOnly, investments, selectedAssetType],
+    () => investments.filter((investment) => !selectedAssetType || investment.assetType === selectedAssetType),
+    [investments, selectedAssetType],
   );
+  const favoritePortfolioInvestments = useMemo(
+    () => filteredInvestments.filter((investment) => investment.isFavorite),
+    [filteredInvestments],
+  );
+  const favoriteItems = useMemo(() => {
+    const portfolioKeys = new Set(favoritePortfolioInvestments.map((investment) => (
+      `${investment.assetType}:${(investment.ticker ?? '').trim().toLocaleLowerCase() || investment.name.trim().toLocaleLowerCase()}`
+    )));
+    return [
+      ...favoritePortfolioInvestments.map((investment) => ({ kind: 'investment' as const, item: investment })),
+      ...favoriteAssets
+        .filter((favorite) => !portfolioKeys.has(`${favorite.assetType}:${favorite.ticker.trim().toLocaleLowerCase() || favorite.name.trim().toLocaleLowerCase()}`))
+        .map((favorite) => ({ kind: 'catalog' as const, item: favorite })),
+    ];
+  }, [favoriteAssets, favoritePortfolioInvestments]);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [favoriteDetails, setFavoriteDetails] = useState<Investment | null>(null);
+  const [favoriteDetails, setFavoriteDetails] = useState<FavoriteDetail | null>(null);
+  const [favoriteAssetToRegister, setFavoriteAssetToRegister] = useState<string | null>(null);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [form, setForm] = useState(() => getInitialForm());
   const [nameFocused, setNameFocused] = useState(false);
@@ -135,11 +183,12 @@ export default function InvestmentsScreen() {
   const [favoriteOnCreate, setFavoriteOnCreate] = useState(false);
   const quoteGuidance = QUOTE_GUIDANCE[form.assetType];
 
-  const totals = useMemo(() => filteredInvestments.reduce((summary, investment) => ({
+  const totalsInvestments = favoriteOnly ? favoritePortfolioInvestments : filteredInvestments;
+  const totals = useMemo(() => totalsInvestments.reduce((summary, investment) => ({
     invested: summary.invested + investment.investedAmount,
     current: summary.current + investment.currentValue,
     result: summary.result + investment.returnAmount,
-  }), { invested: 0, current: 0, result: 0 }), [filteredInvestments]);
+  }), { invested: 0, current: 0, result: 0 }), [totalsInvestments]);
   const totalPercentage = totals.invested > 0 ? (totals.result / totals.invested) * 100 : 0;
   const matchingRecentAssets = useMemo(() => {
     const query = form.name.trim().toLocaleLowerCase();
@@ -178,9 +227,10 @@ export default function InvestmentsScreen() {
   const favoriteCatalogSuggestions = useMemo(
     () => favoriteSearchResults.filter((suggestion) => {
       const key = `${suggestion.assetType}:${suggestion.ticker.trim().toLocaleLowerCase() || suggestion.name.trim().toLocaleLowerCase()}`;
-      return !favoriteExistingKeys.has(key) && !investmentKeys.has(key);
+      const favoriteKeys = new Set(favoriteAssets.map((favorite) => `${favorite.assetType}:${favorite.ticker.trim().toLocaleLowerCase() || favorite.name.trim().toLocaleLowerCase()}`));
+      return !favoriteExistingKeys.has(key) && !investmentKeys.has(key) && !favoriteKeys.has(key);
     }),
-    [favoriteExistingKeys, favoriteSearchResults, investmentKeys],
+    [favoriteAssets, favoriteExistingKeys, favoriteSearchResults, investmentKeys],
   );
 
   useEffect(() => {
@@ -233,8 +283,9 @@ export default function InvestmentsScreen() {
     return () => clearTimeout(timeout);
   }, [favoriteOnly, favoriteSearchQuery, searchInvestmentAssets]);
 
-  const openEditor = (investment?: Investment, prefill?: InvestmentSearchResult, markAsFavorite = false) => {
+  const openEditor = (investment?: Investment, prefill?: InvestmentSearchResult | InvestmentFavorite, markAsFavorite = false, favoriteAssetId?: string) => {
     setEditingInvestment(investment ?? null);
+    setFavoriteAssetToRegister(favoriteAssetId ?? null);
     const initialForm = getInitialForm(investment);
     setForm(prefill && !investment ? {
       ...initialForm,
@@ -285,16 +336,10 @@ export default function InvestmentsScreen() {
     const key = `${suggestion.assetType}:${suggestion.ticker}:${suggestion.name}`;
     try {
       setFavoriteAddingKey(key);
-      await createInvestment({
+      await createFavoriteAsset({
         name: suggestion.name,
-        ticker: suggestion.ticker || undefined,
+        ticker: suggestion.ticker,
         assetType: suggestion.assetType,
-        quantity: 0,
-        averagePrice: 0,
-        investedAmount: 0,
-        currentValue: 0,
-        valuationMode: 'manual',
-        isFavorite: true,
       });
       setFavoriteSearchQuery('');
       setFavoriteSearchResults([]);
@@ -323,7 +368,11 @@ export default function InvestmentsScreen() {
   const removeFavoriteFromDetails = async () => {
     if (!favoriteDetails) return;
     try {
-      await toggleFavorite(favoriteDetails.id);
+      if (isPortfolioFavorite(favoriteDetails)) {
+        await toggleFavorite(favoriteDetails.id);
+      } else {
+        await deleteFavoriteAsset(favoriteDetails.id);
+      }
       setFavoriteDetails(null);
     } catch {
       Alert.alert('Não foi possível remover favorito', 'Tente novamente.');
@@ -372,6 +421,9 @@ export default function InvestmentsScreen() {
         await updateInvestment(editingInvestment.id, updates);
       } else {
         await createInvestment(input);
+        if (favoriteAssetToRegister) {
+          await deleteFavoriteAsset(favoriteAssetToRegister);
+        }
       }
       await rememberRecentAsset({
         name,
@@ -380,6 +432,7 @@ export default function InvestmentsScreen() {
       });
       setEditorOpen(false);
       setFavoriteOnCreate(false);
+      setFavoriteAssetToRegister(null);
       if (form.valuationMode === 'automatic') {
         void refreshQuotes().catch(() => undefined);
       }
@@ -605,7 +658,7 @@ export default function InvestmentsScreen() {
                 </Pressable>
               )}
             </View>
-            {filteredInvestments.length === 0 ? (
+            {(favoriteOnly ? favoriteItems.length : filteredInvestments.length) === 0 ? (
               <View style={styles.emptyWrap}>
                 <EmptyState message={
                   favoriteOnly
@@ -628,12 +681,21 @@ export default function InvestmentsScreen() {
               </View>
             ) : (
               <View style={styles.list}>
-                {filteredInvestments.map((investment) => favoriteOnly ? (
+                {(favoriteOnly ? favoriteItems : filteredInvestments).map((entry) => {
+                  const investment: Investment = (favoriteOnly
+                    ? ((entry as typeof favoriteItems[number]).kind === 'investment'
+                      ? (entry as typeof favoriteItems[number]).item
+                      : catalogFavoriteAsInvestment((entry as typeof favoriteItems[number]).item as InvestmentFavorite))
+                    : entry as Investment) as Investment;
+                  const favoriteDetail = favoriteOnly
+                    ? (entry as typeof favoriteItems[number]).item
+                    : investment;
+                  return favoriteOnly ? (
                   <Pressable
                     key={investment.id}
                     accessibilityRole="button"
                     accessibilityLabel={`Ver detalhes de ${investment.name}`}
-                    onPress={() => setFavoriteDetails(investment)}
+                    onPress={() => setFavoriteDetails(favoriteDetail)}
                     style={({ pressed }) => [styles.investmentCard, styles.favoriteCompactCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
                   >
                     <View style={styles.investmentHeader}>
@@ -720,7 +782,7 @@ export default function InvestmentsScreen() {
                       </View>
                     </View>
                   </View>
-                ))}
+                )})}
               </View>
             )}
           </>
@@ -1000,54 +1062,68 @@ export default function InvestmentsScreen() {
                 </View>
                 <Text style={[styles.favoriteDetailMeta, { color: colors.mutedForeground }]}>
                   {favoriteDetails.ticker ? `${favoriteDetails.ticker} · ` : ''}{assetTypeLabel(favoriteDetails.assetType)}
-                  {favoriteDetails.institution ? ` · ${favoriteDetails.institution}` : ''}
+                  {isPortfolioFavorite(favoriteDetails) && favoriteDetails.institution ? ` · ${favoriteDetails.institution}` : ''}
                 </Text>
-                <View style={[styles.investmentDetails, { borderTopColor: colors.border }]}>
-                  <View>
-                    <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Quantidade</Text>
-                    <Text style={[styles.detailValue, { color: colors.foreground }]}>{favoriteDetails.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 8 })}</Text>
+                {isPortfolioFavorite(favoriteDetails) ? (
+                  <>
+                    <View style={[styles.investmentDetails, { borderTopColor: colors.border }]}>
+                      <View>
+                        <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Quantidade</Text>
+                        <Text style={[styles.detailValue, { color: colors.foreground }]}>{favoriteDetails.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 8 })}</Text>
+                      </View>
+                      <View>
+                        <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Preço médio</Text>
+                        <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(favoriteDetails.averagePrice)}</Text>
+                      </View>
+                      <View style={styles.detailRight}>
+                        <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Valor atual</Text>
+                        <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(favoriteDetails.currentValue)}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.returnRow}>
+                      <Text style={[styles.returnLabel, { color: colors.mutedForeground }]}>Rentabilidade</Text>
+                      <Text style={[styles.returnValue, { color: favoriteDetails.returnAmount >= 0 ? colors.income : colors.expense }]}>
+                        {formatCurrency(favoriteDetails.returnAmount)} · {formatPercentage(favoriteDetails.returnPercentage)}
+                      </Text>
+                    </View>
+                    <View style={[styles.quoteRow, { borderTopColor: colors.border }]}>
+                      <Feather
+                        name={favoriteDetails.valuationMode === 'automatic' && favoriteDetails.quoteStatus === 'updated' ? 'check-circle' : 'info'}
+                        size={12}
+                        color={favoriteDetails.quoteStatus === 'error' || favoriteDetails.quoteStatus === 'unavailable' ? colors.expense : colors.mutedForeground}
+                      />
+                      <View style={styles.quoteCopy}>
+                        <Text style={[styles.quoteText, { color: colors.mutedForeground }]}>{quoteStatusText(favoriteDetails)}</Text>
+                        {favoriteDetails.quoteError && favoriteDetails.valuationMode === 'automatic' ? (
+                          <Text style={[styles.quoteError, { color: colors.expense }]}>{favoriteDetails.quoteError}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  </>
+                ) : (
+                  <View style={[styles.favoriteCatalogNotice, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                    <Feather name="star" size={15} color={colors.accent} />
+                    <Text style={[styles.favoriteCatalogNoticeText, { color: colors.mutedForeground }]}>
+                      Este ativo está salvo apenas nos favoritos. Cadastre-o na carteira para informar quantidade e valores.
+                    </Text>
                   </View>
-                  <View>
-                    <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Preço médio</Text>
-                    <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(favoriteDetails.averagePrice)}</Text>
-                  </View>
-                  <View style={styles.detailRight}>
-                    <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Valor atual</Text>
-                    <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(favoriteDetails.currentValue)}</Text>
-                  </View>
-                </View>
-                <View style={styles.returnRow}>
-                  <Text style={[styles.returnLabel, { color: colors.mutedForeground }]}>Rentabilidade</Text>
-                  <Text style={[styles.returnValue, { color: favoriteDetails.returnAmount >= 0 ? colors.income : colors.expense }]}>
-                    {formatCurrency(favoriteDetails.returnAmount)} · {formatPercentage(favoriteDetails.returnPercentage)}
-                  </Text>
-                </View>
-                <View style={[styles.quoteRow, { borderTopColor: colors.border }]}>
-                  <Feather
-                    name={favoriteDetails.valuationMode === 'automatic' && favoriteDetails.quoteStatus === 'updated' ? 'check-circle' : 'info'}
-                    size={12}
-                    color={favoriteDetails.quoteStatus === 'error' || favoriteDetails.quoteStatus === 'unavailable' ? colors.expense : colors.mutedForeground}
-                  />
-                  <View style={styles.quoteCopy}>
-                    <Text style={[styles.quoteText, { color: colors.mutedForeground }]}>{quoteStatusText(favoriteDetails)}</Text>
-                    {favoriteDetails.quoteError && favoriteDetails.valuationMode === 'automatic' ? (
-                      <Text style={[styles.quoteError, { color: colors.expense }]}>{favoriteDetails.quoteError}</Text>
-                    ) : null}
-                  </View>
-                </View>
+                )}
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={isFavoriteDraft(favoriteDetails) ? 'Cadastrar favorito na carteira' : 'Editar investimento na carteira'}
+                  accessibilityLabel={isPortfolioFavorite(favoriteDetails) ? 'Editar investimento na carteira' : 'Cadastrar favorito na carteira'}
                   onPress={() => {
-                    const investment = favoriteDetails;
                     setFavoriteDetails(null);
-                    openEditor(investment);
+                    if (isPortfolioFavorite(favoriteDetails)) {
+                      openEditor(favoriteDetails);
+                    } else {
+                      openEditor(undefined, favoriteDetails, true, favoriteDetails.id);
+                    }
                   }}
                   style={({ pressed }) => [styles.favoriteDetailPrimaryAction, { backgroundColor: colors.primary }, pressed && styles.pressed]}
                 >
-                  <Feather name={isFavoriteDraft(favoriteDetails) ? 'plus' : 'edit-2'} size={15} color={colors.primaryForeground} />
+                  <Feather name={isPortfolioFavorite(favoriteDetails) ? 'edit-2' : 'plus'} size={15} color={colors.primaryForeground} />
                   <Text style={[styles.saveText, { color: colors.primaryForeground }]}>
-                    {isFavoriteDraft(favoriteDetails) ? 'Cadastrar na carteira' : 'Editar na carteira'}
+                    {isPortfolioFavorite(favoriteDetails) ? 'Editar na carteira' : 'Cadastrar na carteira'}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -1144,6 +1220,8 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 },
   favoriteDetailTitleCopy: { flex: 1, minWidth: 0, paddingRight: 10 },
   favoriteDetailMeta: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: -3 },
+  favoriteCatalogNotice: { borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 11, marginTop: 18 },
+  favoriteCatalogNoticeText: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular' },
   favoriteDetailPrimaryAction: { minHeight: 46, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 22 },
   favoriteDetailSecondaryAction: { minHeight: 42, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 9 },
   favoriteDetailSecondaryText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
