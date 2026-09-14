@@ -45,6 +45,12 @@ export const DASHBOARD_CARD_OPTIONS = [
     description: 'Acompanhe faturas, vencimentos e limites dos seus cartões.',
     icon: 'credit-card',
   },
+  {
+    id: 'investments',
+    title: 'Investimentos',
+    description: 'Acompanhe o valor atual e a rentabilidade da sua carteira.',
+    icon: 'bar-chart',
+  },
 ] as const satisfies ReadonlyArray<{
   id: string;
   title: string;
@@ -65,6 +71,7 @@ const DEFAULT_VISIBILITY: DashboardCardVisibility = {
   limits: true,
   goals: true,
   cards: true,
+  investments: true,
 };
 
 function parseVisibility(value: string | null): DashboardCardVisibility {
@@ -79,6 +86,7 @@ function parseVisibility(value: string | null): DashboardCardVisibility {
       limits: typeof parsed.limits === 'boolean' ? parsed.limits : DEFAULT_VISIBILITY.limits,
       goals: typeof parsed.goals === 'boolean' ? parsed.goals : DEFAULT_VISIBILITY.goals,
       cards: typeof parsed.cards === 'boolean' ? parsed.cards : DEFAULT_VISIBILITY.cards,
+      investments: typeof parsed.investments === 'boolean' ? parsed.investments : DEFAULT_VISIBILITY.investments,
     };
   } catch {
     return DEFAULT_VISIBILITY;

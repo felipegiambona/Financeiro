@@ -7,7 +7,10 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { useFinance } from '@/context/FinanceContext';
 import { useCategories } from '@/context/CategoryContext';
+import { useFinancialProfiles } from '@/context/FinancialProfileContext';
+import { useInvestments } from '@/context/InvestmentContext';
 import { useColors } from '@/hooks/useColors';
+import type { Investment, InvestmentAssetType } from '@workspace/api-client-react';
 import { calculateTotalsByMonth } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
@@ -18,6 +21,13 @@ export default function ChartsScreen() {
   const insets = useSafeAreaInsets();
   const { transactions, loading, error, refresh } = useFinance();
   const { categories } = useCategories();
+  const { activeProfile } = useFinancialProfiles();
+  const {
+    investments,
+    loading: investmentsLoading,
+    error: investmentsError,
+    refresh: refreshInvestments,
+  } = useInvestments();
   const totals = useMemo(() => calculateTotalsByMonth(transactions), [transactions]);
   const hasData = totals.some((month) => month.income > 0 || month.expense > 0);
   const maxValue = Math.max(...totals.flatMap((month) => [month.income, month.expense]), 1);
@@ -196,6 +206,14 @@ export default function ChartsScreen() {
             <ForecastTable transactions={transactions} />
           </>
         )}
+        {activeProfile?.type === 'personal' ? (
+          <InvestmentCompositionCard
+            investments={investments}
+            loading={investmentsLoading}
+            error={investmentsError}
+            onRetry={() => void refreshInvestments()}
+          />
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -206,6 +224,7 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: 16 },
   chartCard: { borderRadius: 8, borderWidth: 1, padding: 16 },
   categoryCard: { borderRadius: 8, borderWidth: 1, padding: 16, marginTop: 12 },
+  investmentCard: { borderRadius: 8, borderWidth: 1, padding: 16, marginTop: 12 },
   categoryTitleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   categoryTitleCopy: { flex: 1, minWidth: 0 },
   chartTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
@@ -243,6 +262,14 @@ const styles = StyleSheet.create({
   categoryTrack: { height: 7, borderRadius: 4, overflow: 'hidden' },
   categoryBar: { height: '100%', borderRadius: 4 },
   categoryPercentage: { fontSize: 10, fontFamily: 'Inter_400Regular' },
+  investmentSummary: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  investmentMetric: { flex: 1, minWidth: 0 },
+  investmentMetricLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  investmentMetricValue: { fontSize: 14, fontFamily: 'Inter_700Bold', marginTop: 4 },
+  investmentState: { minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18 },
+  investmentStateText: { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_400Regular', textAlign: 'center' },
+  investmentRetry: { borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8, marginTop: 2 },
+  investmentRetryText: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.6 },
 });
@@ -253,6 +280,133 @@ type CategoryTotal = {
   name: string;
   color: string;
 };
+
+const ASSET_TYPE_LABELS: Record<InvestmentAssetType, string> = {
+  stock: 'Ações',
+  fii: 'FIIs',
+  etf: 'ETFs',
+  fund: 'Fundos',
+  fixed_income: 'Renda fixa',
+  crypto: 'Cripto',
+  other: 'Outros',
+};
+
+function InvestmentCompositionCard({
+  investments,
+  loading,
+  error,
+  onRetry,
+}: {
+  investments: Investment[];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}) {
+  const colors = useColors();
+  const totalCurrentValue = useMemo(
+    () => investments.reduce((total, investment) => total + investment.currentValue, 0),
+    [investments],
+  );
+  const totalReturn = useMemo(
+    () => investments.reduce((total, investment) => total + investment.returnAmount, 0),
+    [investments],
+  );
+  const composition = useMemo(() => {
+    const totalsByType = new Map<InvestmentAssetType, number>();
+    for (const investment of investments) {
+      totalsByType.set(investment.assetType, (totalsByType.get(investment.assetType) ?? 0) + investment.currentValue);
+    }
+    const palette = [
+      colors.primary,
+      colors.income,
+      colors.accent,
+      colors.expense,
+      colors.pending,
+      colors.transfer,
+      colors.secondaryForeground,
+    ];
+    return Array.from(totalsByType.entries())
+      .sort((first, second) => second[1] - first[1])
+      .map(([assetType, amount], index) => ({
+        assetType,
+        amount,
+        color: palette[index % palette.length],
+      }));
+  }, [colors.accent, colors.expense, colors.income, colors.pending, colors.primary, colors.secondaryForeground, colors.transfer, investments]);
+
+  return (
+    <View style={[styles.investmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.chartTitle, { color: colors.foreground }]}>Composição da carteira</Text>
+      <Text style={[styles.chartDescription, { color: colors.mutedForeground }]}>Distribuição dos investimentos por tipo de ativo</Text>
+      {loading ? (
+        <View style={styles.investmentState}>
+          <Text style={[styles.investmentStateText, { color: colors.mutedForeground }]}>Carregando investimentos...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.investmentState}>
+          <Feather name="alert-circle" size={20} color={colors.expense} />
+          <Text style={[styles.investmentStateText, { color: colors.mutedForeground }]}>Não foi possível carregar sua carteira.</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Tentar carregar composição da carteira novamente"
+            onPress={onRetry}
+            style={({ pressed }) => [styles.investmentRetry, { backgroundColor: colors.primary }, pressed && styles.pressed]}
+          >
+            <Text style={styles.investmentRetryText}>Tentar novamente</Text>
+          </Pressable>
+        </View>
+      ) : investments.length === 0 ? (
+        <View style={styles.investmentState}>
+          <Feather name="bar-chart" size={20} color={colors.mutedForeground} />
+          <Text style={[styles.investmentStateText, { color: colors.mutedForeground }]}>Cadastre investimentos para visualizar a composição da sua carteira.</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.investmentSummary}>
+            <View style={styles.investmentMetric}>
+              <Text style={[styles.investmentMetricLabel, { color: colors.mutedForeground }]}>Valor atual</Text>
+              <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.investmentMetricValue, { color: colors.foreground }]}>
+                {formatCurrency(totalCurrentValue)}
+              </Text>
+            </View>
+            <View style={styles.investmentMetric}>
+              <Text style={[styles.investmentMetricLabel, { color: colors.mutedForeground }]}>Resultado</Text>
+              <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.investmentMetricValue, { color: totalReturn >= 0 ? colors.income : colors.expense }]}>
+                {formatCurrency(totalReturn)}
+              </Text>
+            </View>
+          </View>
+          {composition.length === 0 ? (
+            <Text style={[styles.categoryEmpty, { color: colors.mutedForeground }]}>Não há valor atual para distribuir.</Text>
+          ) : (
+            <View style={styles.categoryRows}>
+              {composition.map((item) => {
+                const percentage = totalCurrentValue > 0 ? item.amount / totalCurrentValue : 0;
+                return (
+                  <View key={item.assetType} style={styles.categoryRow}>
+                    <View style={styles.categoryRowHeader}>
+                      <View style={styles.categoryLabel}>
+                        <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                        <Text style={[styles.categoryName, { color: colors.foreground }]}>{ASSET_TYPE_LABELS[item.assetType]}</Text>
+                      </View>
+                      <Text style={[styles.categoryAmount, { color: colors.foreground }]}>{formatCurrency(item.amount)}</Text>
+                    </View>
+                    <View style={[styles.categoryTrack, { backgroundColor: colors.secondary }]}>
+                      <View style={[styles.categoryBar, { width: `${Math.max(percentage * 100, 2)}%`, backgroundColor: item.color }]} />
+                    </View>
+                    <Text style={[styles.categoryPercentage, { color: colors.mutedForeground }]}>
+                      {Math.round(percentage * 100)}% da carteira
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
 
 function CategoryReport({
   title,
