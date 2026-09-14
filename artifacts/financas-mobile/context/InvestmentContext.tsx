@@ -64,6 +64,7 @@ interface InvestmentContextValue {
   removeRecentAsset: (asset: RecentInvestmentAsset) => Promise<void>;
   createInvestment: (input: InvestmentInput) => Promise<Investment>;
   updateInvestment: (id: string, updates: InvestmentUpdate) => Promise<Investment>;
+  toggleFavorite: (id: string) => Promise<Investment>;
   deleteInvestment: (id: string) => Promise<void>;
 }
 
@@ -212,9 +213,23 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
     }
   }, []);
 
+  const toggleFavorite = useCallback(async (id: string) => {
+    const current = investments.find((investment) => investment.id === id);
+    if (!current) throw new Error('Investimento não encontrado.');
+    try {
+      setError(null);
+      const updated = await updatePersistedInvestment(id, { isFavorite: !current.isFavorite });
+      setInvestments((items) => items.map((investment) => investment.id === id ? updated : investment));
+      return updated;
+    } catch {
+      setError('Não foi possível atualizar o favorito.');
+      throw new Error('Não foi possível atualizar o favorito.');
+    }
+  }, [investments]);
+
   const value = useMemo(
-    () => ({ investments, recentAssets, loading, error, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, createInvestment, updateInvestment, deleteInvestment }),
-    [createInvestment, deleteInvestment, error, investments, loading, recentAssets, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, updateInvestment],
+    () => ({ investments, recentAssets, loading, error, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, createInvestment, updateInvestment, toggleFavorite, deleteInvestment }),
+    [createInvestment, deleteInvestment, error, investments, loading, recentAssets, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, toggleFavorite, updateInvestment],
   );
 
   return <InvestmentContext.Provider value={value}>{children}</InvestmentContext.Provider>;

@@ -263,17 +263,19 @@ export default function DashboardScreen() {
                   <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                 </Pressable>
               ) : (
-                  goalCards.map(({ goal, ...progress }, index) => (
-                  <GoalCard
-                    key={goal.id}
-                    goal={goal}
-                    {...progress}
-                    style={{ marginBottom: index === goalCards.length - 1 ? 0 : DASHBOARD_CARD_GAP }}
-                    onPress={() => router.push({ pathname: '/more/goal/[id]', params: { id: goal.id } })}
-                    onEdit={() => router.push({ pathname: '/more/goals', params: { editId: goal.id } })}
-                    onDelete={() => router.push({ pathname: '/more/goals', params: { deleteId: goal.id } })}
-                  />
-                ))
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalCardsContent}>
+                  {goalCards.map(({ goal, ...progress }) => (
+                    <GoalCard
+                      key={goal.id}
+                      goal={goal}
+                      {...progress}
+                      style={styles.dashboardCarouselCard}
+                      onPress={() => router.push({ pathname: '/more/goal/[id]', params: { id: goal.id } })}
+                      onEdit={() => router.push({ pathname: '/more/goals', params: { editId: goal.id } })}
+                      onDelete={() => router.push({ pathname: '/more/goals', params: { deleteId: goal.id } })}
+                    />
+                  ))}
+                </ScrollView>
               )}
             </View> : null}
             {visibility.limits ? <View style={styles.limitsSection}>
@@ -301,18 +303,20 @@ export default function DashboardScreen() {
                   <Text style={[styles.limitState, { color: colors.mutedForeground }]}>Crie um limite para acompanhar seus gastos.</Text>
                 </View>
               ) : (
-                limitCards.map(({ limit, categoryName, usage }, index) => (
-                  <LimitCard
-                    key={limit.id}
-                    limit={limit}
-                    categoryName={categoryName}
-                    usage={usage}
-                    style={{ marginBottom: index === limitCards.length - 1 ? 0 : DASHBOARD_CARD_GAP }}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalCardsContent}>
+                  {limitCards.map(({ limit, categoryName, usage }) => (
+                    <LimitCard
+                      key={limit.id}
+                      limit={limit}
+                      categoryName={categoryName}
+                      usage={usage}
+                      style={styles.dashboardCarouselCard}
                       onPress={() => router.push('/more/limits')}
-                    onEdit={() => router.push({ pathname: '/more/limits', params: { editId: limit.id } })}
-                    onDelete={() => router.push({ pathname: '/more/limits', params: { deleteId: limit.id } })}
-                  />
-                ))
+                      onEdit={() => router.push({ pathname: '/more/limits', params: { editId: limit.id } })}
+                      onDelete={() => router.push({ pathname: '/more/limits', params: { deleteId: limit.id } })}
+                    />
+                  ))}
+                </ScrollView>
               )}
             </View> : null}
             {visibility.cards ? <View style={styles.cardsSection}>
@@ -348,15 +352,17 @@ export default function DashboardScreen() {
                   <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                 </Pressable>
               ) : (
-                cards.map((card, index) => (
-                  <CreditCardCard
-                    key={card.id}
-                    card={card}
-                    style={{ marginBottom: index === cards.length - 1 ? 0 : DASHBOARD_CARD_GAP }}
-                    onPress={() => router.push({ pathname: '/more/card/[id]', params: { id: card.id } })}
-                    onPay={() => handlePayCard(card.id, card.name)}
-                  />
-                ))
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalCardsContent}>
+                  {cards.map((card) => (
+                    <CreditCardCard
+                      key={card.id}
+                      card={card}
+                      style={styles.dashboardCarouselCard}
+                      onPress={() => router.push({ pathname: '/more/card/[id]', params: { id: card.id } })}
+                      onPay={() => handlePayCard(card.id, card.name)}
+                    />
+                  ))}
+                </ScrollView>
               )}
             </View> : null}
             {isPersonalProfile && visibility.investments ? <View style={styles.investmentsSection}>
@@ -491,6 +497,8 @@ const styles = StyleSheet.create({
   limitsSection: { marginTop: 24 },
   limitsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   cardsSection: { marginTop: 24 },
+  horizontalCardsContent: { gap: DASHBOARD_CARD_GAP },
+  dashboardCarouselCard: { width: 304, marginBottom: 0 },
   cardsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   investmentsSection: { marginTop: 24 },
   investmentsHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 },

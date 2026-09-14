@@ -10,6 +10,7 @@ export const financialProfilesTable = pgTable("financial_profiles", {
   type: financialProfileType("type").notNull(),
   name: text("name").notNull(),
   businessName: text("business_name"),
+  imageData: text("image_data"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

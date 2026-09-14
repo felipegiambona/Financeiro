@@ -19,6 +19,8 @@ export interface FinancialProfile {
   name: string;
   /** @nullable */
   businessName: string | null;
+  /** @nullable */
+  imageData: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +38,8 @@ export interface FinancialProfileInput {
   /** @minLength 1 */
   name: string;
   businessName?: string;
+  /** @nullable */
+  imageData?: string | null;
 }
 
 export type InvestmentQuoteStatus = typeof InvestmentQuoteStatus[keyof typeof InvestmentQuoteStatus];
@@ -120,6 +124,7 @@ export interface Investment {
   quoteError: string | null;
   /** @nullable */
   lastQuoteAt: string | null;
+  isFavorite: boolean;
   returnAmount: number;
   returnPercentage: number;
   createdAt: string;
@@ -214,6 +219,7 @@ export interface InvestmentUpdate {
   /** @minimum 0 */
   currentValue?: number;
   valuationMode?: InvestmentValuationMode;
+  isFavorite?: boolean;
 }
 
 export interface HealthStatus {

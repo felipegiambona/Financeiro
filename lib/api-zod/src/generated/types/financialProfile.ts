@@ -13,6 +13,8 @@ export interface FinancialProfile {
   name: string;
   /** @nullable */
   businessName: string | null;
+  /** @nullable */
+  imageData: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

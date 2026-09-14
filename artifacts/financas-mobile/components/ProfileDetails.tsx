@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useUser } from '@clerk/expo';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -39,7 +39,10 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const { profiles, activeProfile, switchProfile, createProfile, deleteProfile } = useFinancialProfiles();
   const name = session?.name || 'Usuário';
   const email = session?.email || 'E-mail não informado';
-  const initials = useMemo(() => getInitials(name, email), [email, name]);
+  const isBusinessProfile = activeProfile?.type === 'business';
+  const displayedProfileName = isBusinessProfile ? activeProfile.businessName || 'Empresarial' : name;
+  const displayedImage = isBusinessProfile ? activeProfile.imageData : user?.imageUrl;
+  const initials = useMemo(() => getInitials(displayedProfileName, email), [displayedProfileName, email]);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
@@ -48,6 +51,10 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const [switchingProfile, setSwitchingProfile] = useState(false);
   const [deletingBusinessProfile, setDeletingBusinessProfile] = useState(false);
   const [deleteBusinessProfileModalOpen, setDeleteBusinessProfileModalOpen] = useState(false);
+  const [businessEditorOpen, setBusinessEditorOpen] = useState(false);
+  const [businessNameInput, setBusinessNameInput] = useState('');
+  const [businessImageData, setBusinessImageData] = useState<string | null>(null);
+  const [savingBusinessProfile, setSavingBusinessProfile] = useState(false);
 
   const handleDeleteAccount = async () => {
     setDeletingAccount(true);
@@ -98,6 +105,51 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
     }
   };
 
+  const openBusinessEditor = () => {
+    setBusinessNameInput('');
+    setBusinessImageData(null);
+    setBusinessEditorOpen(true);
+  };
+
+  const handlePickBusinessImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        base64: true,
+        quality: 0.7,
+      });
+      const asset = result.assets?.[0];
+      if (result.canceled || !asset?.base64) return;
+      setBusinessImageData(`data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}`);
+    } catch {
+      Alert.alert('Não foi possível adicionar a imagem', 'Escolha outra imagem e tente novamente.');
+    }
+  };
+
+  const handleCreateBusinessProfile = async () => {
+    const trimmedName = businessNameInput.trim();
+    if (!trimmedName) {
+      Alert.alert('Nome obrigatório', 'Informe o nome da empresa.');
+      return;
+    }
+    try {
+      setSavingBusinessProfile(true);
+      await createProfile({
+        type: 'business',
+        name: 'Empresarial',
+        businessName: trimmedName,
+        imageData: businessImageData,
+      });
+      setBusinessEditorOpen(false);
+    } catch {
+      Alert.alert('Não foi possível criar o perfil', 'Tente novamente.');
+    } finally {
+      setSavingBusinessProfile(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!user) return;
     const trimmedName = profileName.trim();
@@ -132,22 +184,24 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
 
         <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Alterar foto do perfil"
-            disabled={savingProfile}
+            accessibilityRole={isBusinessProfile ? undefined : 'button'}
+            accessibilityLabel={isBusinessProfile ? undefined : 'Alterar foto do perfil'}
+            disabled={isBusinessProfile || savingProfile}
             onPress={() => void handlePickProfileImage()}
             style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]}
           >
-            {user?.imageUrl ? (
-              <Image source={{ uri: user.imageUrl }} style={styles.avatar} />
+            {displayedImage ? (
+              <Image source={{ uri: displayedImage }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
                 <Text style={[styles.avatarText, { color: colors.accentForeground }]}>{initials}</Text>
               </View>
             )}
-            <View style={[styles.avatarEditBadge, { backgroundColor: colors.primary, borderColor: colors.card }]}>
-              <Feather name="camera" size={11} color={colors.primaryForeground} />
-            </View>
+            {!isBusinessProfile ? (
+              <View style={[styles.avatarEditBadge, { backgroundColor: colors.primary, borderColor: colors.card }]}>
+                <Feather name="camera" size={11} color={colors.primaryForeground} />
+              </View>
+            ) : null}
           </Pressable>
           <View style={styles.profileCopy}>
             {editingProfile ? (
@@ -161,16 +215,16 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
                 style={[styles.profileNameInput, { color: colors.foreground, borderColor: colors.input }]}
               />
             ) : (
-              <Text style={[styles.name, { color: colors.foreground }]}>{name}</Text>
+              <Text style={[styles.name, { color: colors.foreground }]}>{displayedProfileName}</Text>
             )}
-            <Text style={[styles.email, { color: colors.mutedForeground }]}>{email}</Text>
+            <Text style={[styles.email, { color: colors.mutedForeground }]}>{isBusinessProfile ? 'Perfil empresarial' : email}</Text>
             <View style={[styles.status, { backgroundColor: colors.paidSoft }]}>
               <View style={[styles.statusDot, { backgroundColor: colors.paid }]} />
               <Text style={[styles.statusText, { color: colors.paid }]}>Conta ativa</Text>
             </View>
           </View>
         </View>
-        {editingProfile ? (
+        {editingProfile && !isBusinessProfile ? (
           <View style={styles.profileActions}>
             <Pressable
               accessibilityRole="button"
@@ -195,7 +249,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
               </Text>
             </Pressable>
           </View>
-        ) : (
+        ) : !isBusinessProfile ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Editar perfil"
@@ -209,7 +263,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
             <Feather name="edit-2" size={15} color={colors.foreground} />
             <Text style={[styles.editProfileText, { color: colors.foreground }]}>Editar perfil</Text>
           </Pressable>
-        )}
+        ) : null}
 
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Perfil financeiro</Text>
         <View style={[styles.profileSelector, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -233,11 +287,17 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
                 pressed && styles.pressed,
               ]}
             >
-              <Feather name={profile.type === 'business' ? 'briefcase' : 'user'} size={16} color={colors.foreground} />
+              {profile.type === 'business' && profile.imageData ? (
+                <Image source={{ uri: profile.imageData }} style={styles.profileOptionImage} />
+              ) : (
+                <Feather name={profile.type === 'business' ? 'briefcase' : 'user'} size={16} color={colors.foreground} />
+              )}
               <View style={styles.profileOptionCopy}>
-                <Text style={[styles.profileOptionName, { color: colors.foreground }]}>{profile.name}</Text>
+                <Text style={[styles.profileOptionName, { color: colors.foreground }]}>
+                  {profile.type === 'business' ? profile.businessName || 'Empresarial' : profile.name}
+                </Text>
                 <Text style={[styles.profileOptionType, { color: colors.mutedForeground }]}>
-                  {profile.type === 'business' ? profile.businessName || 'Empresarial' : 'Pessoal'}
+                  {profile.type === 'business' ? 'Empresarial' : 'Pessoal'}
                 </Text>
               </View>
               {profile.id === activeProfile?.id ? <Feather name="check" size={17} color={colors.primary} /> : null}
@@ -247,12 +307,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
             <Pressable
               accessibilityRole="button"
               disabled={switchingProfile}
-              onPress={() => {
-                setSwitchingProfile(true);
-                void createProfile({ type: 'business', name: 'Empresarial', businessName: 'Meu negócio' })
-                  .catch(() => Alert.alert('Não foi possível criar o perfil', 'Tente novamente.'))
-                  .finally(() => setSwitchingProfile(false));
-              }}
+              onPress={openBusinessEditor}
               style={({ pressed }) => [styles.addProfileButton, { borderColor: colors.border }, pressed && styles.pressed]}
             >
               <Feather name="plus" size={16} color={colors.foreground} />
@@ -362,6 +417,62 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         errorTitle="Não foi possível excluir o perfil"
         errorMessage="O perfil empresarial não foi excluído. Tente novamente."
       />
+      <Modal animationType="fade" transparent visible={businessEditorOpen} onRequestClose={() => setBusinessEditorOpen(false)}>
+        <View style={styles.modalRoot}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setBusinessEditorOpen(false)} />
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderCopy}>
+                <Text style={[styles.modalEyebrow, { color: colors.mutedForeground }]}>Novo perfil</Text>
+                <Text style={[styles.modalTitle, { color: colors.foreground }]}>Perfil empresarial</Text>
+              </View>
+              <Pressable accessibilityLabel="Fechar criação de perfil empresarial" onPress={() => setBusinessEditorOpen(false)} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
+                <Feather name="x" size={18} color={colors.foreground} />
+              </Pressable>
+            </View>
+            <Text style={[styles.modalDescription, { color: colors.mutedForeground }]}>O nome e a imagem ficam separados do seu perfil pessoal.</Text>
+            <Text style={[styles.modalLabel, { color: colors.foreground }]}>Nome da empresa</Text>
+            <TextInput
+              accessibilityLabel="Nome da empresa"
+              testID="business-profile-name-input"
+              autoCapitalize="words"
+              placeholder="Ex.: Estúdio Aurora"
+              placeholderTextColor={colors.mutedForeground}
+              value={businessNameInput}
+              onChangeText={setBusinessNameInput}
+              style={[styles.modalInput, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={businessImageData ? 'Trocar imagem da empresa' : 'Adicionar imagem da empresa'}
+              onPress={() => void handlePickBusinessImage()}
+              style={({ pressed }) => [styles.businessImagePicker, { borderColor: colors.border, backgroundColor: colors.secondary }, pressed && styles.pressed]}
+            >
+              {businessImageData ? <Image source={{ uri: businessImageData }} style={styles.businessImagePreview} /> : <Feather name="camera" size={18} color={colors.mutedForeground} />}
+              <Text style={[styles.businessImageText, { color: colors.foreground }]}>{businessImageData ? 'Trocar imagem' : 'Adicionar imagem da empresa'}</Text>
+            </Pressable>
+            <View style={styles.modalActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={savingBusinessProfile}
+                onPress={() => setBusinessEditorOpen(false)}
+                style={({ pressed }) => [styles.profileCancelButton, { borderColor: colors.border }, savingBusinessProfile && styles.disabled, pressed && styles.pressed]}
+              >
+                <Text style={[styles.profileCancelText, { color: colors.foreground }]}>Cancelar criação</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                testID="business-profile-save-button"
+                disabled={savingBusinessProfile}
+                onPress={() => void handleCreateBusinessProfile()}
+                style={({ pressed }) => [styles.profileSaveButton, { backgroundColor: colors.primary }, savingBusinessProfile && styles.disabled, pressed && styles.pressed]}
+              >
+                <Text style={[styles.profileSaveText, { color: colors.primaryForeground }]}>{savingBusinessProfile ? 'Criando...' : 'Criar perfil'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -395,6 +506,7 @@ const styles = StyleSheet.create({
   profileSelector: { borderWidth: 1, borderRadius: 9, padding: 12, gap: 8 },
   selectorDescription: { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_400Regular', marginBottom: 2 },
   profileOption: { minHeight: 52, borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  profileOptionImage: { width: 30, height: 30, borderRadius: 7 },
   profileOptionCopy: { flex: 1 },
   profileOptionName: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   profileOptionType: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
@@ -407,6 +519,20 @@ const styles = StyleSheet.create({
   profileSaveButton: { flex: 1, minHeight: 42, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   profileCancelText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   profileSaveText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
+  modalCard: { width: '100%', maxWidth: 390, borderRadius: 10, borderWidth: 1, padding: 15 },
+  modalHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  modalHeaderCopy: { flex: 1, minWidth: 0 },
+  modalEyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.1, textTransform: 'uppercase' },
+  modalTitle: { fontSize: 19, fontFamily: 'Inter_700Bold', marginTop: 4 },
+  modalDescription: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', marginTop: 10 },
+  modalLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 16, marginBottom: 7 },
+  modalInput: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
+  businessImagePicker: { minHeight: 50, borderWidth: 1, borderRadius: 8, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 11 },
+  businessImagePreview: { width: 34, height: 34, borderRadius: 6 },
+  businessImageText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  modalActions: { flexDirection: 'row', gap: 8, marginTop: 18 },
+  closeButton: { width: 32, height: 32, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   signOutButton: { minHeight: 48, borderRadius: 8, borderWidth: 1, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   signOutText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   deleteCard: { borderWidth: 1, borderRadius: 9, padding: 13 },

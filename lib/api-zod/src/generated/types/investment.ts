@@ -45,6 +45,7 @@ export interface Investment {
   quoteError: string | null;
   /** @nullable */
   lastQuoteAt: Date | null;
+  isFavorite: boolean;
   returnAmount: number;
   returnPercentage: number;
   createdAt: Date;

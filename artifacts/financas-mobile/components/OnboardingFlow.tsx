@@ -1,6 +1,7 @@
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePickerModal } from '@/components/DatePickerModal';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -219,12 +220,42 @@ export function OnboardingFlow({ initialStep, onStepChange, onComplete, onCancel
 function BusinessProfileStep({ colors, onContinue, setError, error }: StepProps & { onContinue: () => void }) {
   const { createProfile } = useFinancialProfiles();
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [businessName, setBusinessName] = useState('');
+  const [imageData, setImageData] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        base64: true,
+        quality: 0.7,
+      });
+      const asset = result.assets?.[0];
+      if (result.canceled || !asset?.base64) return;
+      setImageData(`data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}`);
+    } catch {
+      Alert.alert('Não foi possível adicionar a imagem', 'Escolha outra imagem e tente novamente.');
+    }
+  };
 
   const addBusinessProfile = async () => {
+    const trimmedBusinessName = businessName.trim();
+    if (!trimmedBusinessName) {
+      setError('Informe o nome da empresa para continuar.');
+      return;
+    }
     try {
       setSaving(true);
       setError('');
-      await createProfile({ type: 'business', name: 'Empresarial', businessName: 'Meu negócio' }, { activate: false });
+      await createProfile({
+        type: 'business',
+        name: 'Empresarial',
+        businessName: trimmedBusinessName,
+        imageData,
+      }, { activate: false });
       onContinue();
     } catch {
       setError('Não foi possível criar o perfil empresarial. Tente novamente.');
@@ -232,6 +263,64 @@ function BusinessProfileStep({ colors, onContinue, setError, error }: StepProps 
       setSaving(false);
     }
   };
+
+  if (creating) {
+    return (
+      <>
+        <StepHeader
+          eyebrow="PERFIL EMPRESARIAL"
+          title="Como se chama a empresa?"
+          description="O nome empresarial ficará separado do seu nome pessoal."
+          colors={colors}
+        />
+        <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Nome da empresa</Text>
+        <TextInput
+          accessibilityLabel="Nome da empresa"
+          testID="business-name-input"
+          autoCapitalize="words"
+          placeholder="Ex.: Estúdio Aurora"
+          placeholderTextColor={colors.mutedForeground}
+          value={businessName}
+          onChangeText={setBusinessName}
+          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={imageData ? 'Trocar imagem da empresa' : 'Adicionar imagem da empresa'}
+          onPress={() => void pickImage()}
+          style={({ pressed }) => [styles.imagePicker, { borderColor: colors.border, backgroundColor: colors.card }, pressed && styles.pressed]}
+        >
+          {imageData ? <Image source={{ uri: imageData }} style={styles.businessImage} /> : <Feather name="camera" size={19} color={colors.mutedForeground} />}
+          <View style={styles.imagePickerCopy}>
+            <Text style={[styles.imagePickerTitle, { color: colors.foreground }]}>{imageData ? 'Trocar imagem' : 'Adicionar imagem'}</Text>
+            <Text style={[styles.imagePickerHint, { color: colors.mutedForeground }]}>Opcional · usada apenas no perfil empresarial</Text>
+          </View>
+        </Pressable>
+        <View style={styles.choiceStack}>
+          <ChoiceButton
+            label={saving ? 'Criando perfil...' : 'Criar perfil empresarial'}
+            icon="check"
+            onPress={() => void addBusinessProfile()}
+            colors={colors}
+            secondary={saving}
+          />
+          <ChoiceButton
+            label="Cancelar criação"
+            icon="x"
+            onPress={() => {
+              setCreating(false);
+              setBusinessName('');
+              setImageData(null);
+              setError('');
+            }}
+            colors={colors}
+            secondary
+          />
+        </View>
+        <ErrorMessage message={error} colors={colors} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -249,11 +338,13 @@ function BusinessProfileStep({ colors, onContinue, setError, error }: StepProps 
       </View>
       <View style={styles.choiceStack}>
         <ChoiceButton
-          label={saving ? 'Criando perfil...' : 'Sim, criar perfil empresarial'}
+          label="Sim, criar perfil empresarial"
           icon="briefcase"
-          onPress={() => void addBusinessProfile()}
+          onPress={() => {
+            setError('');
+            setCreating(true);
+          }}
           colors={colors}
-          secondary={saving}
         />
         <ChoiceButton label="Agora não" icon="arrow-right" onPress={onContinue} colors={colors} secondary />
       </View>
@@ -790,6 +881,11 @@ const styles = StyleSheet.create({
   description: { fontSize: 14, lineHeight: 20, fontFamily: 'Inter_400Regular', marginTop: 12 },
   fieldLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 6, marginTop: 15 },
   input: { minHeight: 50, borderRadius: 9, borderWidth: 1, paddingHorizontal: 13, fontSize: 14, fontFamily: 'Inter_400Regular' },
+  imagePicker: { minHeight: 66, borderRadius: 9, borderWidth: 1, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 },
+  businessImage: { width: 44, height: 44, borderRadius: 8 },
+  imagePickerCopy: { flex: 1, minWidth: 0 },
+  imagePickerTitle: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  imagePickerHint: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
   amountShell: { minHeight: 50, borderRadius: 9, borderWidth: 1, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center' },
   currency: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginRight: 7 },
   amountInput: { flex: 1, minHeight: 48, paddingVertical: 0, fontSize: 16, fontFamily: 'Inter_600SemiBold' },

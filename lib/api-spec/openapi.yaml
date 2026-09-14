@@ -806,7 +806,7 @@ components:
   schemas:
     FinancialProfile:
       type: object
-      required: [id, type, name, businessName, createdAt, updatedAt]
+      required: [id, type, name, businessName, imageData, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         type:
@@ -814,6 +814,7 @@ components:
           enum: [personal, business]
         name: { type: string }
         businessName: { type: ["string", "null"] }
+        imageData: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
     FinancialProfileInput:
@@ -825,6 +826,7 @@ components:
           enum: [personal, business]
         name: { type: string, minLength: 1 }
         businessName: { type: string }
+        imageData: { type: ["string", "null"] }
     InvestmentQuoteStatus:
       type: string
       enum: [not_configured, pending, updated, unavailable, error]
@@ -840,7 +842,7 @@ components:
         para criptoativos pelo ID único do CoinGecko.
     Investment:
       type: object
-      required: [id, name, ticker, assetType, institution, quantity, averagePrice, investedAmount, currentValue, manualCurrentValue, valuationMode, quoteSource, quotePrice, quoteStatus, quoteError, lastQuoteAt, returnAmount, returnPercentage, createdAt, updatedAt]
+      required: [id, name, ticker, assetType, institution, quantity, averagePrice, investedAmount, currentValue, manualCurrentValue, valuationMode, quoteSource, quotePrice, quoteStatus, quoteError, lastQuoteAt, isFavorite, returnAmount, returnPercentage, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -870,6 +872,7 @@ components:
           $ref: "#/components/schemas/InvestmentQuoteStatus"
         quoteError: { type: ["string", "null"] }
         lastQuoteAt: { type: ["string", "null"], format: date-time }
+        isFavorite: { type: boolean }
         returnAmount: { type: number }
         returnPercentage: { type: number }
         createdAt: { type: string, format: date-time }
@@ -923,6 +926,7 @@ components:
         currentValue: { type: number, minimum: 0 }
         valuationMode:
           $ref: "#/components/schemas/InvestmentValuationMode"
+        isFavorite: { type: boolean }
     HealthStatus:
       type: object
       properties:

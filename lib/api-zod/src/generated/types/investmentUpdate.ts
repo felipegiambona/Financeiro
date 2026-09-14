@@ -29,4 +29,5 @@ export interface InvestmentUpdate {
   /** @minimum 0 */
   currentValue?: number;
   valuationMode?: InvestmentValuationMode;
+  isFavorite?: boolean;
 }

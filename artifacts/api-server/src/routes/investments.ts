@@ -71,6 +71,7 @@ function toResponse(row: typeof investmentsTable.$inferSelect) {
     quoteStatus: row.quoteStatus,
     quoteError: row.quoteError,
     lastQuoteAt: row.lastQuoteAt?.toISOString() ?? null,
+    isFavorite: row.isFavorite,
     returnAmount,
     returnPercentage,
     createdAt: row.createdAt.toISOString(),
@@ -186,7 +187,7 @@ router.post("/investments", async (req, res): Promise<void> => {
 
   const valuationMode = parsed.data.valuationMode ?? "manual";
   const ticker = normalizeQuoteIdentifier(parsed.data.assetType, optionalText(parsed.data.ticker) ?? "");
-  if (valuationMode === "automatic") {
+  if (valuationMode === "automatic" && ticker) {
     const quoteError = quoteIdentifierError(parsed.data.assetType, ticker);
     if (quoteError) {
       res.status(400).json({ error: quoteError });
@@ -208,6 +209,7 @@ router.post("/investments", async (req, res): Promise<void> => {
     valuationMode,
     quoteSource: valuationMode === "automatic" ? quoteSourceForAssetType(parsed.data.assetType) : null,
     quoteStatus: valuationMode === "automatic" ? "pending" : "not_configured",
+    isFavorite: false,
   }).returning();
   res.status(201).json(CreateInvestmentResponse.parse(toResponse(row)));
 });
@@ -239,7 +241,7 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
   const ticker = body.data.ticker === undefined
     ? existing.ticker
     : normalizeQuoteIdentifier(assetType, optionalText(body.data.ticker) ?? "");
-  if (valuationMode === "automatic") {
+  if (valuationMode === "automatic" && ticker) {
     const quoteError = quoteIdentifierError(assetType, ticker);
     if (quoteError) {
       res.status(400).json({ error: quoteError });
@@ -268,6 +270,7 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
     ...(body.data.averagePrice === undefined ? {} : { averagePrice: String(body.data.averagePrice) }),
     ...(body.data.investedAmount === undefined ? {} : { investedAmount: String(body.data.investedAmount) }),
     ...(body.data.currentValue === undefined ? {} : { manualCurrentValue: String(body.data.currentValue) }),
+    ...(body.data.isFavorite === undefined ? {} : { isFavorite: body.data.isFavorite }),
     ...(valuationMode === "manual" ? { currentValue: String(manualCurrentValue) } : {}),
     valuationMode,
     ...(valuationMode === "manual" ? {

@@ -22,6 +22,7 @@ export const ListFinancialProfilesResponseItem = zod.object({
   "type": zod.enum(['personal', 'business']),
   "name": zod.string(),
   "businessName": zod.string().nullable(),
+  "imageData": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -34,7 +35,8 @@ export const ListFinancialProfilesResponse = zod.array(ListFinancialProfilesResp
 export const CreateFinancialProfileBody = zod.object({
   "type": zod.enum(['personal', 'business']),
   "name": zod.string().min(1),
-  "businessName": zod.string().optional()
+  "businessName": zod.string().optional(),
+  "imageData": zod.string().nullish()
 })
 
 export const CreateFinancialProfileResponse = zod.object({
@@ -42,6 +44,7 @@ export const CreateFinancialProfileResponse = zod.object({
   "type": zod.enum(['personal', 'business']),
   "name": zod.string(),
   "businessName": zod.string().nullable(),
+  "imageData": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -85,6 +88,7 @@ export const ListInvestmentsResponseItem = zod.object({
   "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
   "quoteError": zod.string().nullable(),
   "lastQuoteAt": zod.coerce.date().nullable(),
+  "isFavorite": zod.boolean(),
   "returnAmount": zod.number(),
   "returnPercentage": zod.number(),
   "createdAt": zod.coerce.date(),
@@ -147,6 +151,7 @@ export const CreateInvestmentResponse = zod.object({
   "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
   "quoteError": zod.string().nullable(),
   "lastQuoteAt": zod.coerce.date().nullable(),
+  "isFavorite": zod.boolean(),
   "returnAmount": zod.number(),
   "returnPercentage": zod.number(),
   "createdAt": zod.coerce.date(),
@@ -195,7 +200,8 @@ export const UpdateInvestmentBody = zod.object({
   "averagePrice": zod.number().min(updateInvestmentBodyAveragePriceMin).optional(),
   "investedAmount": zod.number().min(updateInvestmentBodyInvestedAmountMin).optional(),
   "currentValue": zod.number().min(updateInvestmentBodyCurrentValueMin).optional(),
-  "valuationMode": zod.enum(['manual', 'automatic']).optional()
+  "valuationMode": zod.enum(['manual', 'automatic']).optional(),
+  "isFavorite": zod.boolean().optional()
 })
 
 export const updateInvestmentResponseQuantityMin = 0;
@@ -229,6 +235,7 @@ export const UpdateInvestmentResponse = zod.object({
   "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
   "quoteError": zod.string().nullable(),
   "lastQuoteAt": zod.coerce.date().nullable(),
+  "isFavorite": zod.boolean(),
   "returnAmount": zod.number(),
   "returnPercentage": zod.number(),
   "createdAt": zod.coerce.date(),
@@ -277,6 +284,7 @@ export const RefreshInvestmentQuotesResponseItem = zod.object({
   "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
   "quoteError": zod.string().nullable(),
   "lastQuoteAt": zod.coerce.date().nullable(),
+  "isFavorite": zod.boolean(),
   "returnAmount": zod.number(),
   "returnPercentage": zod.number(),
   "createdAt": zod.coerce.date(),

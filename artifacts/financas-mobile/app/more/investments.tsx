@@ -98,6 +98,7 @@ export default function InvestmentsScreen() {
     removeRecentAsset,
     createInvestment,
     updateInvestment,
+    toggleFavorite,
     deleteInvestment,
   } = useInvestments();
   const routeAssetType = Array.isArray(assetTypeParam) ? assetTypeParam[0] : assetTypeParam;
@@ -368,6 +369,14 @@ export default function InvestmentsScreen() {
                         </View>
                       </View>
                       <View style={styles.investmentActions}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={investment.isFavorite ? `Remover ${investment.name} dos favoritos` : `Adicionar ${investment.name} aos favoritos`}
+                          onPress={() => void toggleFavorite(investment.id).catch(() => Alert.alert('Não foi possível atualizar o favorito', 'Tente novamente.'))}
+                          style={({ pressed }) => [styles.iconButton, { backgroundColor: investment.isFavorite ? colors.accent : colors.secondary }, pressed && styles.pressed]}
+                        >
+                          <Feather name="star" size={14} color={investment.isFavorite ? colors.accentForeground : colors.foreground} />
+                        </Pressable>
                         <Pressable accessibilityLabel={`Editar ${investment.name}`} onPress={() => openEditor(investment)} style={({ pressed }) => [styles.iconButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
                           <Feather name="edit-2" size={14} color={colors.foreground} />
                         </Pressable>

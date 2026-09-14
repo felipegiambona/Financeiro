@@ -1,4 +1,4 @@
-import { and, asc, eq, or } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
   db,
@@ -19,6 +19,7 @@ function toResponse(profile: typeof financialProfilesTable.$inferSelect) {
     type: profile.type,
     name: profile.name,
     businessName: profile.businessName,
+    imageData: profile.imageData,
     createdAt: profile.createdAt.toISOString(),
     updatedAt: profile.updatedAt.toISOString(),
   };
@@ -48,6 +49,7 @@ router.post("/financial-profiles", async (req, res): Promise<void> => {
   const type = req.body?.type === "business" ? "business" : req.body?.type === "personal" ? "personal" : null;
   const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
   const businessName = typeof req.body?.businessName === "string" ? req.body.businessName.trim() : "";
+  const imageData = typeof req.body?.imageData === "string" ? req.body.imageData : null;
 
   if (!type || !name) {
     res.status(400).json({ error: "type and name are required" });
@@ -73,6 +75,7 @@ router.post("/financial-profiles", async (req, res): Promise<void> => {
     type,
     name,
     businessName: type === "business" ? businessName : null,
+    imageData: type === "business" ? imageData : null,
   }).returning();
   res.status(201).json(toResponse(profile));
 });

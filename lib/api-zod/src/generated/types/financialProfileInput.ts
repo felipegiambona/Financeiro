@@ -12,4 +12,6 @@ export interface FinancialProfileInput {
   /** @minLength 1 */
   name: string;
   businessName?: string;
+  /** @nullable */
+  imageData?: string | null;
 }
