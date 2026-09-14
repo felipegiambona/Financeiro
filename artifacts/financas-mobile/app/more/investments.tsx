@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -85,6 +85,7 @@ function getInitialForm(investment?: Investment) {
 export default function InvestmentsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { assetType: assetTypeParam } = useLocalSearchParams<{ assetType?: string }>();
   const {
     investments,
     recentAssets,
@@ -99,6 +100,12 @@ export default function InvestmentsScreen() {
     updateInvestment,
     deleteInvestment,
   } = useInvestments();
+  const routeAssetType = Array.isArray(assetTypeParam) ? assetTypeParam[0] : assetTypeParam;
+  const selectedAssetType = ASSET_TYPES.find((item) => item.value === routeAssetType)?.value ?? null;
+  const filteredInvestments = useMemo(
+    () => selectedAssetType ? investments.filter((investment) => investment.assetType === selectedAssetType) : investments,
+    [investments, selectedAssetType],
+  );
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [form, setForm] = useState(() => getInitialForm());
@@ -111,11 +118,11 @@ export default function InvestmentsScreen() {
   const [investmentToDelete, setInvestmentToDelete] = useState<Investment | null>(null);
   const quoteGuidance = QUOTE_GUIDANCE[form.assetType];
 
-  const totals = useMemo(() => investments.reduce((summary, investment) => ({
+  const totals = useMemo(() => filteredInvestments.reduce((summary, investment) => ({
     invested: summary.invested + investment.investedAmount,
     current: summary.current + investment.currentValue,
     result: summary.result + investment.returnAmount,
-  }), { invested: 0, current: 0, result: 0 }), [investments]);
+  }), { invested: 0, current: 0, result: 0 }), [filteredInvestments]);
   const totalPercentage = totals.invested > 0 ? (totals.result / totals.invested) * 100 : 0;
   const matchingRecentAssets = useMemo(() => {
     const query = form.name.trim().toLocaleLowerCase();
@@ -274,8 +281,28 @@ export default function InvestmentsScreen() {
           onAction={() => openEditor()}
         />
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>
-           Acompanhe sua carteira pessoal com valor manual ou cotações automáticas.
+          {selectedAssetType
+            ? `Exibindo apenas investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.`
+            : 'Acompanhe sua carteira pessoal com valor manual ou cotações automáticas.'}
         </Text>
+        {selectedAssetType ? (
+          <View style={[styles.activeFilter, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <View style={styles.activeFilterCopy}>
+              <Feather name="filter" size={13} color={colors.primary} />
+              <Text style={[styles.activeFilterText, { color: colors.foreground }]}>
+                Filtro: {assetTypeLabel(selectedAssetType)}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Remover filtro de tipo de ativo"
+              onPress={() => router.replace('/more/investments')}
+              style={({ pressed }) => [styles.clearFilterButton, pressed && styles.pressed]}
+            >
+              <Feather name="x" size={15} color={colors.mutedForeground} />
+            </Pressable>
+          </View>
+        ) : null}
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
           <>
             <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
@@ -308,22 +335,24 @@ export default function InvestmentsScreen() {
                 </Pressable>
               )}
             </View>
-            {investments.length === 0 ? (
+            {filteredInvestments.length === 0 ? (
               <View style={styles.emptyWrap}>
-                <EmptyState message="Você ainda não cadastrou nenhum investimento." />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Cadastrar primeiro investimento"
-                  onPress={() => openEditor()}
-                  style={({ pressed }) => [styles.emptyAction, { backgroundColor: colors.primary }, pressed && styles.pressed]}
-                >
-                  <Feather name="plus" size={15} color={colors.primaryForeground} />
-                  <Text style={[styles.emptyActionText, { color: colors.primaryForeground }]}>Cadastrar investimento</Text>
-                </Pressable>
+                <EmptyState message={selectedAssetType ? `Você ainda não cadastrou investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.` : 'Você ainda não cadastrou nenhum investimento.'} />
+                {!selectedAssetType ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Cadastrar primeiro investimento"
+                    onPress={() => openEditor()}
+                    style={({ pressed }) => [styles.emptyAction, { backgroundColor: colors.primary }, pressed && styles.pressed]}
+                  >
+                    <Feather name="plus" size={15} color={colors.primaryForeground} />
+                    <Text style={[styles.emptyActionText, { color: colors.primaryForeground }]}>Cadastrar investimento</Text>
+                  </Pressable>
+                ) : null}
               </View>
             ) : (
               <View style={styles.list}>
-                {investments.map((investment) => (
+                {filteredInvestments.map((investment) => (
                   <View key={investment.id} style={[styles.investmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={styles.investmentHeader}>
                       <View style={styles.investmentIdentity}>
@@ -636,6 +665,10 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 16 },
   intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 18 },
+  activeFilter: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 11, paddingRight: 5, marginTop: -7, marginBottom: 12 },
+  activeFilterCopy: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  activeFilterText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  clearFilterButton: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   summaryCard: { minHeight: 166, borderRadius: 9, padding: 17, justifyContent: 'space-between' },
   summaryLabel: { color: '#D4D4D4', fontSize: 12, fontFamily: 'Inter_500Medium' },
   summaryValue: { color: '#FFFFFF', fontSize: 29, lineHeight: 35, fontFamily: 'Inter_700Bold', marginTop: 13 },

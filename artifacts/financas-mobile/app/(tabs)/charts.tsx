@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -212,6 +213,7 @@ export default function ChartsScreen() {
             loading={investmentsLoading}
             error={investmentsError}
             onRetry={() => void refreshInvestments()}
+              onAssetTypePress={(assetType) => router.push({ pathname: '/more/investments', params: { assetType } })}
           />
         ) : null}
       </ScrollView>
@@ -258,6 +260,7 @@ const styles = StyleSheet.create({
   categoryRowHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   categoryLabel: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 7 },
   categoryName: { flex: 1, minWidth: 0, fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  categoryAmountGroup: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   categoryAmount: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   categoryTrack: { height: 7, borderRadius: 4, overflow: 'hidden' },
   categoryBar: { height: '100%', borderRadius: 4 },
@@ -296,11 +299,13 @@ function InvestmentCompositionCard({
   loading,
   error,
   onRetry,
+  onAssetTypePress,
 }: {
   investments: Investment[];
   loading: boolean;
   error: string | null;
   onRetry: () => void;
+  onAssetTypePress: (assetType: InvestmentAssetType) => void;
 }) {
   const colors = useColors();
   const totalCurrentValue = useMemo(
@@ -383,13 +388,24 @@ function InvestmentCompositionCard({
               {composition.map((item) => {
                 const percentage = totalCurrentValue > 0 ? item.amount / totalCurrentValue : 0;
                 return (
-                  <View key={item.assetType} style={styles.categoryRow}>
+                  <Pressable
+                    key={item.assetType}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver investimentos de ${ASSET_TYPE_LABELS[item.assetType]}`}
+                    accessibilityHint="Abre a carteira filtrada por tipo de ativo"
+                    testID={`investment-composition-${item.assetType}`}
+                    onPress={() => onAssetTypePress(item.assetType)}
+                    style={({ pressed }) => [styles.categoryRow, pressed && styles.pressed]}
+                  >
                     <View style={styles.categoryRowHeader}>
                       <View style={styles.categoryLabel}>
                         <View style={[styles.legendDot, { backgroundColor: item.color }]} />
                         <Text style={[styles.categoryName, { color: colors.foreground }]}>{ASSET_TYPE_LABELS[item.assetType]}</Text>
                       </View>
-                      <Text style={[styles.categoryAmount, { color: colors.foreground }]}>{formatCurrency(item.amount)}</Text>
+                      <View style={styles.categoryAmountGroup}>
+                        <Text style={[styles.categoryAmount, { color: colors.foreground }]}>{formatCurrency(item.amount)}</Text>
+                        <Feather name="chevron-right" size={15} color={colors.mutedForeground} />
+                      </View>
                     </View>
                     <View style={[styles.categoryTrack, { backgroundColor: colors.secondary }]}>
                       <View style={[styles.categoryBar, { width: `${Math.max(percentage * 100, 2)}%`, backgroundColor: item.color }]} />
@@ -397,7 +413,7 @@ function InvestmentCompositionCard({
                     <Text style={[styles.categoryPercentage, { color: colors.mutedForeground }]}>
                       {Math.round(percentage * 100)}% da carteira
                     </Text>
-                  </View>
+                  </Pressable>
                 );
               })}
             </View>
