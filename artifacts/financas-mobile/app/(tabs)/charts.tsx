@@ -10,6 +10,7 @@ import { useFinance } from '@/context/FinanceContext';
 import { useCategories } from '@/context/CategoryContext';
 import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 import { useInvestments } from '@/context/InvestmentContext';
+import { useCards } from '@/context/CardContext';
 import { useColors } from '@/hooks/useColors';
 import type { Investment, InvestmentAssetType } from '@workspace/api-client-react';
 import { calculateTotalsByMonth } from '@/services/financialRules';
@@ -22,6 +23,7 @@ export default function ChartsScreen() {
   const insets = useSafeAreaInsets();
   const { transactions, loading, error, refresh } = useFinance();
   const { categories } = useCategories();
+  const { cards } = useCards();
   const { activeProfile } = useFinancialProfiles();
   const {
     investments,
@@ -29,7 +31,7 @@ export default function ChartsScreen() {
     error: investmentsError,
     refresh: refreshInvestments,
   } = useInvestments();
-  const totals = useMemo(() => calculateTotalsByMonth(transactions), [transactions]);
+  const totals = useMemo(() => calculateTotalsByMonth(transactions, 6, cards), [cards, transactions]);
   const hasData = totals.some((month) => month.income > 0 || month.expense > 0);
   const maxValue = Math.max(...totals.flatMap((month) => [month.income, month.expense]), 1);
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
@@ -40,10 +42,17 @@ export default function ChartsScreen() {
   const categoryTotals = useMemo(() => {
     const totalsByCategory = new Map<string, number>();
     for (const transaction of getTransactionOccurrencesForMonth(transactions, categoryMonth)) {
-      if (transaction.type !== 'expense') continue;
+      if (transaction.type !== 'expense' || transaction.cardId) continue;
       const key = transaction.categoryId ?? 'uncategorized';
       totalsByCategory.set(key, (totalsByCategory.get(key) ?? 0) + transaction.amount);
     }
+    const cardInvoiceTotal = cards.reduce(
+      (total, card) => total + card.invoices
+        .filter((invoice) => invoice.invoiceMonth === `${categoryMonth.getFullYear()}-${String(categoryMonth.getMonth() + 1).padStart(2, '0')}`)
+        .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
+      0,
+    );
+    if (cardInvoiceTotal > 0) totalsByCategory.set('uncategorized', (totalsByCategory.get('uncategorized') ?? 0) + cardInvoiceTotal);
     const categoryById = new Map(categories.map((category) => [category.id, category]));
     return Array.from(totalsByCategory.entries())
       .map(([key, amount]) => ({
@@ -53,7 +62,7 @@ export default function ChartsScreen() {
         color: key === 'uncategorized' ? colors.mutedForeground : categoryById.get(key)?.color ?? colors.mutedForeground,
       }))
       .sort((a, b) => b.amount - a.amount);
-  }, [categories, categoryMonth, colors.mutedForeground, transactions]);
+  }, [cards, categories, categoryMonth, colors.mutedForeground, transactions]);
   const categoryTotal = categoryTotals.reduce((total, item) => total + item.amount, 0);
   const [incomeCategoryMonth, setIncomeCategoryMonth] = useState(() => shiftMonth(new Date(), 0));
   const incomeCategoryTotals = useMemo(() => {
@@ -204,7 +213,7 @@ export default function ChartsScreen() {
               emptyMessage="Não há receitas para analisar neste mês."
               percentageLabel="das receitas"
             />
-            <ForecastTable transactions={transactions} />
+            <ForecastTable transactions={transactions} cards={cards} />
           </>
         )}
         {activeProfile?.type === 'personal' ? (

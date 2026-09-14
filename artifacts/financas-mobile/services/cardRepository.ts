@@ -39,6 +39,9 @@ export async function deleteCard(id: string): Promise<void> {
   await deleteCardRequest(id);
 }
 
-export async function payCardInvoice(id: string): Promise<Card> {
-  return payCardInvoiceRequest(id) as Promise<Card>;
+export async function payCardInvoice(id: string, invoiceMonth?: string): Promise<Card> {
+  return payCardInvoiceRequest(id, invoiceMonth ? {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ invoiceMonth }),
+  } : undefined) as Promise<Card>;
 }

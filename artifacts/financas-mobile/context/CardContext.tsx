@@ -17,7 +17,7 @@ interface CardContextValue {
   createCard: (input: NewCardInput) => Promise<Card>;
   updateCard: (id: string, updates: CardUpdate) => Promise<Card>;
   deleteCard: (id: string) => Promise<void>;
-  payCardInvoice: (id: string) => Promise<Card>;
+  payCardInvoice: (id: string, invoiceMonth?: string) => Promise<Card>;
 }
 
 const CardContext = createContext<CardContextValue | null>(null);
@@ -79,10 +79,10 @@ export function CardProvider({ children }: React.PropsWithChildren) {
     }
   }, [refresh]);
 
-  const payCardInvoice = useCallback(async (id: string) => {
+  const payCardInvoice = useCallback(async (id: string, invoiceMonth?: string) => {
     try {
       setError(null);
-      const updated = await persistCardInvoice(id);
+      const updated = await persistCardInvoice(id, invoiceMonth);
       setCards((current) => current.map((card) => card.id === id ? updated : card));
       await refreshFinance();
       return updated;

@@ -10,6 +10,7 @@ import { TransactionRow } from '@/components/TransactionRow';
 import { useFinance } from '@/context/FinanceContext';
 import { useCategories } from '@/context/CategoryContext';
 import { useWallets } from '@/context/WalletContext';
+import { useCards } from '@/context/CardContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateForecast } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth, getTransactionOccurrencesInRange } from '@/services/recurrence';
@@ -106,6 +107,7 @@ export default function TransactionsScreen() {
     updateTransactions,
   } = useFinance();
   const { wallets } = useWallets();
+  const { cards } = useCards();
   const { categories } = useCategories();
   const routeTypeFilter = Array.isArray(typeFilterParam) ? typeFilterParam[0] : typeFilterParam;
   const routeStatusFilter = Array.isArray(statusFilterParam) ? statusFilterParam[0] : statusFilterParam;
@@ -238,6 +240,7 @@ export default function TransactionsScreen() {
       label: formatTransactionGroupLabel(groupTransactions[0].date),
       transactions: groupTransactions,
       total: groupTransactions.reduce((total, transaction) => {
+        if (transaction.cardId) return total;
         if (transaction.type === 'income') return total + transaction.amount;
         if (transaction.type === 'expense') return total - transaction.amount;
         if (typeFilter === 'transfer') return total + transaction.amount;
@@ -250,6 +253,7 @@ export default function TransactionsScreen() {
   const filteredSummary = useMemo(
     () => filteredTransactions.reduce(
       (summary, transaction) => {
+        if (transaction.cardId) return summary;
         if (transaction.type === 'income') {
           summary.income += transaction.amount;
         } else if (transaction.type === 'expense') {
@@ -268,8 +272,14 @@ export default function TransactionsScreen() {
     ),
     [filteredTransactions, walletFilter],
   );
-  const currentBalance = calculateCurrentBalance(wallets, transactions);
-  const forecast = calculateForecast(transactions, selectedMonth);
+  const currentBalance = calculateCurrentBalance(wallets, transactions, cards);
+  const forecast = calculateForecast(transactions, selectedMonth, cards);
+  const cardInvoicesForMonth = useMemo(() => {
+    const monthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`;
+    return cards.flatMap((card) => card.invoices
+      .filter((invoice) => invoice.invoiceMonth === monthKey && invoice.amount > 0)
+      .map((invoice) => ({ card, invoice })));
+  }, [cards, selectedMonth]);
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const leaveSelectionMode = () => {
@@ -793,34 +803,78 @@ export default function TransactionsScreen() {
             ) : null}
             {filteredTransactions.length === 0 ? (
               <EmptyState message={selectedTransactions.length === 0 ? 'Não há lançamentos neste mês.' : 'Nenhum lançamento corresponde aos filtros.'} />
-            ) : (
-              transactionGroups.map((group) => (
-                <View key={group.key} style={styles.transactionGroup}>
-                  <View style={styles.groupHeader}>
-                    <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>{group.label}</Text>
-                      <Text style={[styles.groupTotal, { color: group.total >= 0 ? colors.income : colors.expense }]}>
-                        {formatCurrency(group.total)}
-                      </Text>
-                  </View>
-                  {group.transactions.map((transaction) => (
-                    <TransactionRow
-                      key={transaction.occurrenceKey}
-                      transaction={transaction}
-                      onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
-                      onTogglePaymentStatus={() => void handleTogglePaymentStatus(transaction)}
-                      paymentStatusUpdating={updatingStatusId === transaction.occurrenceKey}
-                      onDelete={() => confirmDeleteOne(transaction)}
-                      selectionMode={selectionMode}
-                      selected={selectedIdSet.has(transaction.sourceId)}
-                      onToggleSelection={() => toggleSelection(transaction.sourceId)}
-                      swipeOpen={openSwipeKey === transaction.occurrenceKey}
-                      onSwipeOpen={() => setOpenSwipeKey(transaction.occurrenceKey)}
-                      onSwipeClose={() => setOpenSwipeKey(null)}
-                    />
-                  ))}
+            ) : transactionGroups.map((group) => (
+              <View key={group.key} style={styles.transactionGroup}>
+                <View style={styles.groupHeader}>
+                  <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>{group.label}</Text>
+                  <Text style={[styles.groupTotal, { color: group.total >= 0 ? colors.income : colors.expense }]}>
+                    {formatCurrency(group.total)}
+                  </Text>
                 </View>
-              ))
-            )}
+                {group.transactions.map((transaction) => (
+                  <TransactionRow
+                    key={transaction.occurrenceKey}
+                    transaction={transaction}
+                    onPress={() => router.push({ pathname: '/transaction/new', params: { id: transaction.id } })}
+                    onTogglePaymentStatus={() => void handleTogglePaymentStatus(transaction)}
+                    paymentStatusUpdating={updatingStatusId === transaction.occurrenceKey}
+                    onDelete={() => confirmDeleteOne(transaction)}
+                    selectionMode={selectionMode}
+                    selected={selectedIdSet.has(transaction.sourceId)}
+                    onToggleSelection={() => toggleSelection(transaction.sourceId)}
+                    swipeOpen={openSwipeKey === transaction.occurrenceKey}
+                    onSwipeOpen={() => setOpenSwipeKey(transaction.occurrenceKey)}
+                    onSwipeClose={() => setOpenSwipeKey(null)}
+                  />
+                ))}
+              </View>
+            ))}
+            {!dateRangeStart && !dateRangeEnd && (typeFilter === 'all' || typeFilter === 'expense') && cardInvoicesForMonth.length > 0 ? (
+              <View style={styles.cardInvoicesSection}>
+                <View style={styles.cardInvoicesHeader}>
+                  <View style={styles.cardInvoicesHeaderCopy}>
+                    <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Cartões</Text>
+                    <Text style={[styles.cardInvoicesHint, { color: colors.mutedForeground }]}>
+                      Resumo da fatura do mês. Não é um lançamento individual.
+                    </Text>
+                  </View>
+                </View>
+                {cardInvoicesForMonth.map(({ card, invoice }) => {
+                  const statusLabel = invoice.status === 'paid'
+                    ? 'Fatura paga'
+                    : invoice.status === 'overdue'
+                      ? 'Fatura atrasada'
+                      : invoice.status === 'closed'
+                        ? 'Fatura fechada'
+                        : 'Fatura aberta';
+                  return (
+                    <Pressable
+                      key={`${card.id}-${invoice.invoiceMonth}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Abrir detalhes da fatura do cartão ${card.name}`}
+                      onPress={() => router.push({ pathname: '/more/card/[id]', params: { id: card.id } })}
+                      style={({ pressed }) => [
+                        styles.cardInvoiceRow,
+                        { backgroundColor: colors.card, borderColor: colors.border },
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <View style={[styles.cardInvoiceIcon, { backgroundColor: colors.secondary }]}>
+                        <Feather name="credit-card" size={16} color={colors.foreground} />
+                      </View>
+                      <View style={styles.cardInvoiceCopy}>
+                        <Text style={[styles.cardInvoiceTitle, { color: colors.foreground }]}>{card.name}</Text>
+                        <Text style={[styles.cardInvoiceStatus, { color: invoice.status === 'overdue' ? colors.expense : colors.mutedForeground }]}>
+                          {statusLabel}
+                        </Text>
+                      </View>
+                      <Text style={[styles.cardInvoiceAmount, { color: colors.expense }]}>{formatCurrency(invoice.amount)}</Text>
+                      <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
             {filteredTransactions.length > 0 ? (
               <View style={styles.monthSummary}>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
@@ -1346,6 +1400,16 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.72 },
   transactionGroup: { marginBottom: 7 },
+  cardInvoicesSection: { marginTop: 16, gap: 8 },
+  cardInvoicesHeader: { marginBottom: 1 },
+  cardInvoicesHeaderCopy: { gap: 3 },
+  cardInvoicesHint: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular' },
+  cardInvoiceRow: { minHeight: 58, borderWidth: 1, borderRadius: 9, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  cardInvoiceIcon: { width: 31, height: 31, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  cardInvoiceCopy: { flex: 1, minWidth: 0 },
+  cardInvoiceTitle: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  cardInvoiceStatus: { fontSize: 10, fontFamily: 'Inter_500Medium', marginTop: 3 },
+  cardInvoiceAmount: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   groupHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 3, marginBottom: 7 },
   groupLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', textTransform: 'capitalize' },
   groupTotal: { fontSize: 10, fontFamily: 'Inter_700Bold' },

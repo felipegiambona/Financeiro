@@ -9,6 +9,7 @@ export const transactionsTable = pgTable("finance_transactions", {
   walletId: uuid("wallet_id"),
   cardId: uuid("card_id"),
   cardEntryType: text("card_entry_type").notNull().default("purchase"),
+  cardInvoiceMonth: text("card_invoice_month"),
   destinationWalletId: uuid("destination_wallet_id"),
   categoryId: uuid("category_id"),
   goalId: uuid("goal_id"),

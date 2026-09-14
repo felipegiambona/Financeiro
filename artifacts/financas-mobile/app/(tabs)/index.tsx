@@ -60,9 +60,9 @@ export default function DashboardScreen() {
 
     return `${timeGreeting}, ${firstName}`;
   }, [session?.name]);
-  const monthlyTotals = useMemo(() => calculateMonthlyTotals(transactions, new Date()), [transactions]);
-  const walletTotals = useMemo(() => calculateWalletTotals(wallets, transactions), [transactions, wallets]);
-  const balance = calculateCurrentBalance(wallets, transactions);
+  const monthlyTotals = useMemo(() => calculateMonthlyTotals(transactions, new Date(), cards), [cards, transactions]);
+  const walletTotals = useMemo(() => calculateWalletTotals(wallets, transactions, new Date(), cards), [cards, transactions, wallets]);
+  const balance = calculateCurrentBalance(wallets, transactions, cards);
   const pendingNotifications = useMemo(() => getPendingTransactionOccurrences(transactions), [transactions]);
   const limitCards = useMemo(
     () => limits.map((limit) => ({

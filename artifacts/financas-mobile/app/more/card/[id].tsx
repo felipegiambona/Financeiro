@@ -18,7 +18,7 @@ export default function CardDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { cards, loading, refresh, deleteCard, payCardInvoice } = useCards();
-  const [paying, setPaying] = useState(false);
+  const [payingInvoiceMonth, setPayingInvoiceMonth] = useState<string | null>(null);
   const [history, setHistory] = useState<CardHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const card = cards.find((item) => item.id === id);
@@ -40,26 +40,28 @@ export default function CardDetailsScreen() {
     void loadHistory();
   }, [loadHistory, refresh]));
 
-  const handlePay = () => {
+  const handlePay = (invoiceMonth: string, amount: number, label: string) => {
     if (!card) return;
     Alert.alert(
       'Pagar fatura?',
-      `A fatura atual de ${card.name} será marcada como paga e zerada.`,
+      `A ${label.toLocaleLowerCase()} de ${card.name}, no valor de ${formatCurrency(amount)}, será marcada como paga.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Pagar',
           onPress: () => {
-            setPaying(true);
-            void payCardInvoice(card.id)
+            setPayingInvoiceMonth(invoiceMonth);
+            void payCardInvoice(card.id, invoiceMonth)
               .then(() => loadHistory())
               .catch(() => Alert.alert('Não foi possível pagar', 'Tente novamente.'))
-              .finally(() => setPaying(false));
+              .finally(() => setPayingInvoiceMonth(null));
           },
         },
       ],
     );
   };
+
+  const currentInvoiceMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
   const handleDelete = () => {
     if (!card) return;
@@ -107,7 +109,11 @@ export default function CardDetailsScreen() {
           <EmptyState message="Cartão não encontrado." />
         ) : (
           <>
-            <CreditCardCard card={card} onPay={handlePay} paying={paying} />
+            <CreditCardCard
+              card={card}
+              onPay={() => handlePay(currentInvoiceMonth, card.currentInvoiceAmount, 'fatura atual')}
+              paying={payingInvoiceMonth === currentInvoiceMonth}
+            />
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Informações do cartão</Text>
             <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <InfoRow label="Nome" value={card.name} colors={colors} />
@@ -115,10 +121,52 @@ export default function CardDetailsScreen() {
               <InfoRow label="Fechamento" value={`Dia ${card.closingDay}`} colors={colors} />
               <InfoRow label="Fatura atual" value={formatCurrency(card.currentInvoiceAmount)} colors={colors} />
               <InfoRow label="Limite disponível" value={card.availableLimit == null ? 'Não informado' : formatCurrency(card.availableLimit)} colors={colors} />
-              <InfoRow label="Status da fatura" value={card.invoiceStatus === 'closed' ? 'Fechada' : 'Aberta'} colors={colors} last />
+              <InfoRow
+                label="Status da fatura"
+                value={card.invoiceStatus === 'paid' ? 'Paga' : card.invoiceStatus === 'overdue' ? 'Atrasada' : card.invoiceStatus === 'closed' ? 'Fechada' : 'Aberta'}
+                colors={colors}
+                last
+              />
             </View>
+            {card.overdueInvoices.length > 0 ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Faturas atrasadas</Text>
+                <View style={[styles.overdueCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  {card.overdueInvoices.map((invoice, index) => (
+                    <View
+                      key={invoice.invoiceMonth}
+                      style={[
+                        styles.overdueRow,
+                        index < card.overdueInvoices.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
+                      ]}
+                    >
+                      <View style={styles.overdueCopy}>
+                        <Text style={[styles.overdueTitle, { color: colors.foreground }]}>
+                          Fatura de {formatMonthYearLabel(new Date(`${invoice.invoiceMonth}-01T12:00:00`))}
+                        </Text>
+                        <Text style={[styles.overdueAmount, { color: colors.expense }]}>{formatCurrency(invoice.amount)}</Text>
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Pagar fatura atrasada de ${invoice.invoiceMonth}`}
+                        disabled={payingInvoiceMonth !== null}
+                        onPress={() => handlePay(invoice.invoiceMonth, invoice.amount, 'fatura atrasada')}
+                        style={({ pressed }) => [
+                          styles.overdueButton,
+                          { backgroundColor: colors.expense },
+                          payingInvoiceMonth !== null && styles.disabled,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Text style={styles.overdueButtonText}>Pagar</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : null}
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-              Histórico de {formatMonthYearLabel(new Date())}
+              Histórico do cartão
             </Text>
             <View style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {historyLoading ? (
@@ -200,6 +248,13 @@ const styles = StyleSheet.create({
   infoRow: { minHeight: 43, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14 },
   infoLabel: { fontSize: 11, fontFamily: 'Inter_400Regular' },
   infoValue: { flex: 1, textAlign: 'right', fontSize: 12, fontFamily: 'Inter_700Bold' },
+  overdueCard: { borderWidth: 1, borderRadius: 9, paddingHorizontal: 13 },
+  overdueRow: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  overdueCopy: { flex: 1, minWidth: 0 },
+  overdueTitle: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  overdueAmount: { fontSize: 11, fontFamily: 'Inter_700Bold', marginTop: 4 },
+  overdueButton: { minHeight: 34, borderRadius: 7, paddingHorizontal: 13, alignItems: 'center', justifyContent: 'center' },
+  overdueButtonText: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
   historyCard: { borderWidth: 1, borderRadius: 9, paddingHorizontal: 13 },
   historyState: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 16, textAlign: 'center' },
   historyRow: { minHeight: 61, flexDirection: 'row', alignItems: 'center', gap: 9 },
@@ -211,6 +266,7 @@ const styles = StyleSheet.create({
   historyValue: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   historyStatus: { fontSize: 9, fontFamily: 'Inter_600SemiBold', marginTop: 3 },
   closureLabel: { fontSize: 10, fontFamily: 'Inter_700Bold' },
+  disabled: { opacity: 0.5 },
   deleteButton: { minHeight: 44, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 18 },
   deleteText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   pressed: { opacity: 0.72 },

@@ -1,5 +1,6 @@
 import { Transaction } from '@/types/transaction';
 import { Wallet } from '@/types/wallet';
+import { Card } from '@/types/card';
 import { getDateKey, parseStoredDate } from '@/utils/date';
 import {
   getTransactionOccurrencesForMonth,
@@ -25,6 +26,7 @@ export interface WalletTotal {
 }
 
 function transactionValue(transaction: Transaction): number {
+  if (transaction.cardId) return 0;
   if (transaction.type === 'income') return transaction.amount;
   if (transaction.type === 'expense') return -transaction.amount;
   return 0;
@@ -38,8 +40,35 @@ function walletTransactionValue(transaction: Transaction, walletId: string): num
   }
   if (transaction.walletId !== walletId) return 0;
   if (transaction.isInvestment) return -transaction.amount;
-  if (transaction.type === 'expense' && transaction.cardId && transaction.cardEntryType !== 'invoice_payment') return 0;
+  if (transaction.type === 'expense' && transaction.cardId) return 0;
   return transactionValue(transaction);
+}
+
+function cardInvoiceTotalForMonth(cards: Card[], month: Date): number {
+  const key = getDateKey(month).slice(0, 7);
+  return cards.reduce(
+    (total, card) => total + card.invoices
+      .filter((invoice) => invoice.invoiceMonth === key)
+      .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
+    0,
+  );
+}
+
+function cardInvoiceTotal(cards: Card[]): number {
+  return cards.reduce(
+    (total, card) => total + card.invoices.reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
+    0,
+  );
+}
+
+function cardInvoicePayableForMonth(cards: Card[], month: Date): number {
+  const key = getDateKey(month).slice(0, 7);
+  return cards.reduce(
+    (total, card) => total + card.invoices
+      .filter((invoice) => invoice.invoiceMonth === key && invoice.status !== 'paid')
+      .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
+    0,
+  );
 }
 
 function isOnOrBefore(transaction: Transaction, endDate: Date): boolean {
@@ -88,9 +117,10 @@ function calculateBalanceAtDate(
 export function calculateCurrentBalance(
   wallets: Wallet[],
   transactions: Transaction[],
+  cards: Card[] = [],
   now = new Date(),
 ): number {
-  return calculateWalletTotals(wallets, transactions, now)
+  return calculateWalletTotals(wallets, transactions, now, cards)
     .reduce((total, walletTotal) => total + walletTotal.total, 0);
 }
 
@@ -98,6 +128,7 @@ export function calculateWalletTotals(
   wallets: Wallet[],
   transactions: Transaction[],
   now = new Date(),
+  cards: Card[] = [],
 ): WalletTotal[] {
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   const balanceRangeEnd = getBalanceRangeEnd(transactions, todayEnd);
@@ -118,17 +149,20 @@ export function calculateWalletTotals(
       return balance + walletTransactionValue(transaction, wallet.id);
     }, wallet.initialBalance);
 
-    return { wallet, total };
+    const cardAdjustment = wallet.isDefault ? cardInvoiceTotal(cards) : 0;
+    return { wallet, total: total - cardAdjustment };
   });
 }
 
 export function calculateMonthlyTotals(
   transactions: Transaction[],
   month: Date,
+  cards: Card[] = [],
 ): MonthlyTotals {
   const occurrences = getTransactionOccurrencesForMonth(transactions, month);
   return occurrences.reduce(
     (totals, transaction) => {
+      if (transaction.cardId) return totals;
       if (transaction.type === 'income') {
         totals.income += transaction.amount;
         if (transaction.paymentStatus === 'unpaid') totals.receivable += transaction.amount;
@@ -138,28 +172,37 @@ export function calculateMonthlyTotals(
       }
       return totals;
     },
-    { income: 0, expense: 0, receivable: 0, payable: 0 },
+    {
+      income: 0,
+      expense: cardInvoiceTotalForMonth(cards, month),
+      receivable: 0,
+      payable: cardInvoicePayableForMonth(cards, month),
+    },
   );
 }
 
 export function calculateForecast(
   transactions: Transaction[],
   targetMonth = new Date(),
+  cards: Card[] = [],
   _now = new Date(),
 ): number {
   const occurrences = getTransactionOccurrencesForMonth(transactions, targetMonth);
-  return occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0);
+  return occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0)
+    - cardInvoiceTotalForMonth(cards, targetMonth);
 }
 
 export function calculateForecastByMonth(
   transactions: Transaction[],
   year: number,
+  cards: Card[] = [],
   _now = new Date(),
 ): MonthlyForecast[] {
   return Array.from({ length: 12 }, (_, monthIndex) => {
     const date = new Date(year, monthIndex, 1, 12);
     const occurrences = getTransactionOccurrencesForMonth(transactions, date);
-    const forecast = occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0);
+    const forecast = occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0)
+      - cardInvoiceTotalForMonth(cards, date);
 
     return { key: getDateKey(date), date, forecast };
   });
@@ -168,11 +211,12 @@ export function calculateForecastByMonth(
 export function calculateTotalsByMonth(
   transactions: Transaction[],
   months = 6,
+  cards: Card[] = [],
   now = new Date(),
 ): Array<{ key: string; date: Date; income: number; expense: number }> {
   return Array.from({ length: months }, (_, index) => {
     const date = new Date(now.getFullYear(), now.getMonth() - (months - 1 - index), 1, 12);
-    const totals = calculateMonthlyTotals(transactions, date);
+    const totals = calculateMonthlyTotals(transactions, date, cards);
     return { key: getDateKey(date), date, ...totals };
   });
 }

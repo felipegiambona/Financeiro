@@ -16,6 +16,8 @@ interface CreditCardCardProps {
 export function CreditCardCard({ card, onPress, onPay, paying = false, style }: CreditCardCardProps) {
   const colors = useColors();
   const isClosed = card.invoiceStatus === 'closed';
+  const isPaid = card.invoiceStatus === 'paid';
+  const isOverdue = card.invoiceStatus === 'overdue';
   const hasInvoiceAmount = card.currentInvoiceAmount > 0;
   const Wrapper = onPress ? Pressable : View;
 
@@ -45,10 +47,10 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
             Vencimento dia {card.dueDay} · Fecha dia {card.closingDay}
           </Text>
         </View>
-        <View style={[styles.status, { backgroundColor: isClosed ? colors.pendingSoft : colors.paidSoft }]}>
-          <View style={[styles.statusDot, { backgroundColor: isClosed ? colors.pending : colors.paid }]} />
-          <Text style={[styles.statusText, { color: isClosed ? colors.pending : colors.paid }]}>
-            {isClosed ? 'Fechada' : 'Aberta'}
+        <View style={[styles.status, { backgroundColor: isOverdue ? colors.expenseSoft : isClosed ? colors.pendingSoft : colors.paidSoft }]}>
+          <View style={[styles.statusDot, { backgroundColor: isOverdue ? colors.expense : isClosed ? colors.pending : colors.paid }]} />
+          <Text style={[styles.statusText, { color: isOverdue ? colors.expense : isClosed ? colors.pending : colors.paid }]}>
+            {isPaid ? 'Paga' : isOverdue ? 'Atrasada' : isClosed ? 'Fechada' : 'Aberta'}
           </Text>
         </View>
       </View>
@@ -71,7 +73,7 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
           accessibilityRole="button"
           accessibilityLabel={hasInvoiceAmount ? `Pagar fatura do cartão ${card.name}` : `Nenhum lançamento na fatura do cartão ${card.name}`}
           testID={`pay-card-invoice-${card.id}`}
-          disabled={paying || !hasInvoiceAmount}
+          disabled={paying || !hasInvoiceAmount || isPaid}
           onPress={(event) => {
             event.stopPropagation();
             onPay();
@@ -79,13 +81,13 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
           style={({ pressed }) => [
             styles.payButton,
             { backgroundColor: colors.secondary, borderColor: colors.border },
-            (paying || card.currentInvoiceAmount <= 0) && styles.disabled,
+            (paying || card.currentInvoiceAmount <= 0 || isPaid) && styles.disabled,
             pressed && styles.pressed,
           ]}
         >
           <Feather name="check-circle" size={15} color={colors.foreground} />
           <Text style={[styles.payText, { color: colors.foreground }]}>
-            {paying ? 'Pagando...' : hasInvoiceAmount ? 'Pagar fatura' : 'Sem lançamentos'}
+            {paying ? 'Pagando...' : isPaid ? 'Fatura paga' : isOverdue ? 'Pagar fatura atrasada' : hasInvoiceAmount ? 'Pagar fatura' : 'Sem lançamentos'}
           </Text>
         </Pressable>
       ) : null}

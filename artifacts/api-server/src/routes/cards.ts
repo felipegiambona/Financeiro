@@ -17,6 +17,12 @@ import {
   UpdateCardResponse,
 } from "@workspace/api-zod";
 import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
+import {
+  dayDate,
+  getCardInvoiceSummaries,
+  monthKey,
+  type CardInvoiceSummary,
+} from "../services/cardInvoices";
 import { ensureDefaultWallet } from "./wallets";
 
 const router: IRouter = Router();
@@ -24,21 +30,19 @@ router.use("/cards", requireAuth, resolveFinancialProfile);
 
 const userIdFrom = scopedUserIdFrom;
 
-function monthKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function dayDate(month: Date, day: number): string {
-  const safeDay = Math.min(day, new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate());
-  return `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}-${String(safeDay).padStart(2, "0")}`;
-}
-
-function toResponse(row: typeof cardsTable.$inferSelect, currentInvoiceAmount: number, now = new Date()) {
+function toResponse(
+  row: typeof cardsTable.$inferSelect,
+  invoices: CardInvoiceSummary[],
+  now = new Date(),
+) {
+  const currentInvoice = invoices.find((invoice) => invoice.invoiceMonth === monthKey(now));
   return {
     ...row,
-    currentInvoiceAmount,
+    currentInvoiceAmount: currentInvoice?.amount ?? 0,
     availableLimit: row.availableLimit == null ? null : Number(row.availableLimit),
-    invoiceStatus: now.getDate() >= row.closingDay ? "closed" : "open",
+    invoiceStatus: currentInvoice?.status ?? "open",
+    invoices,
+    overdueInvoices: invoices.filter((invoice) => invoice.status === "overdue"),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -52,19 +56,12 @@ async function getCardForUser(userId: string, cardId: string) {
   return card;
 }
 
-async function getCardPurchaseRows(userId: string, cardId: string) {
+async function getCardRows(userId: string, cardId: string) {
   return db.select().from(transactionsTable).where(and(
     eq(transactionsTable.userId, userId),
     eq(transactionsTable.cardId, cardId),
     eq(transactionsTable.type, "expense"),
   ));
-}
-
-function invoiceAmount(rows: Array<typeof transactionsTable.$inferSelect>, now = new Date()): number {
-  const key = monthKey(now);
-  return Math.max(0, Math.round(rows
-    .filter((row) => row.date.slice(0, 7) === key)
-    .reduce((total, row) => total + (row.cardEntryType === "invoice_payment" ? -Number(row.amount) : Number(row.amount)), 0) * 100) / 100);
 }
 
 router.get("/cards", async (req, res): Promise<void> => {
@@ -73,8 +70,8 @@ router.get("/cards", async (req, res): Promise<void> => {
     .orderBy(asc(cardsTable.createdAt));
   const now = new Date();
   const cards = await Promise.all(rows.map(async (row) => {
-    const transactions = await getCardPurchaseRows(userIdFrom(req), row.id);
-    return toResponse(row, invoiceAmount(transactions, now), now);
+    const transactions = await getCardRows(userIdFrom(req), row.id);
+    return toResponse(row, getCardInvoiceSummaries(transactions, row.closingDay, row.dueDay, now), now);
   }));
   res.json(ListCardsResponse.parse(cards));
 });
@@ -93,7 +90,7 @@ router.post("/cards", async (req, res): Promise<void> => {
     closingDay: parsed.data.closingDay,
     availableLimit: parsed.data.availableLimit == null ? null : String(parsed.data.availableLimit),
   }).returning();
-  res.status(201).json(CreateCardResponse.parse(toResponse(row, 0)));
+  res.status(201).json(CreateCardResponse.parse(toResponse(row, getCardInvoiceSummaries([], row.closingDay, row.dueDay))));
 });
 
 router.get("/cards/:id", async (req, res): Promise<void> => {
@@ -112,8 +109,8 @@ router.get("/cards/:id", async (req, res): Promise<void> => {
     return;
   }
   const now = new Date();
-  const transactions = await getCardPurchaseRows(userId, row.id);
-  res.json(GetCardResponse.parse(toResponse(row, invoiceAmount(transactions, now), now)));
+  const transactions = await getCardRows(userId, row.id);
+  res.json(GetCardResponse.parse(toResponse(row, getCardInvoiceSummaries(transactions, row.closingDay, row.dueDay, now), now)));
 });
 
 router.patch("/cards/:id", async (req, res): Promise<void> => {
@@ -136,8 +133,8 @@ router.patch("/cards/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Card not found" });
     return;
   }
-  const transactions = await getCardPurchaseRows(userIdFrom(req), row.id);
-  res.json(UpdateCardResponse.parse(toResponse(row, invoiceAmount(transactions))));
+  const transactions = await getCardRows(userIdFrom(req), row.id);
+  res.json(UpdateCardResponse.parse(toResponse(row, getCardInvoiceSummaries(transactions, row.closingDay, row.dueDay))));
 });
 
 router.delete("/cards/:id", async (req, res): Promise<void> => {
@@ -168,9 +165,13 @@ router.post("/cards/:id/pay-invoice", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Card not found" });
     return;
   }
-  const transactions = await getCardPurchaseRows(userId, existing.id);
-  const currentInvoiceAmount = invoiceAmount(transactions);
-  if (currentInvoiceAmount <= 0) {
+  const transactions = await getCardRows(userId, existing.id);
+  const invoices = getCardInvoiceSummaries(transactions, existing.closingDay, existing.dueDay);
+  const requestedMonth = typeof req.body?.invoiceMonth === "string" && /^\d{4}-\d{2}$/.test(req.body.invoiceMonth)
+    ? req.body.invoiceMonth
+    : monthKey(new Date());
+  const invoice = invoices.find((item) => item.invoiceMonth === requestedMonth);
+  if (!invoice || invoice.amount <= 0 || invoice.status === "paid") {
     res.status(400).json({ error: "No open invoice to pay" });
     return;
   }
@@ -181,20 +182,24 @@ router.post("/cards/:id/pay-invoice", async (req, res): Promise<void> => {
     walletId: wallet.id,
     cardId: existing.id,
     cardEntryType: "invoice_payment",
+    cardInvoiceMonth: requestedMonth,
     destinationWalletId: null,
     categoryId: null,
     goalId: null,
     type: "expense",
-    amount: String(currentInvoiceAmount),
-    description: `Pagamento da fatura - ${existing.name}`,
+    amount: String(invoice.amount),
+    description: `Pagamento da fatura ${requestedMonth} - ${existing.name}`,
     date: new Date().toISOString().slice(0, 10),
     dueDate: null,
     recurrence: { kind: "none" },
     paymentStatus: "paid",
     paymentStatusOverrides: {},
   });
-  const refreshedTransactions = await getCardPurchaseRows(userId, existing.id);
-  res.json(PayCardInvoiceResponse.parse(toResponse(existing, invoiceAmount(refreshedTransactions))));
+  const refreshedTransactions = await getCardRows(userId, existing.id);
+  res.json(PayCardInvoiceResponse.parse(toResponse(
+    existing,
+    getCardInvoiceSummaries(refreshedTransactions, existing.closingDay, existing.dueDay),
+  )));
 });
 
 router.get("/cards/:id/history", async (req, res): Promise<void> => {
@@ -210,7 +215,7 @@ router.get("/cards/:id/history", async (req, res): Promise<void> => {
     return;
   }
   const now = new Date();
-  const rows = await getCardPurchaseRows(userId, card.id);
+  const rows = await getCardRows(userId, card.id);
   const categoryIds = rows.map((row) => row.categoryId).filter((id): id is string => Boolean(id));
   const categories = categoryIds.length === 0
     ? []
@@ -226,9 +231,7 @@ router.get("/cards/:id/history", async (req, res): Promise<void> => {
     date: string;
     paymentStatus: "paid" | "unpaid";
     categoryName: string | null;
-  }> = rows
-    .filter((row) => row.date.slice(0, 7) === monthKey(now))
-    .map((row) => ({
+  }> = rows.map((row) => ({
       id: row.id,
       kind: "transaction" as const,
       description: row.description,
@@ -243,7 +246,7 @@ router.get("/cards/:id/history", async (req, res): Promise<void> => {
       kind: "closure" as const,
       description: "Fatura fechada",
       amount: 0,
-      date: dayDate(now, card.closingDay),
+      date: dayDate(monthKey(now), card.closingDay),
       paymentStatus: "paid" as const,
       categoryName: null,
     });

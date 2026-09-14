@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Response } from "express";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { cardsTable, categoriesTable, db, goalsTable, transactionsTable, walletsTable } from "@workspace/db";
 import {
   CreateTransactionBody,
@@ -14,6 +14,7 @@ import {
   UpdateTransactionResponse,
 } from "@workspace/api-zod";
 import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
+import { invoiceMonthForPurchase } from "../services/cardInvoices";
 import { ensureDefaultWallet, getUserWallet } from "./wallets";
 
 const router: IRouter = Router();
@@ -61,7 +62,10 @@ router.get("/transactions", async (req, res): Promise<void> => {
       .where(and(eq(transactionsTable.userId, userId), isNull(transactionsTable.walletId)));
   }
   const rows = await db.select().from(transactionsTable)
-    .where(eq(transactionsTable.userId, userId))
+    .where(and(
+      eq(transactionsTable.userId, userId),
+      ne(transactionsTable.cardEntryType, "purchase"),
+    ))
     .orderBy(desc(transactionsTable.date), desc(transactionsTable.createdAt));
   const parsed = ListTransactionsResponse.parse(rows.map(toResponse));
   res.json(parsed.map((transaction) => ({
@@ -102,17 +106,19 @@ router.post("/transactions", async (req, res): Promise<void> => {
       return;
     }
   }
+  let cardClosingDay: number | null = null;
   if (parsed.data.cardId) {
     if (parsed.data.type !== "expense") {
       res.status(400).json({ error: "Cards can only be linked to expenses" });
       return;
     }
-    const [card] = await db.select({ id: cardsTable.id }).from(cardsTable)
+    const [card] = await db.select({ id: cardsTable.id, closingDay: cardsTable.closingDay }).from(cardsTable)
       .where(and(eq(cardsTable.id, parsed.data.cardId), eq(cardsTable.userId, userId)));
     if (!card) {
       res.status(400).json({ error: "Card not found" });
       return;
     }
+    cardClosingDay = card.closingDay;
   }
   const [row] = await db.insert(transactionsTable).values({
     ...parsed.data,
@@ -121,6 +127,9 @@ router.post("/transactions", async (req, res): Promise<void> => {
     walletId: wallet.id,
     cardId: parsed.data.type === "expense" ? parsed.data.cardId ?? null : null,
     cardEntryType: "purchase",
+    cardInvoiceMonth: parsed.data.cardId
+      ? invoiceMonthForPurchase(dateOnly(parsed.data.date) ?? new Date().toISOString().slice(0, 10), cardClosingDay ?? 31)
+      : null,
     destinationWalletId: parsed.data.type === "transfer" ? destinationWallet?.id : null,
     categoryId: parsed.data.categoryId ?? null,
     goalId: parsed.data.goalId ?? null,
@@ -189,13 +198,15 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
   const effectiveCardId = effectiveType === "expense"
     ? cardId === undefined ? current.cardId : cardId
     : null;
+  let effectiveCardClosingDay: number | null = null;
   if (effectiveCardId) {
-    const [card] = await db.select({ id: cardsTable.id }).from(cardsTable)
+    const [card] = await db.select({ id: cardsTable.id, closingDay: cardsTable.closingDay }).from(cardsTable)
       .where(and(eq(cardsTable.id, effectiveCardId), eq(cardsTable.userId, userId)));
     if (!card) {
       res.status(400).json({ error: "Card not found" });
       return;
     }
+    effectiveCardClosingDay = card.closingDay;
   }
   const effectiveGoalId = goalId === undefined ? current.goalId : goalId;
   if (effectiveGoalId) {
@@ -212,9 +223,16 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     ...(date === undefined ? {} : { date: dateOnly(date) }),
     ...(dueDate === undefined ? {} : { dueDate: dateOnly(dueDate) }),
     ...(walletId === undefined ? {} : { walletId: wallet.id }),
-    ...((cardId !== undefined || type !== undefined) ? {
+    ...((cardId !== undefined || type !== undefined || date !== undefined) ? {
       cardId: effectiveCardId,
-      cardEntryType: effectiveCardId ? "purchase" : current.cardEntryType,
+      cardEntryType: current.cardEntryType === "invoice_payment"
+        ? "invoice_payment"
+        : effectiveCardId ? "purchase" : current.cardEntryType,
+      cardInvoiceMonth: current.cardEntryType === "invoice_payment"
+        ? current.cardInvoiceMonth
+        : effectiveCardId
+          ? invoiceMonthForPurchase(dateOnly(date) ?? current.date, effectiveCardClosingDay ?? 31)
+          : null,
     } : {}),
     ...(type === undefined ? {} : { type }),
     ...(paymentStatus === undefined ? {} : { paymentStatus }),

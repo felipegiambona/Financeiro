@@ -71,6 +71,7 @@ export function calculateLimitUsage(
   const used = occurrences.reduce((total, transaction) => {
     if (
       transaction.isInvestment
+      || transaction.cardId
       ||
       transaction.type !== 'expense'
       || transaction.paymentStatus !== 'paid'

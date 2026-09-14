@@ -4,14 +4,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { calculateForecastByMonth } from '@/services/financialRules';
 import { Transaction } from '@/types/transaction';
+import { Card } from '@/types/card';
 import { formatCurrency } from '@/utils/currency';
 
-export function ForecastTable({ transactions }: { transactions: Transaction[] }) {
+export function ForecastTable({ transactions, cards = [] }: { transactions: Transaction[]; cards?: Card[] }) {
   const colors = useColors();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const forecasts = useMemo(
-    () => calculateForecastByMonth(transactions, selectedYear),
-    [transactions, selectedYear],
+    () => calculateForecastByMonth(transactions, selectedYear, cards),
+    [cards, transactions, selectedYear],
   );
 
   return (

@@ -10,6 +10,7 @@ import { WalletIconView } from '@/components/WalletIconView';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
 import { useWallets } from '@/context/WalletContext';
+import { useCards } from '@/context/CardContext';
 import { calculateWalletTotals } from '@/services/financialRules';
 import type { Wallet } from '@/types/wallet';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
@@ -38,6 +39,7 @@ export default function WalletsScreen() {
   const insets = useSafeAreaInsets();
   const { wallets, loading, error, refresh, createWallet, updateWallet, deleteWallet } = useWallets();
   const { transactions, loading: transactionsLoading } = useFinance();
+  const { cards } = useCards();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingWalletId, setEditingWalletId] = useState<string | null>(null);
   const [form, setForm] = useState<WalletForm>(EMPTY_FORM);
@@ -49,8 +51,8 @@ export default function WalletsScreen() {
     [editingWalletId, wallets],
   );
   const walletTotals = useMemo(
-    () => calculateWalletTotals(wallets, transactions),
-    [transactions, wallets],
+    () => calculateWalletTotals(wallets, transactions, new Date(), cards),
+    [cards, transactions, wallets],
   );
 
   const openCreate = () => {
