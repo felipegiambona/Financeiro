@@ -17,7 +17,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { ClerkLoaded, ClerkProvider } from '@clerk/expo';
+import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setBaseUrl } from '@workspace/api-client-react';
 import { FinanceProvider } from '@/context/FinanceContext';
@@ -170,11 +170,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
-          <ClerkLoaded>
-            <ThemeProvider>
-              <ThemedApp />
-            </ThemeProvider>
-          </ClerkLoaded>
+          <ThemeProvider>
+            <ThemedApp />
+          </ThemeProvider>
         </ClerkProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
