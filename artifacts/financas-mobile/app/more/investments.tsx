@@ -108,6 +108,7 @@ export default function InvestmentsScreen() {
   const [favoriteSearchQuery, setFavoriteSearchQuery] = useState('');
   const [favoriteSearchResults, setFavoriteSearchResults] = useState<InvestmentSearchResult[]>([]);
   const [favoriteSearchLoading, setFavoriteSearchLoading] = useState(false);
+  const [favoriteAddingKey, setFavoriteAddingKey] = useState<string | null>(null);
   const favoriteSearchRequestRef = useRef(0);
   const filteredInvestments = useMemo(
     () => investments.filter((investment) => (
@@ -165,11 +166,16 @@ export default function InvestmentsScreen() {
     () => new Set(favoriteExistingMatches.map((investment) => `${investment.assetType}:${(investment.ticker ?? '').trim().toLocaleLowerCase() || investment.name.trim().toLocaleLowerCase()}`)),
     [favoriteExistingMatches],
   );
+  const investmentKeys = useMemo(
+    () => new Set(investments.map((investment) => `${investment.assetType}:${(investment.ticker ?? '').trim().toLocaleLowerCase() || investment.name.trim().toLocaleLowerCase()}`)),
+    [investments],
+  );
   const favoriteCatalogSuggestions = useMemo(
-    () => favoriteSearchResults.filter((suggestion) => (
-      !favoriteExistingKeys.has(`${suggestion.assetType}:${suggestion.ticker.trim().toLocaleLowerCase() || suggestion.name.trim().toLocaleLowerCase()}`)
-    )),
-    [favoriteExistingKeys, favoriteSearchResults],
+    () => favoriteSearchResults.filter((suggestion) => {
+      const key = `${suggestion.assetType}:${suggestion.ticker.trim().toLocaleLowerCase() || suggestion.name.trim().toLocaleLowerCase()}`;
+      return !favoriteExistingKeys.has(key) && !investmentKeys.has(key);
+    }),
+    [favoriteExistingKeys, favoriteSearchResults, investmentKeys],
   );
 
   useEffect(() => {
@@ -267,6 +273,30 @@ export default function InvestmentsScreen() {
       setFavoriteSearchQuery('');
     } catch {
       Alert.alert('Não foi possível adicionar favorito', 'Tente novamente.');
+    }
+  };
+
+  const addCatalogFavorite = async (suggestion: InvestmentSearchResult) => {
+    const key = `${suggestion.assetType}:${suggestion.ticker}:${suggestion.name}`;
+    try {
+      setFavoriteAddingKey(key);
+      await createInvestment({
+        name: suggestion.name,
+        ticker: suggestion.ticker || undefined,
+        assetType: suggestion.assetType,
+        quantity: 0,
+        averagePrice: 0,
+        investedAmount: 0,
+        currentValue: 0,
+        valuationMode: 'manual',
+        isFavorite: true,
+      });
+      setFavoriteSearchQuery('');
+      setFavoriteSearchResults([]);
+    } catch {
+      Alert.alert('Não foi possível adicionar favorito', 'Tente novamente.');
+    } finally {
+      setFavoriteAddingKey(null);
     }
   };
 
@@ -420,7 +450,7 @@ export default function InvestmentsScreen() {
               </View>
               <Feather name="star" size={16} color={colors.accent} />
             </View>
-            <View style={styles.inputWithClear}>
+            <View style={[styles.inputWithClear, styles.favoriteSearchInput]}>
               <TextInput
                 accessibilityLabel="Buscar ativo para adicionar aos favoritos"
                 testID="favorite-asset-search-input"
@@ -429,7 +459,7 @@ export default function InvestmentsScreen() {
                 placeholder="Nome, ticker ou código do ativo"
                 placeholderTextColor={colors.mutedForeground}
                 autoCapitalize="none"
-                style={[styles.input, styles.inputWithClearField, styles.favoriteSearchInput, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
+                style={[styles.input, styles.inputWithClearField, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
               />
               {favoriteSearchQuery ? (
                 <Pressable
@@ -484,7 +514,8 @@ export default function InvestmentsScreen() {
                             key={`${suggestion.assetType}:${suggestion.ticker}:${suggestion.name}`}
                             accessibilityRole="button"
                             accessibilityLabel={`Adicionar ${suggestion.name} aos favoritos`}
-                            onPress={() => openEditor(undefined, suggestion, true)}
+                            disabled={favoriteAddingKey === `${suggestion.assetType}:${suggestion.ticker}:${suggestion.name}`}
+                            onPress={() => void addCatalogFavorite(suggestion)}
                             style={({ pressed }) => [styles.favoriteSearchRow, { borderBottomColor: colors.border }, pressed && styles.pressed]}
                           >
                             <View style={styles.suggestionCopy}>
@@ -495,7 +526,9 @@ export default function InvestmentsScreen() {
                             </View>
                             <View style={styles.favoriteSearchAction}>
                               <Feather name="plus" size={14} color={colors.foreground} />
-                              <Text style={[styles.favoriteSearchActionText, { color: colors.foreground }]}>Adicionar</Text>
+                              <Text style={[styles.favoriteSearchActionText, { color: colors.foreground }]}>
+                                {favoriteAddingKey === `${suggestion.assetType}:${suggestion.ticker}:${suggestion.name}` ? 'Adicionando...' : 'Adicionar'}
+                              </Text>
                             </View>
                           </Pressable>
                         ))}
@@ -982,7 +1015,7 @@ const styles = StyleSheet.create({
   input: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   inputWithClear: { position: 'relative', justifyContent: 'center' },
   inputWithClearField: { paddingRight: 38 },
-  clearSearchButton: { position: 'absolute', right: 11, width: 24, height: 32, alignItems: 'center', justifyContent: 'center' },
+  clearSearchButton: { position: 'absolute', top: 6, right: 10, width: 24, height: 32, alignItems: 'center', justifyContent: 'center' },
   suggestionList: { borderWidth: 1, borderRadius: 8, marginTop: 6, overflow: 'hidden' },
   suggestionSectionLabel: { fontSize: 9, fontFamily: 'Inter_700Bold', letterSpacing: 0.7, textTransform: 'uppercase', paddingHorizontal: 11, paddingTop: 10, paddingBottom: 3 },
   suggestionState: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingHorizontal: 11, paddingVertical: 11 },
