@@ -21,6 +21,9 @@ import {
 const router: IRouter = Router();
 router.use("/investments", requireAuth, resolveFinancialProfile);
 
+const QUOTE_SOURCE = "BRAPI";
+const QUOTE_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+
 function assertPersonalProfile(req: Request, res: Response): boolean {
   if (financialProfileTypeFrom(req) !== "personal") {
     res.status(403).json({ error: "Investments are only available for personal profiles" });
@@ -36,6 +39,9 @@ function roundMoney(value: number): number {
 function toResponse(row: typeof investmentsTable.$inferSelect) {
   const investedAmount = Number(row.investedAmount);
   const currentValue = Number(row.currentValue);
+  const manualCurrentValue = row.valuationMode === "manual" && Number(row.manualCurrentValue) === 0 && currentValue > 0
+    ? currentValue
+    : Number(row.manualCurrentValue);
   const returnAmount = roundMoney(currentValue - investedAmount);
   const returnPercentage = investedAmount > 0
     ? roundMoney((returnAmount / investedAmount) * 100)
@@ -51,11 +57,102 @@ function toResponse(row: typeof investmentsTable.$inferSelect) {
     averagePrice: Number(row.averagePrice),
     investedAmount,
     currentValue,
+    manualCurrentValue,
+    valuationMode: row.valuationMode,
+    quoteSource: row.quoteSource,
+    quotePrice: row.quotePrice === null ? null : Number(row.quotePrice),
+    quoteStatus: row.quoteStatus,
+    quoteError: row.quoteError,
+    lastQuoteAt: row.lastQuoteAt?.toISOString() ?? null,
     returnAmount,
     returnPercentage,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+function quoteIsFresh(row: typeof investmentsTable.$inferSelect): boolean {
+  return row.quoteStatus === "updated"
+    && row.lastQuoteAt !== null
+    && Date.now() - row.lastQuoteAt.getTime() < QUOTE_REFRESH_INTERVAL_MS;
+}
+
+async function fetchQuote(ticker: string): Promise<number> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5_000);
+  try {
+    const response = await fetch(`https://brapi.dev/api/quote/${encodeURIComponent(ticker)}`, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`Quote provider returned ${response.status}`);
+    const payload: unknown = await response.json();
+    if (
+      !payload
+      || typeof payload !== "object"
+      || !("results" in payload)
+      || !Array.isArray(payload.results)
+      || payload.results.length === 0
+    ) {
+      throw new Error("Quote provider returned no results");
+    }
+    const result = payload.results[0];
+    const quote = result && typeof result === "object" && "regularMarketPrice" in result
+      ? result.regularMarketPrice
+      : undefined;
+    if (typeof quote !== "number" || !Number.isFinite(quote) || quote < 0) {
+      throw new Error("Quote provider returned an invalid price");
+    }
+    return quote;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function refreshQuote(row: typeof investmentsTable.$inferSelect) {
+  if (quoteIsFresh(row)) return row;
+
+  if (!row.ticker) {
+    const [updated] = await db.update(investmentsTable).set({
+      quoteSource: QUOTE_SOURCE,
+      quoteStatus: "unavailable",
+      quoteError: "Informe um ticker para consultar a cotação.",
+    }).where(and(
+      eq(investmentsTable.id, row.id),
+      eq(investmentsTable.userId, row.userId),
+      eq(investmentsTable.profileId, row.profileId),
+    )).returning();
+    return updated ?? row;
+  }
+
+  try {
+    const quotePrice = await fetchQuote(row.ticker);
+    const currentValue = roundMoney(quotePrice * Number(row.quantity));
+    const [updated] = await db.update(investmentsTable).set({
+      currentValue: String(currentValue),
+      quoteSource: QUOTE_SOURCE,
+      quotePrice: String(quotePrice),
+      quoteStatus: "updated",
+      quoteError: null,
+      lastQuoteAt: new Date(),
+    }).where(and(
+      eq(investmentsTable.id, row.id),
+      eq(investmentsTable.userId, row.userId),
+      eq(investmentsTable.profileId, row.profileId),
+    )).returning();
+    return updated ?? row;
+  } catch {
+    const [updated] = await db.update(investmentsTable).set({
+      quoteSource: QUOTE_SOURCE,
+      quoteStatus: "error",
+      quoteError: "Não foi possível obter a cotação agora. O último valor foi mantido.",
+    }).where(and(
+      eq(investmentsTable.id, row.id),
+      eq(investmentsTable.userId, row.userId),
+      eq(investmentsTable.profileId, row.profileId),
+    )).returning();
+    return updated ?? row;
+  }
 }
 
 function optionalText(value: string | null | undefined): string | null {
@@ -74,6 +171,26 @@ router.get("/investments", async (req, res): Promise<void> => {
   res.json(ListInvestmentsResponse.parse(rows.map(toResponse)));
 });
 
+router.post("/investments/refresh", async (req, res): Promise<void> => {
+  if (!assertPersonalProfile(req, res)) return;
+  const rows = await db.select().from(investmentsTable)
+    .where(and(
+      eq(investmentsTable.userId, scopedUserIdFrom(req)),
+      eq(investmentsTable.profileId, profileIdFrom(req)),
+      eq(investmentsTable.valuationMode, "automatic"),
+    ))
+    .orderBy(asc(investmentsTable.createdAt));
+  const refreshed = await Promise.all(rows.map(refreshQuote));
+  const refreshedById = new Map(refreshed.map((row) => [row.id, row]));
+  const allRows = await db.select().from(investmentsTable)
+    .where(and(
+      eq(investmentsTable.userId, scopedUserIdFrom(req)),
+      eq(investmentsTable.profileId, profileIdFrom(req)),
+    ))
+    .orderBy(asc(investmentsTable.createdAt));
+  res.json(ListInvestmentsResponse.parse(allRows.map((row) => toResponse(refreshedById.get(row.id) ?? row))));
+});
+
 router.post("/investments", async (req, res): Promise<void> => {
   if (!assertPersonalProfile(req, res)) return;
   const parsed = CreateInvestmentBody.safeParse(req.body);
@@ -82,6 +199,7 @@ router.post("/investments", async (req, res): Promise<void> => {
     return;
   }
 
+  const valuationMode = parsed.data.valuationMode ?? "manual";
   const [row] = await db.insert(investmentsTable).values({
     userId: scopedUserIdFrom(req),
     profileId: profileIdFrom(req),
@@ -93,6 +211,10 @@ router.post("/investments", async (req, res): Promise<void> => {
     averagePrice: String(parsed.data.averagePrice),
     investedAmount: String(parsed.data.investedAmount),
     currentValue: String(parsed.data.currentValue),
+    manualCurrentValue: String(parsed.data.currentValue),
+    valuationMode,
+    quoteSource: valuationMode === "automatic" ? QUOTE_SOURCE : null,
+    quoteStatus: valuationMode === "automatic" ? "pending" : "not_configured",
   }).returning();
   res.status(201).json(CreateInvestmentResponse.parse(toResponse(row)));
 });
@@ -110,6 +232,28 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  const [existing] = await db.select().from(investmentsTable).where(and(
+    eq(investmentsTable.id, params.data.id),
+    eq(investmentsTable.userId, scopedUserIdFrom(req)),
+    eq(investmentsTable.profileId, profileIdFrom(req)),
+  ));
+  if (!existing) {
+    res.status(404).json({ error: "Investment not found" });
+    return;
+  }
+  const valuationMode = body.data.valuationMode ?? existing.valuationMode;
+  const existingManualCurrentValue = existing.valuationMode === "manual"
+    && Number(existing.manualCurrentValue) === 0
+    && Number(existing.currentValue) > 0
+    ? Number(existing.currentValue)
+    : Number(existing.manualCurrentValue);
+  const manualCurrentValue = body.data.currentValue ?? existingManualCurrentValue;
+  const switchedToAutomatic = valuationMode === "automatic" && existing.valuationMode !== "automatic";
+  const requiresNewQuote = valuationMode === "automatic" && (
+    switchedToAutomatic
+    || body.data.ticker !== undefined
+    || body.data.quantity !== undefined
+  );
   const updates = {
     ...(body.data.name === undefined ? {} : { name: body.data.name.trim() }),
     ...(body.data.ticker === undefined ? {} : { ticker: optionalText(body.data.ticker) }),
@@ -118,17 +262,29 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
     ...(body.data.quantity === undefined ? {} : { quantity: String(body.data.quantity) }),
     ...(body.data.averagePrice === undefined ? {} : { averagePrice: String(body.data.averagePrice) }),
     ...(body.data.investedAmount === undefined ? {} : { investedAmount: String(body.data.investedAmount) }),
-    ...(body.data.currentValue === undefined ? {} : { currentValue: String(body.data.currentValue) }),
+    ...(body.data.currentValue === undefined ? {} : { manualCurrentValue: String(body.data.currentValue) }),
+    ...(valuationMode === "manual" ? { currentValue: String(manualCurrentValue) } : {}),
+    valuationMode,
+    ...(valuationMode === "manual" ? {
+      quoteStatus: "not_configured" as const,
+      quoteSource: null,
+      quotePrice: null,
+      quoteError: null,
+      lastQuoteAt: null,
+    } : {}),
+    ...(requiresNewQuote ? {
+      quoteStatus: "pending" as const,
+      quoteSource: QUOTE_SOURCE,
+      quotePrice: null,
+      quoteError: null,
+      lastQuoteAt: null,
+    } : {}),
   };
   const [row] = await db.update(investmentsTable).set(updates).where(and(
     eq(investmentsTable.id, params.data.id),
     eq(investmentsTable.userId, scopedUserIdFrom(req)),
     eq(investmentsTable.profileId, profileIdFrom(req)),
   )).returning();
-  if (!row) {
-    res.status(404).json({ error: "Investment not found" });
-    return;
-  }
   res.json(UpdateInvestmentResponse.parse(toResponse(row)));
 });
 

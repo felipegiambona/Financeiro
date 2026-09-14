@@ -9,7 +9,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useInvestments } from '@/context/InvestmentContext';
 import { useColors } from '@/hooks/useColors';
-import type { Investment, InvestmentAssetType, InvestmentInput, InvestmentUpdate } from '@workspace/api-client-react';
+import type { Investment, InvestmentAssetType, InvestmentInput, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
 
 const ASSET_TYPES: Array<{ value: InvestmentAssetType; label: string }> = [
@@ -41,6 +41,21 @@ function formatPercentage(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2).replace('.', ',')}%`;
 }
 
+function formatQuoteDate(value: string | null): string {
+  if (!value) return 'ainda não consultada';
+  return new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function quoteStatusText(investment: Investment): string {
+  if (investment.valuationMode === 'manual') return 'Manual · valor informado por você';
+  if (investment.quoteStatus === 'updated') {
+    return `${investment.quoteSource ?? 'Fonte de mercado'} · ${formatQuoteDate(investment.lastQuoteAt)}`;
+  }
+  if (investment.quoteStatus === 'pending') return `${investment.quoteSource ?? 'Fonte de mercado'} · aguardando cotação`;
+  if (investment.quoteStatus === 'unavailable') return `${investment.quoteSource ?? 'Fonte de mercado'} · sem cotação`;
+  return `${investment.quoteSource ?? 'Fonte de mercado'} · falha em ${formatQuoteDate(investment.lastQuoteAt)}`;
+}
+
 function getInitialForm(investment?: Investment) {
   return {
     name: investment?.name ?? '',
@@ -50,14 +65,15 @@ function getInitialForm(investment?: Investment) {
     quantity: investment ? formatQuantityInput(String(investment.quantity).replace('.', ',')) : '',
     averagePrice: investment ? formatAmountValue(investment.averagePrice) : '',
     investedAmount: investment ? formatAmountValue(investment.investedAmount) : '',
-    currentValue: investment ? formatAmountValue(investment.currentValue) : '',
+    currentValue: investment ? formatAmountValue(investment.manualCurrentValue) : '',
+    valuationMode: investment?.valuationMode ?? 'manual' as InvestmentValuationMode,
   };
 }
 
 export default function InvestmentsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { investments, loading, error, refresh, createInvestment, updateInvestment, deleteInvestment } = useInvestments();
+  const { investments, loading, error, refresh, refreshQuotes, createInvestment, updateInvestment, deleteInvestment } = useInvestments();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [form, setForm] = useState(() => getInitialForm());
@@ -106,6 +122,7 @@ export default function InvestmentsScreen() {
       averagePrice,
       investedAmount,
       currentValue,
+      valuationMode: form.valuationMode,
     };
     try {
       setSaving(true);
@@ -116,6 +133,9 @@ export default function InvestmentsScreen() {
         await createInvestment(input);
       }
       setEditorOpen(false);
+      if (form.valuationMode === 'automatic') {
+        void refreshQuotes().catch(() => undefined);
+      }
     } catch {
       Alert.alert('Não foi possível salvar', 'Confira os dados e tente novamente.');
     } finally {
@@ -149,7 +169,7 @@ export default function InvestmentsScreen() {
           onAction={() => openEditor()}
         />
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>
-          Acompanhe sua carteira pessoal com os valores que você informar.
+           Acompanhe sua carteira pessoal com valor manual ou cotações automáticas.
         </Text>
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
           <>
@@ -171,6 +191,17 @@ export default function InvestmentsScreen() {
                   </Text>
                 </View>
               </View>
+              {investments.some((investment) => investment.valuationMode === 'automatic') && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Atualizar cotações"
+                  onPress={() => void refreshQuotes().catch(() => Alert.alert('Cotação indisponível', 'Os valores atuais foram mantidos. Tente novamente mais tarde.'))}
+                  style={({ pressed }) => [styles.quoteRefresh, pressed && styles.pressed]}
+                >
+                  <Feather name="refresh-cw" size={12} color="#FFFFFF" />
+                  <Text style={styles.quoteRefreshText}>Atualizar cotações</Text>
+                </Pressable>
+              )}
             </View>
             {investments.length === 0 ? (
               <View style={styles.emptyWrap}>
@@ -231,6 +262,19 @@ export default function InvestmentsScreen() {
                         {formatCurrency(investment.returnAmount)} · {formatPercentage(investment.returnPercentage)}
                       </Text>
                     </View>
+                    <View style={[styles.quoteRow, { borderTopColor: colors.border }]}>
+                      <Feather
+                        name={investment.valuationMode === 'automatic' && investment.quoteStatus === 'updated' ? 'check-circle' : 'info'}
+                        size={12}
+                        color={investment.quoteStatus === 'error' || investment.quoteStatus === 'unavailable' ? colors.expense : colors.mutedForeground}
+                      />
+                      <View style={styles.quoteCopy}>
+                        <Text style={[styles.quoteText, { color: colors.mutedForeground }]}>{quoteStatusText(investment)}</Text>
+                        {investment.quoteError && investment.valuationMode === 'automatic' && (
+                          <Text style={[styles.quoteError, { color: colors.expense }]}>{investment.quoteError}</Text>
+                        )}
+                      </View>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -258,7 +302,29 @@ export default function InvestmentsScreen() {
                   <Feather name="x" size={18} color={colors.foreground} />
                 </Pressable>
               </View>
-              <Text style={[styles.helper, { color: colors.mutedForeground }]}>Os valores são manuais e não recebem atualização automática de mercado.</Text>
+              <Text style={[styles.helper, { color: colors.mutedForeground }]}>Escolha como o valor atual deste ativo deve ser calculado.</Text>
+              <Text style={[styles.label, { color: colors.foreground }]}>Atualização do valor</Text>
+              <View style={styles.modeRow}>
+                {([
+                  { value: 'manual', label: 'Manual', description: 'Você informa o valor' },
+                  { value: 'automatic', label: 'Automática', description: 'BRAPI a cada 15 min' },
+                ] as Array<{ value: InvestmentValuationMode; label: string; description: string }>).map((item) => (
+                  <Pressable
+                    key={item.value}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: form.valuationMode === item.value }}
+                    onPress={() => setForm((current) => ({ ...current, valuationMode: item.value }))}
+                    style={({ pressed }) => [
+                      styles.modeOption,
+                      { backgroundColor: form.valuationMode === item.value ? colors.primary : colors.secondary, borderColor: form.valuationMode === item.value ? colors.primary : colors.border },
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={[styles.modeTitle, { color: form.valuationMode === item.value ? colors.primaryForeground : colors.foreground }]}>{item.label}</Text>
+                    <Text style={[styles.modeDescription, { color: form.valuationMode === item.value ? colors.primaryForeground : colors.mutedForeground }]}>{item.description}</Text>
+                  </Pressable>
+                ))}
+              </View>
               <Text style={[styles.label, { color: colors.foreground }]}>Nome ou código do ativo</Text>
               <TextInput
                 accessibilityLabel="Nome ou código do ativo"
@@ -348,9 +414,11 @@ export default function InvestmentsScreen() {
                 onChangeText={(investedAmount) => setForm((current) => ({ ...current, investedAmount: formatAmountInput(investedAmount) }))}
                 style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
               />
-              <Text style={[styles.label, { color: colors.foreground }]}>Valor atual</Text>
+               <Text style={[styles.label, { color: colors.foreground }]}>
+                 {form.valuationMode === 'automatic' ? 'Valor manual de segurança' : 'Valor atual'}
+               </Text>
               <TextInput
-                accessibilityLabel="Valor atual"
+                 accessibilityLabel={form.valuationMode === 'automatic' ? 'Valor manual de segurança' : 'Valor atual'}
                 keyboardType="decimal-pad"
                 placeholder="R$ 0,00"
                 placeholderTextColor={colors.mutedForeground}
@@ -358,6 +426,11 @@ export default function InvestmentsScreen() {
                 onChangeText={(currentValue) => setForm((current) => ({ ...current, currentValue: formatAmountInput(currentValue) }))}
                 style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
               />
+               {form.valuationMode === 'automatic' && (
+                 <Text style={[styles.helper, { color: colors.mutedForeground }]}>
+                   Mantido caso a fonte não encontre uma cotação. O último valor válido nunca é apagado automaticamente.
+                 </Text>
+               )}
               <Pressable disabled={saving} onPress={() => void saveInvestment()} style={({ pressed }) => [styles.saveButton, { backgroundColor: colors.primary }, saving && styles.disabled, pressed && styles.pressed]}>
                 <Text style={[styles.saveText, { color: colors.primaryForeground }]}>{saving ? 'Salvando...' : editingInvestment ? 'Salvar alterações' : 'Cadastrar investimento'}</Text>
               </Pressable>
@@ -392,6 +465,8 @@ const styles = StyleSheet.create({
   summaryMetaLabel: { color: '#AFAFAF', fontSize: 10, fontFamily: 'Inter_400Regular' },
   summaryMetaValue: { color: '#FFFFFF', fontSize: 13, fontFamily: 'Inter_700Bold', marginTop: 3 },
   summaryPercentage: { fontSize: 10, fontFamily: 'Inter_700Bold', marginTop: 2 },
+  quoteRefresh: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 13, paddingVertical: 4 },
+  quoteRefreshText: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   emptyWrap: { marginTop: 12, gap: 10 },
   emptyAction: { minHeight: 42, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   emptyActionText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
@@ -412,6 +487,10 @@ const styles = StyleSheet.create({
   returnRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 12 },
   returnLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   returnValue: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  quoteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, borderTopWidth: 1, marginTop: 10, paddingTop: 9 },
+  quoteCopy: { flex: 1, minWidth: 0 },
+  quoteText: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  quoteError: { fontSize: 9, lineHeight: 13, fontFamily: 'Inter_400Regular', marginTop: 2 },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
   modalCard: { width: '100%', maxWidth: 360, maxHeight: '90%', borderRadius: 10, borderWidth: 1, padding: 14, flexShrink: 1 },
   modalScroll: { flexShrink: 1 },
@@ -422,6 +501,10 @@ const styles = StyleSheet.create({
   closeButton: { width: 32, height: 32, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   helper: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular', marginBottom: 2 },
   label: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 7, marginTop: 14 },
+  modeRow: { flexDirection: 'row', gap: 8 },
+  modeOption: { flex: 1, minHeight: 56, borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 9, justifyContent: 'center' },
+  modeTitle: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  modeDescription: { fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 4 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   fieldsRow: { flexDirection: 'row', gap: 10 },
   halfField: { flex: 1, minWidth: 0 },

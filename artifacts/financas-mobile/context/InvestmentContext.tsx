@@ -3,6 +3,7 @@ import {
   createInvestment as persistInvestment,
   deleteInvestment as removeInvestment,
   listInvestments,
+  refreshInvestmentQuotes as persistInvestmentQuotes,
   updateInvestment as updatePersistedInvestment,
   type Investment,
   type InvestmentInput,
@@ -15,6 +16,7 @@ interface InvestmentContextValue {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  refreshQuotes: () => Promise<void>;
   createInvestment: (input: InvestmentInput) => Promise<Investment>;
   updateInvestment: (id: string, updates: InvestmentUpdate) => Promise<Investment>;
   deleteInvestment: (id: string) => Promise<void>;
@@ -39,7 +41,15 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
     try {
       setError(null);
       setLoading(true);
-      setInvestments(await listInvestments());
+      const loaded = await listInvestments();
+      setInvestments(loaded);
+      if (loaded.some((investment) => investment.valuationMode === 'automatic')) {
+        try {
+          setInvestments(await persistInvestmentQuotes());
+        } catch {
+          // Quote provider outages are shown per asset; they should not hide the portfolio.
+        }
+      }
     } catch {
       setError('Não foi possível carregar seus investimentos.');
     } finally {
@@ -49,7 +59,18 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
 
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+    if (activeProfile?.type !== 'personal') return undefined;
+    const interval = setInterval(() => void refresh(), 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [activeProfile?.type, refresh]);
+
+  const refreshQuotes = useCallback(async () => {
+    try {
+      setInvestments(await persistInvestmentQuotes());
+    } catch {
+      throw new Error('Não foi possível atualizar as cotações agora.');
+    }
+  }, []);
 
   const createInvestment = useCallback(async (input: InvestmentInput) => {
     try {
@@ -87,8 +108,8 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   const value = useMemo(
-    () => ({ investments, loading, error, refresh, createInvestment, updateInvestment, deleteInvestment }),
-    [createInvestment, deleteInvestment, error, investments, loading, refresh, updateInvestment],
+    () => ({ investments, loading, error, refresh, refreshQuotes, createInvestment, updateInvestment, deleteInvestment }),
+    [createInvestment, deleteInvestment, error, investments, loading, refresh, refreshQuotes, updateInvestment],
   );
 
   return <InvestmentContext.Provider value={value}>{children}</InvestmentContext.Provider>;

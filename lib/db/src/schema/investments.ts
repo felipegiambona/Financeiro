@@ -11,6 +11,17 @@ export const investmentAssetType = pgEnum("investment_asset_type", [
   "crypto",
   "other",
 ]);
+export const investmentValuationMode = pgEnum("investment_valuation_mode", [
+  "manual",
+  "automatic",
+]);
+export const investmentQuoteStatus = pgEnum("investment_quote_status", [
+  "not_configured",
+  "pending",
+  "updated",
+  "unavailable",
+  "error",
+]);
 
 export const investmentsTable = pgTable("finance_investments", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -24,6 +35,13 @@ export const investmentsTable = pgTable("finance_investments", {
   averagePrice: numeric("average_price", { precision: 20, scale: 8 }).notNull(),
   investedAmount: numeric("invested_amount", { precision: 16, scale: 2 }).notNull(),
   currentValue: numeric("current_value", { precision: 16, scale: 2 }).notNull(),
+  manualCurrentValue: numeric("manual_current_value", { precision: 16, scale: 2 }).notNull().default("0"),
+  valuationMode: investmentValuationMode("valuation_mode").notNull().default("manual"),
+  quoteSource: text("quote_source"),
+  quotePrice: numeric("quote_price", { precision: 20, scale: 8 }),
+  quoteStatus: investmentQuoteStatus("quote_status").notNull().default("not_configured"),
+  quoteError: text("quote_error"),
+  lastQuoteAt: timestamp("last_quote_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

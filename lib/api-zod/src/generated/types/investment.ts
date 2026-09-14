@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { InvestmentAssetType } from './investmentAssetType';
+import type { InvestmentQuoteStatus } from './investmentQuoteStatus';
+import type { InvestmentValuationMode } from './investmentValuationMode';
 
 export interface Investment {
   id: string;
@@ -23,6 +25,21 @@ export interface Investment {
   investedAmount: number;
   /** @minimum 0 */
   currentValue: number;
+  /** @minimum 0 */
+  manualCurrentValue: number;
+  valuationMode: InvestmentValuationMode;
+  /** @nullable */
+  quoteSource: string | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  quotePrice: number | null;
+  quoteStatus: InvestmentQuoteStatus;
+  /** @nullable */
+  quoteError: string | null;
+  /** @nullable */
+  lastQuoteAt: Date | null;
   returnAmount: number;
   returnPercentage: number;
   createdAt: Date;

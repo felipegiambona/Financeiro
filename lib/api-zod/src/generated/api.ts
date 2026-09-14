@@ -62,6 +62,10 @@ export const listInvestmentsResponseInvestedAmountMin = 0;
 
 export const listInvestmentsResponseCurrentValueMin = 0;
 
+export const listInvestmentsResponseManualCurrentValueMin = 0;
+
+export const listInvestmentsResponseQuotePriceMin = 0;
+
 
 
 export const ListInvestmentsResponseItem = zod.object({
@@ -74,6 +78,13 @@ export const ListInvestmentsResponseItem = zod.object({
   "averagePrice": zod.number().min(listInvestmentsResponseAveragePriceMin),
   "investedAmount": zod.number().min(listInvestmentsResponseInvestedAmountMin),
   "currentValue": zod.number().min(listInvestmentsResponseCurrentValueMin),
+  "manualCurrentValue": zod.number().min(listInvestmentsResponseManualCurrentValueMin),
+  "valuationMode": zod.enum(['manual', 'automatic']),
+  "quoteSource": zod.string().nullable(),
+  "quotePrice": zod.number().min(listInvestmentsResponseQuotePriceMin).nullable(),
+  "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
+  "quoteError": zod.string().nullable(),
+  "lastQuoteAt": zod.coerce.date().nullable(),
   "returnAmount": zod.number(),
   "returnPercentage": zod.number(),
   "createdAt": zod.coerce.date(),
@@ -101,7 +112,8 @@ export const CreateInvestmentBody = zod.object({
   "quantity": zod.number().min(createInvestmentBodyQuantityMin),
   "averagePrice": zod.number().min(createInvestmentBodyAveragePriceMin),
   "investedAmount": zod.number().min(createInvestmentBodyInvestedAmountMin),
-  "currentValue": zod.number().min(createInvestmentBodyCurrentValueMin)
+  "currentValue": zod.number().min(createInvestmentBodyCurrentValueMin),
+  "valuationMode": zod.enum(['manual', 'automatic']).optional()
 })
 
 export const createInvestmentResponseQuantityMin = 0;
@@ -111,6 +123,10 @@ export const createInvestmentResponseAveragePriceMin = 0;
 export const createInvestmentResponseInvestedAmountMin = 0;
 
 export const createInvestmentResponseCurrentValueMin = 0;
+
+export const createInvestmentResponseManualCurrentValueMin = 0;
+
+export const createInvestmentResponseQuotePriceMin = 0;
 
 
 
@@ -124,6 +140,13 @@ export const CreateInvestmentResponse = zod.object({
   "averagePrice": zod.number().min(createInvestmentResponseAveragePriceMin),
   "investedAmount": zod.number().min(createInvestmentResponseInvestedAmountMin),
   "currentValue": zod.number().min(createInvestmentResponseCurrentValueMin),
+  "manualCurrentValue": zod.number().min(createInvestmentResponseManualCurrentValueMin),
+  "valuationMode": zod.enum(['manual', 'automatic']),
+  "quoteSource": zod.string().nullable(),
+  "quotePrice": zod.number().min(createInvestmentResponseQuotePriceMin).nullable(),
+  "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
+  "quoteError": zod.string().nullable(),
+  "lastQuoteAt": zod.coerce.date().nullable(),
   "returnAmount": zod.number(),
   "returnPercentage": zod.number(),
   "createdAt": zod.coerce.date(),
@@ -154,7 +177,8 @@ export const UpdateInvestmentBody = zod.object({
   "quantity": zod.number().min(updateInvestmentBodyQuantityMin).optional(),
   "averagePrice": zod.number().min(updateInvestmentBodyAveragePriceMin).optional(),
   "investedAmount": zod.number().min(updateInvestmentBodyInvestedAmountMin).optional(),
-  "currentValue": zod.number().min(updateInvestmentBodyCurrentValueMin).optional()
+  "currentValue": zod.number().min(updateInvestmentBodyCurrentValueMin).optional(),
+  "valuationMode": zod.enum(['manual', 'automatic']).optional()
 })
 
 export const updateInvestmentResponseQuantityMin = 0;
@@ -164,6 +188,10 @@ export const updateInvestmentResponseAveragePriceMin = 0;
 export const updateInvestmentResponseInvestedAmountMin = 0;
 
 export const updateInvestmentResponseCurrentValueMin = 0;
+
+export const updateInvestmentResponseManualCurrentValueMin = 0;
+
+export const updateInvestmentResponseQuotePriceMin = 0;
 
 
 
@@ -177,6 +205,13 @@ export const UpdateInvestmentResponse = zod.object({
   "averagePrice": zod.number().min(updateInvestmentResponseAveragePriceMin),
   "investedAmount": zod.number().min(updateInvestmentResponseInvestedAmountMin),
   "currentValue": zod.number().min(updateInvestmentResponseCurrentValueMin),
+  "manualCurrentValue": zod.number().min(updateInvestmentResponseManualCurrentValueMin),
+  "valuationMode": zod.enum(['manual', 'automatic']),
+  "quoteSource": zod.string().nullable(),
+  "quotePrice": zod.number().min(updateInvestmentResponseQuotePriceMin).nullable(),
+  "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
+  "quoteError": zod.string().nullable(),
+  "lastQuoteAt": zod.coerce.date().nullable(),
   "returnAmount": zod.number(),
   "returnPercentage": zod.number(),
   "createdAt": zod.coerce.date(),
@@ -189,6 +224,48 @@ export const DeleteInvestmentParams = zod.object({
 })
 
 export const DeleteInvestmentResponse = zod.void()
+
+
+/**
+ * @summary Refresh automatic investment quotes
+ */
+export const refreshInvestmentQuotesResponseQuantityMin = 0;
+
+export const refreshInvestmentQuotesResponseAveragePriceMin = 0;
+
+export const refreshInvestmentQuotesResponseInvestedAmountMin = 0;
+
+export const refreshInvestmentQuotesResponseCurrentValueMin = 0;
+
+export const refreshInvestmentQuotesResponseManualCurrentValueMin = 0;
+
+export const refreshInvestmentQuotesResponseQuotePriceMin = 0;
+
+
+
+export const RefreshInvestmentQuotesResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "ticker": zod.string().nullable(),
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
+  "institution": zod.string().nullable(),
+  "quantity": zod.number().min(refreshInvestmentQuotesResponseQuantityMin),
+  "averagePrice": zod.number().min(refreshInvestmentQuotesResponseAveragePriceMin),
+  "investedAmount": zod.number().min(refreshInvestmentQuotesResponseInvestedAmountMin),
+  "currentValue": zod.number().min(refreshInvestmentQuotesResponseCurrentValueMin),
+  "manualCurrentValue": zod.number().min(refreshInvestmentQuotesResponseManualCurrentValueMin),
+  "valuationMode": zod.enum(['manual', 'automatic']),
+  "quoteSource": zod.string().nullable(),
+  "quotePrice": zod.number().min(refreshInvestmentQuotesResponseQuotePriceMin).nullable(),
+  "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
+  "quoteError": zod.string().nullable(),
+  "lastQuoteAt": zod.coerce.date().nullable(),
+  "returnAmount": zod.number(),
+  "returnPercentage": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const RefreshInvestmentQuotesResponse = zod.array(RefreshInvestmentQuotesResponseItem)
 
 
 export const listTransactionsResponseAmountExclusiveMin = 0;

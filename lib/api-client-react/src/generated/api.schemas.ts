@@ -38,6 +38,25 @@ export interface FinancialProfileInput {
   businessName?: string;
 }
 
+export type InvestmentQuoteStatus = typeof InvestmentQuoteStatus[keyof typeof InvestmentQuoteStatus];
+
+
+export const InvestmentQuoteStatus = {
+  not_configured: 'not_configured',
+  pending: 'pending',
+  updated: 'updated',
+  unavailable: 'unavailable',
+  error: 'error',
+} as const;
+
+export type InvestmentValuationMode = typeof InvestmentValuationMode[keyof typeof InvestmentValuationMode];
+
+
+export const InvestmentValuationMode = {
+  manual: 'manual',
+  automatic: 'automatic',
+} as const;
+
 export type InvestmentAssetType = typeof InvestmentAssetType[keyof typeof InvestmentAssetType];
 
 
@@ -67,6 +86,21 @@ export interface Investment {
   investedAmount: number;
   /** @minimum 0 */
   currentValue: number;
+  /** @minimum 0 */
+  manualCurrentValue: number;
+  valuationMode: InvestmentValuationMode;
+  /** @nullable */
+  quoteSource: string | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  quotePrice: number | null;
+  quoteStatus: InvestmentQuoteStatus;
+  /** @nullable */
+  quoteError: string | null;
+  /** @nullable */
+  lastQuoteAt: string | null;
   returnAmount: number;
   returnPercentage: number;
   createdAt: string;
@@ -100,6 +134,7 @@ export interface InvestmentInput {
   investedAmount: number;
   /** @minimum 0 */
   currentValue: number;
+  valuationMode?: InvestmentValuationMode;
 }
 
 export type InvestmentUpdateAssetType = typeof InvestmentUpdateAssetType[keyof typeof InvestmentUpdateAssetType];
@@ -131,6 +166,7 @@ export interface InvestmentUpdate {
   investedAmount?: number;
   /** @minimum 0 */
   currentValue?: number;
+  valuationMode?: InvestmentValuationMode;
 }
 
 export interface HealthStatus {

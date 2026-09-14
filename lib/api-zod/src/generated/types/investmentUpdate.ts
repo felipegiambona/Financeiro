@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { InvestmentUpdateAssetType } from './investmentUpdateAssetType';
+import type { InvestmentValuationMode } from './investmentValuationMode';
 
 export interface InvestmentUpdate {
   /** @minLength 1 */
@@ -23,4 +24,5 @@ export interface InvestmentUpdate {
   investedAmount?: number;
   /** @minimum 0 */
   currentValue?: number;
+  valuationMode?: InvestmentValuationMode;
 }

@@ -161,6 +161,22 @@ paths:
           description: Investments are only available for personal profiles
         "404":
           description: Investment not found
+  /investments/refresh:
+    post:
+      operationId: refreshInvestmentQuotes
+      tags: [investments]
+      summary: Refresh automatic investment quotes
+      responses:
+        "200":
+          description: Investment portfolio with the latest available quotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Investment"
+        "403":
+          description: Investments are only available for personal profiles
   /transactions:
     get:
       operationId: listTransactions
@@ -782,9 +798,15 @@ components:
           enum: [personal, business]
         name: { type: string, minLength: 1 }
         businessName: { type: string }
+    InvestmentQuoteStatus:
+      type: string
+      enum: [not_configured, pending, updated, unavailable, error]
+    InvestmentValuationMode:
+      type: string
+      enum: [manual, automatic]
     Investment:
       type: object
-      required: [id, name, ticker, assetType, institution, quantity, averagePrice, investedAmount, currentValue, returnAmount, returnPercentage, createdAt, updatedAt]
+      required: [id, name, ticker, assetType, institution, quantity, averagePrice, investedAmount, currentValue, manualCurrentValue, valuationMode, quoteSource, quotePrice, quoteStatus, quoteError, lastQuoteAt, returnAmount, returnPercentage, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -797,6 +819,15 @@ components:
         averagePrice: { type: number, minimum: 0 }
         investedAmount: { type: number, minimum: 0 }
         currentValue: { type: number, minimum: 0 }
+        manualCurrentValue: { type: number, minimum: 0 }
+        valuationMode:
+          $ref: "#/components/schemas/InvestmentValuationMode"
+        quoteSource: { type: ["string", "null"] }
+        quotePrice: { type: ["number", "null"], minimum: 0 }
+        quoteStatus:
+          $ref: "#/components/schemas/InvestmentQuoteStatus"
+        quoteError: { type: ["string", "null"] }
+        lastQuoteAt: { type: ["string", "null"], format: date-time }
         returnAmount: { type: number }
         returnPercentage: { type: number }
         createdAt: { type: string, format: date-time }
@@ -815,6 +846,8 @@ components:
         averagePrice: { type: number, minimum: 0 }
         investedAmount: { type: number, minimum: 0 }
         currentValue: { type: number, minimum: 0 }
+        valuationMode:
+          $ref: "#/components/schemas/InvestmentValuationMode"
     InvestmentUpdate:
       type: object
       properties:
@@ -828,6 +861,8 @@ components:
         averagePrice: { type: number, minimum: 0 }
         investedAmount: { type: number, minimum: 0 }
         currentValue: { type: number, minimum: 0 }
+        valuationMode:
+          $ref: "#/components/schemas/InvestmentValuationMode"
     HealthStatus:
       type: object
       properties:
