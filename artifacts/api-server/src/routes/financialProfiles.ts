@@ -1,18 +1,11 @@
 import { and, asc, eq, or } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import {
-  cardsTable,
-  categoriesTable,
   db,
   financialProfilesTable,
-  goalMovementsTable,
-  goalsTable,
-  investmentsTable,
-  limitsTable,
-  transactionsTable,
-  walletsTable,
 } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { deleteFinancialRowsForProfile } from "../lib/financialCleanup";
 
 const router: IRouter = Router();
 
@@ -106,38 +99,7 @@ router.delete("/financial-profiles/:profileId", async (req, res): Promise<void> 
 
   const scopedUserId = `${userId}::${profile.id}`;
   await db.transaction(async (tx) => {
-    await tx.delete(transactionsTable).where(or(
-      eq(transactionsTable.profileId, profile.id),
-      eq(transactionsTable.userId, scopedUserId),
-    ));
-    await tx.delete(goalMovementsTable).where(or(
-      eq(goalMovementsTable.profileId, profile.id),
-      eq(goalMovementsTable.userId, scopedUserId),
-    ));
-    await tx.delete(limitsTable).where(or(
-      eq(limitsTable.profileId, profile.id),
-      eq(limitsTable.userId, scopedUserId),
-    ));
-    await tx.delete(goalsTable).where(or(
-      eq(goalsTable.profileId, profile.id),
-      eq(goalsTable.userId, scopedUserId),
-    ));
-    await tx.delete(cardsTable).where(or(
-      eq(cardsTable.profileId, profile.id),
-      eq(cardsTable.userId, scopedUserId),
-    ));
-    await tx.delete(investmentsTable).where(or(
-      eq(investmentsTable.profileId, profile.id),
-      eq(investmentsTable.userId, scopedUserId),
-    ));
-    await tx.delete(categoriesTable).where(or(
-      eq(categoriesTable.profileId, profile.id),
-      eq(categoriesTable.userId, scopedUserId),
-    ));
-    await tx.delete(walletsTable).where(or(
-      eq(walletsTable.profileId, profile.id),
-      eq(walletsTable.userId, scopedUserId),
-    ));
+    await deleteFinancialRowsForProfile(tx, profile.id, scopedUserId);
     await tx.delete(financialProfilesTable).where(and(
       eq(financialProfilesTable.id, profile.id),
       eq(financialProfilesTable.userId, userId),

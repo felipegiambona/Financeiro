@@ -26,3 +26,4 @@ export * from "./goalMovements";
 export * from "./cards";
 export * from "./financialProfiles";
 export * from "./investments";
+export * from "./financialEntities";

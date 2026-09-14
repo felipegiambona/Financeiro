@@ -8,20 +8,11 @@ const clerkApiUrl = "https://api.clerk.com/v1";
 const apiUrl = process.env.API_BASE_URL ?? "http://127.0.0.1:8080/api";
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
 const execFileAsync = promisify(execFile);
-const financialTables = [
-  "finance_transactions",
-  "finance_goal_movements",
-  "finance_limits",
-  "finance_goals",
-  "finance_cards",
-  "finance_investments",
-  "finance_categories",
-  "finance_wallets",
-];
+let financialTables = [];
 
 const temporaryIdentities = [];
 
-function requireTestConfiguration() {
+async function requireTestConfiguration() {
   assert.ok(
     clerkSecretKey,
     "CLERK_SECRET_KEY is required to run authenticated integration tests",
@@ -29,6 +20,18 @@ function requireTestConfiguration() {
   assert.ok(
     process.env.DATABASE_URL,
     "DATABASE_URL is required to prepare legacy financial rows",
+  );
+  financialTables = (await runDatabaseQuery(
+    "SELECT tablename FROM pg_catalog.pg_tables " +
+      "WHERE schemaname = 'public' AND tablename LIKE 'finance_%' " +
+      "AND tablename <> 'financial_profiles' ORDER BY tablename;",
+  ))
+    .split(/\r?\n/)
+    .map((table) => table.trim())
+    .filter(Boolean);
+  assert.ok(
+    financialTables.length > 0,
+    "Expected at least one profile-scoped financial table",
   );
 }
 
@@ -347,8 +350,8 @@ describe("transaction account isolation", () => {
   let accountA;
   let accountB;
 
-  before(() => {
-    requireTestConfiguration();
+  before(async () => {
+    await requireTestConfiguration();
   });
 
   after(async () => {
@@ -571,7 +574,7 @@ describe("financial profile deletion isolation", () => {
   let identity;
 
   before(async () => {
-    requireTestConfiguration();
+    await requireTestConfiguration();
     identity = await createTemporaryIdentity("financial-profile");
   });
 
@@ -822,7 +825,7 @@ describe("account deletion cleanup", () => {
   let identity;
 
   before(async () => {
-    requireTestConfiguration();
+    await requireTestConfiguration();
     identity = await createTemporaryIdentity("account-deletion");
   });
 
