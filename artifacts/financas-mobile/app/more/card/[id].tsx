@@ -1,12 +1,13 @@
 import { Feather } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreditCardCard } from '@/components/CreditCardCard';
 import { EmptyState, LoadingState } from '@/components/StateView';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useCards } from '@/context/CardContext';
+import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
 import { formatCurrency } from '@/utils/currency';
 import { getCardHistory } from '@/services/cardRepository';
@@ -18,9 +19,14 @@ export default function CardDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { cards, loading, refresh, deleteCard, payCardInvoice } = useCards();
+  const { deleteTransaction } = useFinance();
   const [payingInvoiceMonth, setPayingInvoiceMonth] = useState<string | null>(null);
   const [history, setHistory] = useState<CardHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
+  const [selectedHistoryMonth, setSelectedHistoryMonth] = useState(
+    `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+  );
   const card = cards.find((item) => item.id === id);
 
   const loadHistory = useCallback(async () => {
@@ -62,6 +68,42 @@ export default function CardDetailsScreen() {
   };
 
   const currentInvoiceMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+  const historyMonths = useMemo(() => {
+    const months = new Set(history.map((item) => item.date.slice(0, 7)));
+    months.add(currentInvoiceMonth);
+    return Array.from(months).sort().reverse();
+  }, [currentInvoiceMonth, history]);
+  const filteredHistory = useMemo(
+    () => history.filter((item) => item.date.slice(0, 7) === selectedHistoryMonth),
+    [history, selectedHistoryMonth],
+  );
+  const selectedHistoryMonthIndex = historyMonths.indexOf(selectedHistoryMonth);
+  const previousHistoryMonthDisabled = selectedHistoryMonthIndex < 0 || selectedHistoryMonthIndex >= historyMonths.length - 1;
+  const nextHistoryMonthDisabled = selectedHistoryMonthIndex <= 0;
+
+  const handleDeleteHistoryItem = (item: CardHistoryItem) => {
+    if (item.kind !== 'transaction') return;
+    Alert.alert(
+      'Excluir movimentação?',
+      'Essa movimentação será removida do cartão e a fatura será recalculada.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: () => {
+            setDeletingHistoryId(item.id);
+            void deleteTransaction(item.id)
+              .then(async () => {
+                await Promise.all([loadHistory(), refresh()]);
+              })
+              .catch(() => Alert.alert('Não foi possível excluir', 'Tente novamente.'))
+              .finally(() => setDeletingHistoryId(null));
+          },
+        },
+      ],
+    );
+  };
 
   const handleDelete = () => {
     if (!card) return;
@@ -165,20 +207,69 @@ export default function CardDetailsScreen() {
                 </View>
               </>
             ) : null}
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Mês do histórico</Text>
+            <View
+              style={styles.monthSelector}
+              accessibilityLabel="Selecionar mês do histórico do cartão"
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Mês anterior do histórico do cartão"
+                accessibilityState={{ disabled: previousHistoryMonthDisabled }}
+                disabled={previousHistoryMonthDisabled}
+                hitSlop={8}
+                onPress={() => {
+                  if (!previousHistoryMonthDisabled) {
+                    setSelectedHistoryMonth(historyMonths[selectedHistoryMonthIndex + 1]);
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.monthButton,
+                  { borderColor: colors.border },
+                  previousHistoryMonthDisabled && styles.disabled,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Feather name="chevron-left" size={15} color={colors.foreground} />
+              </Pressable>
+              <Text style={[styles.monthText, { color: colors.foreground }]} numberOfLines={1}>
+                {formatMonthYearLabel(new Date(`${selectedHistoryMonth}-01T12:00:00`))}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Próximo mês do histórico do cartão"
+                accessibilityState={{ disabled: nextHistoryMonthDisabled }}
+                disabled={nextHistoryMonthDisabled}
+                hitSlop={8}
+                onPress={() => {
+                  if (!nextHistoryMonthDisabled) {
+                    setSelectedHistoryMonth(historyMonths[selectedHistoryMonthIndex - 1]);
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.monthButton,
+                  { borderColor: colors.border },
+                  nextHistoryMonthDisabled && styles.disabled,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Feather name="chevron-right" size={15} color={colors.foreground} />
+              </Pressable>
+            </View>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-              Histórico do cartão
+              Histórico de {formatMonthYearLabel(new Date(`${selectedHistoryMonth}-01T12:00:00`))}
             </Text>
             <View style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {historyLoading ? (
                 <Text style={[styles.historyState, { color: colors.mutedForeground }]}>Carregando histórico...</Text>
-              ) : history.length === 0 ? (
-                <Text style={[styles.historyState, { color: colors.mutedForeground }]}>Nenhum lançamento nesta fatura.</Text>
-              ) : history.map((item, index) => (
+              ) : filteredHistory.length === 0 ? (
+                <Text style={[styles.historyState, { color: colors.mutedForeground }]}>Nenhuma movimentação neste mês.</Text>
+              ) : filteredHistory.map((item, index) => (
                 <View
                   key={item.id}
                   style={[
                     styles.historyRow,
-                    index < history.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
+                    index < filteredHistory.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
                   ]}
                 >
                   <View style={[styles.historyIcon, { backgroundColor: item.kind === 'closure' ? colors.pendingSoft : colors.secondary }]}>
@@ -200,6 +291,22 @@ export default function CardDetailsScreen() {
                       </Text>
                     </View>
                   )}
+                  {item.kind === 'transaction' ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Excluir ${item.description}`}
+                      disabled={deletingHistoryId !== null}
+                      onPress={() => handleDeleteHistoryItem(item)}
+                      style={({ pressed }) => [
+                        styles.historyDeleteButton,
+                        { backgroundColor: colors.expenseSoft },
+                        deletingHistoryId !== null && styles.disabled,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Feather name="trash-2" size={14} color={colors.expense} />
+                    </Pressable>
+                  ) : null}
                 </View>
               ))}
             </View>
@@ -255,6 +362,9 @@ const styles = StyleSheet.create({
   overdueAmount: { fontSize: 11, fontFamily: 'Inter_700Bold', marginTop: 4 },
   overdueButton: { minHeight: 34, borderRadius: 7, paddingHorizontal: 13, alignItems: 'center', justifyContent: 'center' },
   overdueButtonText: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
+  monthSelector: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+  monthButton: { width: 30, height: 30, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  monthText: { flex: 1, textAlign: 'center', fontSize: 12, fontFamily: 'Inter_700Bold' },
   historyCard: { borderWidth: 1, borderRadius: 9, paddingHorizontal: 13 },
   historyState: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 16, textAlign: 'center' },
   historyRow: { minHeight: 61, flexDirection: 'row', alignItems: 'center', gap: 9 },
@@ -265,6 +375,7 @@ const styles = StyleSheet.create({
   historyAmount: { alignItems: 'flex-end' },
   historyValue: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   historyStatus: { fontSize: 9, fontFamily: 'Inter_600SemiBold', marginTop: 3 },
+  historyDeleteButton: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   closureLabel: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   disabled: { opacity: 0.5 },
   deleteButton: { minHeight: 44, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 18 },

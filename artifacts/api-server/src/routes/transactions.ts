@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Response } from "express";
-import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne, or } from "drizzle-orm";
 import { cardsTable, categoriesTable, db, goalsTable, transactionsTable, walletsTable } from "@workspace/db";
 import {
   CreateTransactionBody,
@@ -64,7 +64,10 @@ router.get("/transactions", async (req, res): Promise<void> => {
   const rows = await db.select().from(transactionsTable)
     .where(and(
       eq(transactionsTable.userId, userId),
-      ne(transactionsTable.cardEntryType, "purchase"),
+      or(
+        isNull(transactionsTable.cardId),
+        ne(transactionsTable.cardEntryType, "purchase"),
+      ),
     ))
     .orderBy(desc(transactionsTable.date), desc(transactionsTable.createdAt));
   const parsed = ListTransactionsResponse.parse(rows.map(toResponse));
@@ -227,7 +230,7 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
       cardId: effectiveCardId,
       cardEntryType: current.cardEntryType === "invoice_payment"
         ? "invoice_payment"
-        : effectiveCardId ? "purchase" : current.cardEntryType,
+        : "purchase",
       cardInvoiceMonth: current.cardEntryType === "invoice_payment"
         ? current.cardInvoiceMonth
         : effectiveCardId

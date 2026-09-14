@@ -832,7 +832,7 @@ describe("financial profile deletion isolation", () => {
         limits: [personalFixture.limitId],
         goals: [personalFixture.goalId],
         cards: [personalFixture.cardId],
-        transactions: [personalInvestmentTransaction.id, personalFixture.transactionId],
+        transactions: [personalInvestmentTransaction.id],
       },
     );
     assert.deepEqual(
@@ -850,7 +850,7 @@ describe("financial profile deletion isolation", () => {
         limits: [businessFixture.limitId],
         goals: [businessFixture.goalId],
         cards: [businessFixture.cardId],
-        transactions: [businessFixture.transactionId],
+        transactions: [],
       },
     );
 
