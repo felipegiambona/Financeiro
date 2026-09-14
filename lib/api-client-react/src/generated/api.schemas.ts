@@ -57,6 +57,21 @@ export const InvestmentValuationMode = {
   automatic: 'automatic',
 } as const;
 
+/**
+ * Fonte usada por classe: BRAPI para ações, FIIs e ETFs; CVM para fundos
+ * pelo CNPJ; BCB_SGS para renda fixa por código de série SGS; e COINGECKO
+ * para criptoativos pelo ID único do CoinGecko.
+ */
+export type InvestmentQuoteSource = typeof InvestmentQuoteSource[keyof typeof InvestmentQuoteSource];
+
+
+export const InvestmentQuoteSource = {
+  BRAPI: 'BRAPI',
+  CVM: 'CVM',
+  BCB_SGS: 'BCB_SGS',
+  COINGECKO: 'COINGECKO',
+} as const;
+
 export type InvestmentAssetType = typeof InvestmentAssetType[keyof typeof InvestmentAssetType];
 
 
@@ -73,7 +88,12 @@ export const InvestmentAssetType = {
 export interface Investment {
   id: string;
   name: string;
-  /** @nullable */
+  /**
+     * Identificador da cotação. Use ticker B3 para ações/FIIs/ETFs,
+     * CNPJ de 14 dígitos para fundos, código numérico SGS para renda fixa
+     * e ID único do CoinGecko para criptoativos.
+     * @nullable
+     */
   ticker: string | null;
   assetType: InvestmentAssetType;
   /** @nullable */
@@ -89,8 +109,7 @@ export interface Investment {
   /** @minimum 0 */
   manualCurrentValue: number;
   valuationMode: InvestmentValuationMode;
-  /** @nullable */
-  quoteSource: string | null;
+  quoteSource: InvestmentQuoteSource | null;
   /**
      * @minimum 0
      * @nullable
@@ -142,6 +161,11 @@ export const InvestmentInputAssetType = {
 export interface InvestmentInput {
   /** @minLength 1 */
   name: string;
+  /**
+     * Para cotação automática, informe ticker B3 (ações/FIIs/ETFs),
+     * CNPJ de 14 dígitos (fundos), código SGS numérico (renda fixa) ou
+     * ID único do CoinGecko (criptoativos). O formato depende de assetType.
+     */
   ticker?: string;
   assetType: InvestmentInputAssetType;
   institution?: string;
@@ -172,7 +196,11 @@ export const InvestmentUpdateAssetType = {
 export interface InvestmentUpdate {
   /** @minLength 1 */
   name?: string;
-  /** @nullable */
+  /**
+     * Identificador da cotação; o formato depende de assetType. Fundos
+     * usam CNPJ, renda fixa usa código SGS e cripto usa ID do CoinGecko.
+     * @nullable
+     */
   ticker?: string | null;
   assetType?: InvestmentUpdateAssetType;
   /** @nullable */
@@ -758,4 +786,3 @@ export type SearchInvestmentsParams = {
  */
 q: string;
 };
-

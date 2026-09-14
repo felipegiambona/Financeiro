@@ -71,7 +71,7 @@ export const listInvestmentsResponseQuotePriceMin = 0;
 export const ListInvestmentsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
-  "ticker": zod.string().nullable(),
+  "ticker": zod.string().nullable().describe('Identificador da cotação. Use ticker B3 para ações\/FIIs\/ETFs,\nCNPJ de 14 dígitos para fundos, código numérico SGS para renda fixa\ne ID único do CoinGecko para criptoativos.\n'),
   "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
   "institution": zod.string().nullable(),
   "quantity": zod.number().min(listInvestmentsResponseQuantityMin),
@@ -80,7 +80,7 @@ export const ListInvestmentsResponseItem = zod.object({
   "currentValue": zod.number().min(listInvestmentsResponseCurrentValueMin),
   "manualCurrentValue": zod.number().min(listInvestmentsResponseManualCurrentValueMin),
   "valuationMode": zod.enum(['manual', 'automatic']),
-  "quoteSource": zod.string().nullable(),
+  "quoteSource": zod.union([zod.enum(['BRAPI', 'CVM', 'BCB_SGS', 'COINGECKO']).describe('Fonte usada por classe: BRAPI para ações, FIIs e ETFs; CVM para fundos\npelo CNPJ; BCB_SGS para renda fixa por código de série SGS; e COINGECKO\npara criptoativos pelo ID único do CoinGecko.\n'),zod.null()]),
   "quotePrice": zod.number().min(listInvestmentsResponseQuotePriceMin).nullable(),
   "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
   "quoteError": zod.string().nullable(),
@@ -106,7 +106,7 @@ export const createInvestmentBodyCurrentValueMin = 0;
 
 export const CreateInvestmentBody = zod.object({
   "name": zod.string().min(1),
-  "ticker": zod.string().optional(),
+  "ticker": zod.string().optional().describe('Para cotação automática, informe ticker B3 (ações\/FIIs\/ETFs),\nCNPJ de 14 dígitos (fundos), código SGS numérico (renda fixa) ou\nID único do CoinGecko (criptoativos). O formato depende de assetType.\n'),
   "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
   "institution": zod.string().optional(),
   "quantity": zod.number().min(createInvestmentBodyQuantityMin),
@@ -133,7 +133,7 @@ export const createInvestmentResponseQuotePriceMin = 0;
 export const CreateInvestmentResponse = zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
-  "ticker": zod.string().nullable(),
+  "ticker": zod.string().nullable().describe('Identificador da cotação. Use ticker B3 para ações\/FIIs\/ETFs,\nCNPJ de 14 dígitos para fundos, código numérico SGS para renda fixa\ne ID único do CoinGecko para criptoativos.\n'),
   "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
   "institution": zod.string().nullable(),
   "quantity": zod.number().min(createInvestmentResponseQuantityMin),
@@ -142,7 +142,7 @@ export const CreateInvestmentResponse = zod.object({
   "currentValue": zod.number().min(createInvestmentResponseCurrentValueMin),
   "manualCurrentValue": zod.number().min(createInvestmentResponseManualCurrentValueMin),
   "valuationMode": zod.enum(['manual', 'automatic']),
-  "quoteSource": zod.string().nullable(),
+  "quoteSource": zod.union([zod.enum(['BRAPI', 'CVM', 'BCB_SGS', 'COINGECKO']).describe('Fonte usada por classe: BRAPI para ações, FIIs e ETFs; CVM para fundos\npelo CNPJ; BCB_SGS para renda fixa por código de série SGS; e COINGECKO\npara criptoativos pelo ID único do CoinGecko.\n'),zod.null()]),
   "quotePrice": zod.number().min(createInvestmentResponseQuotePriceMin).nullable(),
   "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
   "quoteError": zod.string().nullable(),
@@ -188,7 +188,7 @@ export const updateInvestmentBodyCurrentValueMin = 0;
 
 export const UpdateInvestmentBody = zod.object({
   "name": zod.string().min(1).optional(),
-  "ticker": zod.string().nullish(),
+  "ticker": zod.string().nullish().describe('Identificador da cotação; o formato depende de assetType. Fundos\nusam CNPJ, renda fixa usa código SGS e cripto usa ID do CoinGecko.\n'),
   "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']).optional(),
   "institution": zod.string().nullish(),
   "quantity": zod.number().min(updateInvestmentBodyQuantityMin).optional(),
@@ -215,7 +215,7 @@ export const updateInvestmentResponseQuotePriceMin = 0;
 export const UpdateInvestmentResponse = zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
-  "ticker": zod.string().nullable(),
+  "ticker": zod.string().nullable().describe('Identificador da cotação. Use ticker B3 para ações\/FIIs\/ETFs,\nCNPJ de 14 dígitos para fundos, código numérico SGS para renda fixa\ne ID único do CoinGecko para criptoativos.\n'),
   "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
   "institution": zod.string().nullable(),
   "quantity": zod.number().min(updateInvestmentResponseQuantityMin),
@@ -224,7 +224,7 @@ export const UpdateInvestmentResponse = zod.object({
   "currentValue": zod.number().min(updateInvestmentResponseCurrentValueMin),
   "manualCurrentValue": zod.number().min(updateInvestmentResponseManualCurrentValueMin),
   "valuationMode": zod.enum(['manual', 'automatic']),
-  "quoteSource": zod.string().nullable(),
+  "quoteSource": zod.union([zod.enum(['BRAPI', 'CVM', 'BCB_SGS', 'COINGECKO']).describe('Fonte usada por classe: BRAPI para ações, FIIs e ETFs; CVM para fundos\npelo CNPJ; BCB_SGS para renda fixa por código de série SGS; e COINGECKO\npara criptoativos pelo ID único do CoinGecko.\n'),zod.null()]),
   "quotePrice": zod.number().min(updateInvestmentResponseQuotePriceMin).nullable(),
   "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
   "quoteError": zod.string().nullable(),
@@ -263,7 +263,7 @@ export const refreshInvestmentQuotesResponseQuotePriceMin = 0;
 export const RefreshInvestmentQuotesResponseItem = zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
-  "ticker": zod.string().nullable(),
+  "ticker": zod.string().nullable().describe('Identificador da cotação. Use ticker B3 para ações\/FIIs\/ETFs,\nCNPJ de 14 dígitos para fundos, código numérico SGS para renda fixa\ne ID único do CoinGecko para criptoativos.\n'),
   "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
   "institution": zod.string().nullable(),
   "quantity": zod.number().min(refreshInvestmentQuotesResponseQuantityMin),
@@ -272,7 +272,7 @@ export const RefreshInvestmentQuotesResponseItem = zod.object({
   "currentValue": zod.number().min(refreshInvestmentQuotesResponseCurrentValueMin),
   "manualCurrentValue": zod.number().min(refreshInvestmentQuotesResponseManualCurrentValueMin),
   "valuationMode": zod.enum(['manual', 'automatic']),
-  "quoteSource": zod.string().nullable(),
+  "quoteSource": zod.union([zod.enum(['BRAPI', 'CVM', 'BCB_SGS', 'COINGECKO']).describe('Fonte usada por classe: BRAPI para ações, FIIs e ETFs; CVM para fundos\npelo CNPJ; BCB_SGS para renda fixa por código de série SGS; e COINGECKO\npara criptoativos pelo ID único do CoinGecko.\n'),zod.null()]),
   "quotePrice": zod.number().min(refreshInvestmentQuotesResponseQuotePriceMin).nullable(),
   "quoteStatus": zod.enum(['not_configured', 'pending', 'updated', 'unavailable', 'error']),
   "quoteError": zod.string().nullable(),
@@ -1117,5 +1117,3 @@ export const UpdateAccountProfileImageBody = zod.object({
 })
 
 export const UpdateAccountProfileImageResponse = zod.void()
-
-

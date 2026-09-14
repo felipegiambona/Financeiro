@@ -6,13 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { InvestmentAssetType } from './investmentAssetType';
+import type { InvestmentQuoteSource } from './investmentQuoteSource';
 import type { InvestmentQuoteStatus } from './investmentQuoteStatus';
 import type { InvestmentValuationMode } from './investmentValuationMode';
 
 export interface Investment {
   id: string;
   name: string;
-  /** @nullable */
+  /**
+     * Identificador da cotação. Use ticker B3 para ações/FIIs/ETFs,
+     * CNPJ de 14 dígitos para fundos, código numérico SGS para renda fixa
+     * e ID único do CoinGecko para criptoativos.
+     * @nullable
+     */
   ticker: string | null;
   assetType: InvestmentAssetType;
   /** @nullable */
@@ -28,8 +34,7 @@ export interface Investment {
   /** @minimum 0 */
   manualCurrentValue: number;
   valuationMode: InvestmentValuationMode;
-  /** @nullable */
-  quoteSource: string | null;
+  quoteSource: InvestmentQuoteSource | null;
   /**
      * @minimum 0
      * @nullable

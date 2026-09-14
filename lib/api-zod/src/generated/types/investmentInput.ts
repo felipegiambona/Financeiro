@@ -11,6 +11,11 @@ import type { InvestmentValuationMode } from './investmentValuationMode';
 export interface InvestmentInput {
   /** @minLength 1 */
   name: string;
+  /**
+     * Para cotação automática, informe ticker B3 (ações/FIIs/ETFs),
+     * CNPJ de 14 dígitos (fundos), código SGS numérico (renda fixa) ou
+     * ID único do CoinGecko (criptoativos). O formato depende de assetType.
+     */
   ticker?: string;
   assetType: InvestmentInputAssetType;
   institution?: string;

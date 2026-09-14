@@ -20,8 +20,9 @@ import {
 } from "../middlewares/requireAuth";
 import {
   currentValueFromQuote,
-  fetchBrapiQuote,
-  QUOTE_SOURCE,
+  normalizeQuoteIdentifier,
+  quoteIdentifierError,
+  quoteSourceForAssetType,
   refreshInvestmentQuote,
   type InvestmentQuoteStore,
 } from "../lib/investmentQuotes";
@@ -78,11 +79,11 @@ function toResponse(row: typeof investmentsTable.$inferSelect) {
 }
 
 const quoteStore: InvestmentQuoteStore = {
-  async markUnavailable(row) {
+  async markUnavailable(row, quoteError) {
     const [updated] = await db.update(investmentsTable).set({
-      quoteSource: QUOTE_SOURCE,
+      quoteSource: quoteSourceForAssetType(row.assetType),
       quoteStatus: "unavailable",
-      quoteError: "Informe um ticker para consultar a cotação.",
+      quoteError: quoteError ?? "Não há uma cotação disponível para este identificador.",
     }).where(and(
       eq(investmentsTable.id, row.id),
       eq(investmentsTable.userId, row.userId),
@@ -94,7 +95,7 @@ const quoteStore: InvestmentQuoteStore = {
     const currentValue = currentValueFromQuote(quotePrice, row.quantity);
     const [updated] = await db.update(investmentsTable).set({
       currentValue: String(currentValue),
-      quoteSource: QUOTE_SOURCE,
+      quoteSource: quoteSourceForAssetType(row.assetType),
       quotePrice: String(quotePrice),
       quoteStatus: "updated",
       quoteError: null,
@@ -108,7 +109,7 @@ const quoteStore: InvestmentQuoteStore = {
   },
   async markError(row) {
     const [updated] = await db.update(investmentsTable).set({
-      quoteSource: QUOTE_SOURCE,
+      quoteSource: quoteSourceForAssetType(row.assetType),
       quoteStatus: "error",
       quoteError: "Não foi possível obter a cotação agora. O último valor foi mantido.",
     }).where(and(
@@ -121,10 +122,7 @@ const quoteStore: InvestmentQuoteStore = {
 };
 
 async function refreshQuote(row: typeof investmentsTable.$inferSelect) {
-  return refreshInvestmentQuote(row, {
-    quoteProvider: fetchBrapiQuote,
-    store: quoteStore,
-  });
+  return refreshInvestmentQuote(row, { store: quoteStore });
 }
 
 function optionalText(value: string | null | undefined): string | null {
@@ -187,11 +185,19 @@ router.post("/investments", async (req, res): Promise<void> => {
   }
 
   const valuationMode = parsed.data.valuationMode ?? "manual";
+  const ticker = normalizeQuoteIdentifier(parsed.data.assetType, optionalText(parsed.data.ticker) ?? "");
+  if (valuationMode === "automatic") {
+    const quoteError = quoteIdentifierError(parsed.data.assetType, ticker);
+    if (quoteError) {
+      res.status(400).json({ error: quoteError });
+      return;
+    }
+  }
   const [row] = await db.insert(investmentsTable).values({
     userId: scopedUserIdFrom(req),
     profileId: profileIdFrom(req),
     name: parsed.data.name.trim(),
-    ticker: optionalText(parsed.data.ticker),
+    ticker: ticker || null,
     assetType: parsed.data.assetType,
     institution: optionalText(parsed.data.institution),
     quantity: String(parsed.data.quantity),
@@ -200,7 +206,7 @@ router.post("/investments", async (req, res): Promise<void> => {
     currentValue: String(parsed.data.currentValue),
     manualCurrentValue: String(parsed.data.currentValue),
     valuationMode,
-    quoteSource: valuationMode === "automatic" ? QUOTE_SOURCE : null,
+    quoteSource: valuationMode === "automatic" ? quoteSourceForAssetType(parsed.data.assetType) : null,
     quoteStatus: valuationMode === "automatic" ? "pending" : "not_configured",
   }).returning();
   res.status(201).json(CreateInvestmentResponse.parse(toResponse(row)));
@@ -208,8 +214,8 @@ router.post("/investments", async (req, res): Promise<void> => {
 
 router.patch("/investments/:id", async (req, res): Promise<void> => {
   if (!assertPersonalProfile(req, res)) return;
-  const params = UpdateInvestmentParams.safeParse(req.params);
   const body = UpdateInvestmentBody.safeParse(req.body);
+  const params = UpdateInvestmentParams.safeParse(req.params);
   if (!params.success || !body.success) {
     res.status(400).json({ error: "Invalid investment update" });
     return;
@@ -229,6 +235,17 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
     return;
   }
   const valuationMode = body.data.valuationMode ?? existing.valuationMode;
+  const assetType = body.data.assetType ?? existing.assetType;
+  const ticker = body.data.ticker === undefined
+    ? existing.ticker
+    : normalizeQuoteIdentifier(assetType, optionalText(body.data.ticker) ?? "");
+  if (valuationMode === "automatic") {
+    const quoteError = quoteIdentifierError(assetType, ticker);
+    if (quoteError) {
+      res.status(400).json({ error: quoteError });
+      return;
+    }
+  }
   const existingManualCurrentValue = existing.valuationMode === "manual"
     && Number(existing.manualCurrentValue) === 0
     && Number(existing.currentValue) > 0
@@ -239,12 +256,13 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
   const requiresNewQuote = valuationMode === "automatic" && (
     switchedToAutomatic
     || body.data.ticker !== undefined
+    || body.data.assetType !== undefined
     || body.data.quantity !== undefined
   );
   const updates = {
     ...(body.data.name === undefined ? {} : { name: body.data.name.trim() }),
-    ...(body.data.ticker === undefined ? {} : { ticker: optionalText(body.data.ticker) }),
-    ...(body.data.assetType === undefined ? {} : { assetType: body.data.assetType }),
+    ...(body.data.ticker === undefined ? {} : { ticker: ticker || null }),
+    ...(body.data.assetType === undefined ? {} : { assetType }),
     ...(body.data.institution === undefined ? {} : { institution: optionalText(body.data.institution) }),
     ...(body.data.quantity === undefined ? {} : { quantity: String(body.data.quantity) }),
     ...(body.data.averagePrice === undefined ? {} : { averagePrice: String(body.data.averagePrice) }),
@@ -261,7 +279,7 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
     } : {}),
     ...(requiresNewQuote ? {
       quoteStatus: "pending" as const,
-      quoteSource: QUOTE_SOURCE,
+      quoteSource: quoteSourceForAssetType(assetType),
       quotePrice: null,
       quoteError: null,
       lastQuoteAt: null,

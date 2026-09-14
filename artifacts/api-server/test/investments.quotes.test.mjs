@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { refreshInvestmentQuote } from "../src/lib/investmentQuotes.ts";
+import {
+  normalizeQuoteIdentifier,
+  quoteIdentifierError,
+  quoteProviderForAssetType,
+  quoteSourceForAssetType,
+  refreshInvestmentQuote,
+} from "../src/lib/investmentQuotes.ts";
 
 const now = new Date("2026-09-14T12:00:00.000Z");
 
@@ -63,6 +69,30 @@ function controlledStore() {
 }
 
 describe("investment quote refresh", () => {
+  it("documents a dedicated source and identifier format for each supported class", () => {
+    assert.equal(quoteSourceForAssetType("stock"), "BRAPI");
+    assert.equal(quoteSourceForAssetType("fii"), "BRAPI");
+    assert.equal(quoteSourceForAssetType("etf"), "BRAPI");
+    assert.equal(quoteSourceForAssetType("fund"), "CVM");
+    assert.equal(quoteSourceForAssetType("fixed_income"), "BCB_SGS");
+    assert.equal(quoteSourceForAssetType("crypto"), "COINGECKO");
+    assert.equal(quoteSourceForAssetType("other"), null);
+
+    assert.equal(quoteIdentifierError("fund", "00.000.000/0001-00"), null);
+    assert.equal(normalizeQuoteIdentifier("crypto", "Bitcoin"), "bitcoin");
+    assert.equal(quoteIdentifierError("crypto", "BTC"), "Use ID do CoinGecko no formato esperado (ex.: bitcoin).");
+    assert.equal(quoteIdentifierError("fixed_income", "Selic"), "Use Código da série BCB SGS no formato esperado (ex.: 1178).");
+    assert.equal(quoteIdentifierError("stock", "B3SA3"), null);
+  });
+
+  it("routes supported classes to their matching provider", () => {
+    assert.equal(quoteProviderForAssetType("stock")?.name, "fetchBrapiQuote");
+    assert.equal(quoteProviderForAssetType("fund")?.name, "fetchCvmFundQuote");
+    assert.equal(quoteProviderForAssetType("fixed_income")?.name, "fetchBcbSgsQuote");
+    assert.equal(quoteProviderForAssetType("crypto")?.name, "fetchCoinGeckoQuote");
+    assert.equal(quoteProviderForAssetType("other"), null);
+  });
+
   it("applies a controlled quote without changing the manual value", async () => {
     const controlled = controlledStore();
     const refreshed = await refreshInvestmentQuote(investment(), {

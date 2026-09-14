@@ -11,7 +11,11 @@ import type { InvestmentValuationMode } from './investmentValuationMode';
 export interface InvestmentUpdate {
   /** @minLength 1 */
   name?: string;
-  /** @nullable */
+  /**
+     * Identificador da cotação; o formato depende de assetType. Fundos
+     * usam CNPJ, renda fixa usa código SGS e cripto usa ID do CoinGecko.
+     * @nullable
+     */
   ticker?: string | null;
   assetType?: InvestmentUpdateAssetType;
   /** @nullable */

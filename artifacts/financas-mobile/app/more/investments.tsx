@@ -26,6 +26,13 @@ function assetTypeLabel(type: InvestmentAssetType): string {
   return ASSET_TYPES.find((item) => item.value === type)?.label ?? 'Outros';
 }
 
+function normalizeQuoteIdentifier(type: InvestmentAssetType, value: string): string {
+  const trimmed = value.trim();
+  if (type === 'stock' || type === 'fii' || type === 'etf') return trimmed.toUpperCase();
+  if (type === 'fund') return trimmed.replace(/[.\-/\s]/g, '');
+  if (type === 'crypto') return trimmed.toLowerCase();
+  return trimmed;
+}
 function formatQuantityInput(value: string): string {
   const normalized = value.replace(/\./g, ',').replace(/[^\d,]/g, '');
   const [integer, decimal] = normalized.split(',');
@@ -46,14 +53,19 @@ function formatQuoteDate(value: string | null): string {
   return new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function quoteSourceLabel(source: string | null): string {
+  if (source === 'BCB_SGS') return 'BCB SGS';
+  if (source === 'COINGECKO') return 'CoinGecko';
+  return source ?? 'Fonte de mercado';
+}
 function quoteStatusText(investment: Investment): string {
   if (investment.valuationMode === 'manual') return 'Manual · valor informado por você';
   if (investment.quoteStatus === 'updated') {
-    return `${investment.quoteSource ?? 'Fonte de mercado'} · ${formatQuoteDate(investment.lastQuoteAt)}`;
+    return `${quoteSourceLabel(investment.quoteSource)} · ${formatQuoteDate(investment.lastQuoteAt)}`;
   }
-  if (investment.quoteStatus === 'pending') return `${investment.quoteSource ?? 'Fonte de mercado'} · aguardando cotação`;
-  if (investment.quoteStatus === 'unavailable') return `${investment.quoteSource ?? 'Fonte de mercado'} · sem cotação`;
-  return `${investment.quoteSource ?? 'Fonte de mercado'} · falha em ${formatQuoteDate(investment.lastQuoteAt)}`;
+  if (investment.quoteStatus === 'pending') return `${quoteSourceLabel(investment.quoteSource)} · aguardando cotação`;
+  if (investment.quoteStatus === 'unavailable') return `${quoteSourceLabel(investment.quoteSource)} · sem cotação`;
+  return `${quoteSourceLabel(investment.quoteSource)} · falha em ${formatQuoteDate(investment.lastQuoteAt)}`;
 }
 
 function getInitialForm(investment?: Investment) {
@@ -84,6 +96,7 @@ export default function InvestmentsScreen() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [investmentToDelete, setInvestmentToDelete] = useState<Investment | null>(null);
+  const quoteGuidance = QUOTE_GUIDANCE[form.assetType];
 
   const totals = useMemo(() => investments.reduce((summary, investment) => ({
     invested: summary.invested + investment.investedAmount,
@@ -138,6 +151,7 @@ export default function InvestmentsScreen() {
 
   const saveInvestment = async () => {
     const name = form.name.trim();
+    const normalizedTicker = normalizeQuoteIdentifier(form.assetType, form.ticker);
     const quantity = parseQuantityInput(form.quantity);
     const averagePrice = parseAmountInput(form.averagePrice);
     const investedAmount = parseAmountInput(form.investedAmount);
@@ -150,10 +164,17 @@ export default function InvestmentsScreen() {
       Alert.alert('Valores inválidos', 'Informe valores numéricos iguais ou maiores que zero.');
       return;
     }
+    if (form.valuationMode === 'automatic') {
+      const identifierError = quoteIdentifierError(form.assetType, form.ticker);
+      if (identifierError) {
+        Alert.alert('Identificador inválido', identifierError);
+        return;
+      }
+    }
 
     const input: InvestmentInput = {
       name,
-      ticker: form.ticker.trim() || undefined,
+      ticker: normalizedTicker || undefined,
       assetType: form.assetType,
       institution: form.institution.trim() || undefined,
       quantity,
@@ -345,7 +366,7 @@ export default function InvestmentsScreen() {
               <View style={styles.modeRow}>
                 {([
                   { value: 'manual', label: 'Manual', description: 'Você informa o valor' },
-                  { value: 'automatic', label: 'Automática', description: 'BRAPI a cada 15 min' },
+                   { value: 'automatic', label: 'Automática', description: 'Fonte do tipo a cada 15 min' },
                 ] as Array<{ value: InvestmentValuationMode; label: string; description: string }>).map((item) => (
                   <Pressable
                     key={item.value}
@@ -407,11 +428,13 @@ export default function InvestmentsScreen() {
               )}
               <View style={styles.fieldsRow}>
                 <View style={styles.halfField}>
-                  <Text style={[styles.label, { color: colors.foreground }]}>Ticker opcional</Text>
+               <Text style={[styles.label, { color: colors.foreground }]}>
+                 {form.valuationMode === 'automatic' ? `${quoteGuidance?.identifierLabel ?? 'Identificador'} obrigatório` : 'Ticker ou identificador opcional'}
+               </Text>
                   <TextInput
-                    accessibilityLabel="Ticker opcional"
-                    autoCapitalize="characters"
-                    placeholder="PETR4"
+                     accessibilityLabel={form.valuationMode === 'automatic' ? `${quoteGuidance?.identifierLabel ?? 'Identificador'} obrigatório` : 'Ticker ou identificador opcional'}
+                     autoCapitalize={form.assetType === 'crypto' ? 'none' : 'characters'}
+                     placeholder={form.valuationMode === 'automatic' ? quoteGuidance?.example : 'PETR4'}
                     placeholderTextColor={colors.mutedForeground}
                     value={form.ticker}
                     onChangeText={(ticker) => setForm((current) => ({ ...current, ticker }))}
@@ -430,6 +453,11 @@ export default function InvestmentsScreen() {
                   />
                 </View>
               </View>
+               {form.valuationMode === 'automatic' && (
+                 <Text style={[styles.helper, { color: colors.mutedForeground }]}>
+                   Fonte: {quoteGuidance?.source ?? 'não disponível'}. {quoteGuidance?.identifierHint ?? 'Escolha uma classe com fonte automática.'}
+                 </Text>
+               )}
               <Text style={[styles.label, { color: colors.foreground }]}>Tipo de ativo</Text>
               <KeyboardAwareScrollViewCompat horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.assetTypeList}>
                 {ASSET_TYPES.map((item) => (
@@ -592,3 +620,83 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.72 },
 });
+
+const QUOTE_GUIDANCE: Partial<Record<InvestmentAssetType, QuoteGuidance>> = {
+  stock: {
+    source: 'BRAPI',
+    identifierLabel: 'Ticker B3',
+    identifierHint: 'Use o ticker oficial da B3, sem espaços.',
+    example: 'PETR4',
+  },
+  fii: {
+    source: 'BRAPI',
+    identifierLabel: 'Ticker B3',
+    identifierHint: 'Use o ticker oficial do fundo imobiliário, sem espaços.',
+    example: 'HGLG11',
+  },
+  etf: {
+    source: 'BRAPI',
+    identifierLabel: 'Ticker B3',
+    identifierHint: 'Use o ticker oficial do ETF, sem espaços.',
+    example: 'BOVA11',
+  },
+  fund: {
+    source: 'CVM',
+    identifierLabel: 'CNPJ do fundo',
+    identifierHint: 'Use os 14 dígitos do CNPJ do fundo, com ou sem pontuação.',
+    example: '00.000.000/0001-00',
+  },
+  fixed_income: {
+    source: 'BCB SGS',
+    identifierLabel: 'Código da série BCB SGS',
+    identifierHint: 'Use o código numérico da série SGS do Banco Central.',
+    example: '1178',
+  },
+  crypto: {
+    source: 'CoinGecko',
+    identifierLabel: 'ID do CoinGecko',
+    identifierHint: 'Use o ID único do ativo no CoinGecko, não o símbolo.',
+    example: 'bitcoin',
+  },
+};
+
+function quoteIdentifierError(type: InvestmentAssetType, value: string): string | null {
+  const guidance = QUOTE_GUIDANCE[type];
+  if (!guidance) return 'Esta classe de ativo não possui cotação automática.';
+  const normalized = normalizeQuoteIdentifier(type, value);
+  if (!normalized) return `Informe ${guidance.identifierLabel} para consultar a cotação.`;
+  const valid = type === 'fund'
+    ? /^\d{14}$/.test(normalized)
+    : type === 'fixed_income'
+      ? /^\d{1,6}$/.test(normalized)
+      : type === 'crypto'
+        ? /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized)
+            && !AMBIGUOUS_CRYPTO_IDENTIFIERS.has(normalized)
+        : /^[A-Z][A-Z0-9]{2,6}\d{1,2}$/.test(normalized);
+  return valid
+    ? null
+    : `Use ${guidance.identifierLabel} no formato esperado (ex.: ${guidance.example}).`;
+}
+
+const AMBIGUOUS_CRYPTO_IDENTIFIERS = new Set([
+  'ada',
+  'avax',
+  'bnb',
+  'btc',
+  'doge',
+  'dot',
+  'eth',
+  'link',
+  'sol',
+  'usdc',
+  'usdt',
+  'xrp',
+]);
+
+type QuoteGuidance = {
+  source: string;
+  identifierLabel: string;
+  identifierHint: string;
+  example: string;
+};
+

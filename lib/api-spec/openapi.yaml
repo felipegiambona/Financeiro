@@ -831,13 +831,25 @@ components:
     InvestmentValuationMode:
       type: string
       enum: [manual, automatic]
+    InvestmentQuoteSource:
+      type: string
+      enum: [BRAPI, CVM, BCB_SGS, COINGECKO]
+      description: |
+        Fonte usada por classe: BRAPI para ações, FIIs e ETFs; CVM para fundos
+        pelo CNPJ; BCB_SGS para renda fixa por código de série SGS; e COINGECKO
+        para criptoativos pelo ID único do CoinGecko.
     Investment:
       type: object
       required: [id, name, ticker, assetType, institution, quantity, averagePrice, investedAmount, currentValue, manualCurrentValue, valuationMode, quoteSource, quotePrice, quoteStatus, quoteError, lastQuoteAt, returnAmount, returnPercentage, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        ticker: { type: ["string", "null"] }
+        ticker:
+          type: ["string", "null"]
+          description: |
+            Identificador da cotação. Use ticker B3 para ações/FIIs/ETFs,
+            CNPJ de 14 dígitos para fundos, código numérico SGS para renda fixa
+            e ID único do CoinGecko para criptoativos.
         assetType:
           type: string
           enum: [stock, fii, etf, fund, fixed_income, crypto, other]
@@ -849,7 +861,10 @@ components:
         manualCurrentValue: { type: number, minimum: 0 }
         valuationMode:
           $ref: "#/components/schemas/InvestmentValuationMode"
-        quoteSource: { type: ["string", "null"] }
+        quoteSource:
+          oneOf:
+            - $ref: "#/components/schemas/InvestmentQuoteSource"
+            - type: "null"
         quotePrice: { type: ["number", "null"], minimum: 0 }
         quoteStatus:
           $ref: "#/components/schemas/InvestmentQuoteStatus"
@@ -873,7 +888,12 @@ components:
       required: [name, assetType, quantity, averagePrice, investedAmount, currentValue]
       properties:
         name: { type: string, minLength: 1 }
-        ticker: { type: string }
+        ticker:
+          type: string
+          description: |
+            Para cotação automática, informe ticker B3 (ações/FIIs/ETFs),
+            CNPJ de 14 dígitos (fundos), código SGS numérico (renda fixa) ou
+            ID único do CoinGecko (criptoativos). O formato depende de assetType.
         assetType:
           type: string
           enum: [stock, fii, etf, fund, fixed_income, crypto, other]
@@ -888,7 +908,11 @@ components:
       type: object
       properties:
         name: { type: string, minLength: 1 }
-        ticker: { type: ["string", "null"] }
+        ticker:
+          type: ["string", "null"]
+          description: |
+            Identificador da cotação; o formato depende de assetType. Fundos
+            usam CNPJ, renda fixa usa código SGS e cripto usa ID do CoinGecko.
         assetType:
           type: string
           enum: [stock, fii, etf, fund, fixed_income, crypto, other]
@@ -1258,4 +1282,3 @@ components:
         date: { type: string, format: date }
         paymentStatus: { type: string, enum: [paid, unpaid] }
         categoryName: { type: string, nullable: true }
-

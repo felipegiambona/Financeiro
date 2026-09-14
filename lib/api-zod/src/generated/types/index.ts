@@ -37,6 +37,7 @@ export * from './investment';
 export * from './investmentAssetType';
 export * from './investmentInput';
 export * from './investmentInputAssetType';
+export * from './investmentQuoteSource';
 export * from './investmentQuoteStatus';
 export * from './investmentSearchResult';
 export * from './investmentSearchResultAssetType';
