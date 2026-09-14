@@ -22,6 +22,36 @@ const ASSET_TYPES: Array<{ value: InvestmentAssetType; label: string }> = [
   { value: 'other', label: 'Outros' },
 ];
 
+type AssetSuggestion = {
+  name: string;
+  ticker: string;
+  assetType: InvestmentAssetType;
+};
+
+const ASSET_SUGGESTIONS: AssetSuggestion[] = [
+  { name: 'Petrobras PN', ticker: 'PETR4', assetType: 'stock' },
+  { name: 'Vale ON', ticker: 'VALE3', assetType: 'stock' },
+  { name: 'Itaú Unibanco PN', ticker: 'ITUB4', assetType: 'stock' },
+  { name: 'Banco do Brasil ON', ticker: 'BBAS3', assetType: 'stock' },
+  { name: 'WEG ON', ticker: 'WEGE3', assetType: 'stock' },
+  { name: 'BOVA11', ticker: 'BOVA11', assetType: 'etf' },
+  { name: 'IVVB11', ticker: 'IVVB11', assetType: 'etf' },
+  { name: 'HGLG11', ticker: 'HGLG11', assetType: 'fii' },
+  { name: 'MXRF11', ticker: 'MXRF11', assetType: 'fii' },
+  { name: 'KNRI11', ticker: 'KNRI11', assetType: 'fii' },
+  { name: 'Tesouro Selic', ticker: 'Tesouro Selic', assetType: 'fixed_income' },
+  { name: 'Tesouro IPCA+', ticker: 'Tesouro IPCA+', assetType: 'fixed_income' },
+  { name: 'Bitcoin', ticker: 'BTC', assetType: 'crypto' },
+];
+
+function normalizeSearch(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('pt-BR')
+    .trim();
+}
+
 function assetTypeLabel(type: InvestmentAssetType): string {
   return ASSET_TYPES.find((item) => item.value === type)?.label ?? 'Outros';
 }
@@ -77,6 +107,7 @@ export default function InvestmentsScreen() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [form, setForm] = useState(() => getInitialForm());
+  const [nameFocused, setNameFocused] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [investmentToDelete, setInvestmentToDelete] = useState<Investment | null>(null);
@@ -87,6 +118,16 @@ export default function InvestmentsScreen() {
     result: summary.result + investment.returnAmount,
   }), { invested: 0, current: 0, result: 0 }), [investments]);
   const totalPercentage = totals.invested > 0 ? (totals.result / totals.invested) * 100 : 0;
+  const assetSuggestions = useMemo(() => {
+    const query = normalizeSearch(form.name);
+    if (!nameFocused || !query) return [];
+    return ASSET_SUGGESTIONS
+      .filter((suggestion) => (
+        normalizeSearch(suggestion.name).includes(query)
+        || normalizeSearch(suggestion.ticker).includes(query)
+      ))
+      .slice(0, 6);
+  }, [form.name, nameFocused]);
 
   const openEditor = (investment?: Investment) => {
     setEditingInvestment(investment ?? null);
@@ -96,6 +137,16 @@ export default function InvestmentsScreen() {
 
   const closeEditor = () => {
     if (!saving) setEditorOpen(false);
+  };
+
+  const selectAssetSuggestion = (suggestion: AssetSuggestion) => {
+    setForm((current) => ({
+      ...current,
+      name: suggestion.name,
+      ticker: suggestion.ticker,
+      assetType: suggestion.assetType,
+    }));
+    setNameFocused(false);
   };
 
   const saveInvestment = async () => {
@@ -332,9 +383,37 @@ export default function InvestmentsScreen() {
                 placeholder="Ex.: PETR4 ou Tesouro Selic"
                 placeholderTextColor={colors.mutedForeground}
                 value={form.name}
-                onChangeText={(name) => setForm((current) => ({ ...current, name }))}
+                onFocus={() => setNameFocused(true)}
+                onBlur={() => setTimeout(() => setNameFocused(false), 120)}
+                onChangeText={(name) => {
+                  setNameFocused(name.trim().length > 0);
+                  setForm((current) => ({ ...current, name }));
+                }}
                 style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
               />
+              {assetSuggestions.length > 0 && (
+                <View
+                  accessibilityLabel="Sugestões de ativos"
+                  style={[styles.suggestionList, { backgroundColor: colors.card, borderColor: colors.border }]}
+                >
+                  {assetSuggestions.map((suggestion) => (
+                    <Pressable
+                      key={suggestion.ticker}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Usar ${suggestion.name}, código ${suggestion.ticker}`}
+                      accessibilityHint="Preenche o nome, o código e o tipo do ativo"
+                      onPress={() => selectAssetSuggestion(suggestion)}
+                      style={({ pressed }) => [styles.suggestionItem, pressed && styles.pressed]}
+                    >
+                      <View style={styles.suggestionCopy}>
+                        <Text numberOfLines={1} style={[styles.suggestionName, { color: colors.foreground }]}>{suggestion.name}</Text>
+                        <Text style={[styles.suggestionMeta, { color: colors.mutedForeground }]}>{suggestion.ticker}</Text>
+                      </View>
+                      <Text style={[styles.suggestionType, { color: colors.mutedForeground }]}>{assetTypeLabel(suggestion.assetType)}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
               <View style={styles.fieldsRow}>
                 <View style={styles.halfField}>
                   <Text style={[styles.label, { color: colors.foreground }]}>Ticker opcional</Text>
@@ -506,6 +585,12 @@ const styles = StyleSheet.create({
   modeTitle: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   modeDescription: { fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 4 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
+  suggestionList: { borderWidth: 1, borderRadius: 8, marginTop: 6, overflow: 'hidden' },
+  suggestionItem: { minHeight: 47, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 11, paddingVertical: 7 },
+  suggestionCopy: { flex: 1, minWidth: 0 },
+  suggestionName: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  suggestionMeta: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  suggestionType: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   fieldsRow: { flexDirection: 'row', gap: 10 },
   halfField: { flex: 1, minWidth: 0 },
   assetTypeList: { gap: 7, paddingBottom: 2 },
