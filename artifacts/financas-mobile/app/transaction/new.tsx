@@ -110,7 +110,13 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [cardId, setCardId] = useState<string | null>(transaction?.cardId ?? null);
   const [transactionSource, setTransactionSource] = useState<TransactionSource>(transaction?.cardId ? 'card' : 'wallet');
   const [destinationWalletId, setDestinationWalletId] = useState(transaction?.destinationWalletId ?? '');
-  const [dueDate, setDueDate] = useState(transaction?.dueDate ? toDateInput(transaction.dueDate) : '');
+  const [dueDate, setDueDate] = useState(
+    transaction?.dueDate
+      ? toDateInput(transaction.dueDate)
+      : transaction?.date
+        ? toDateInput(transaction.date)
+        : '',
+  );
   const [recurrence, setRecurrence] = useState<RecurrenceKind>(transaction?.recurrence.kind ?? 'none');
   const [recurrenceCount, setRecurrenceCount] = useState(String(transaction?.recurrence.occurrences ?? ''));
   const [recurrencePeriod, setRecurrencePeriod] = useState<RecurrencePeriod>(getInitialPeriod(transaction));
@@ -227,6 +233,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           description: description.trim(),
           walletId: sourceWalletId,
           cardId: selectedCardId,
+          date: parsedDueDate ? createLocalIsoDate(parsedDueDate) : undefined,
           categoryId,
           goalId: type === 'expense' || type === 'income' ? goalId : null,
           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
@@ -241,6 +248,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           amount: numericAmount,
           description,
           cardId: selectedCardId,
+          date: parsedDueDate ? createLocalIsoDate(parsedDueDate) : undefined,
           categoryId,
           goalId: type === 'expense' || type === 'income' ? goalId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
