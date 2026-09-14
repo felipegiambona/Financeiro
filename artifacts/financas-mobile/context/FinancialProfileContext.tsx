@@ -30,7 +30,13 @@ export function FinancialProfileProvider({ children }: React.PropsWithChildren) 
   const [loading, setLoading] = useState(true);
 
   const selectProfile = useCallback(async (nextProfiles: FinancialProfile[]) => {
-    if (!session?.userId || nextProfiles.length === 0) return;
+    if (!session?.userId) return;
+    if (nextProfiles.length === 0) {
+      setFinancialProfileId(undefined);
+      setProfiles([]);
+      setActiveProfile(null);
+      return;
+    }
     const storedId = await AsyncStorage.getItem(`financas-mobile:financial-profile:${session.userId}`);
     const selected = nextProfiles.find((profile) => profile.id === storedId)
       ?? nextProfiles.find((profile) => profile.type === 'personal')
@@ -94,16 +100,26 @@ export function FinancialProfileProvider({ children }: React.PropsWithChildren) 
 
     await deleteFinancialProfile(profileId);
     const remainingProfiles = profiles.filter((profile) => profile.id !== profileId);
-    const nextProfile = activeProfile?.id === profileId
-      ? remainingProfiles.find((profile) => profile.type === 'personal') ?? remainingProfiles[0]
+    const activeProfileWasDeleted = activeProfile?.id === profileId;
+    const nextProfile = activeProfileWasDeleted
+      ? remainingProfiles.find((profile) => profile.type === 'personal') ?? remainingProfiles[0] ?? null
       : activeProfile;
 
     setProfiles(remainingProfiles);
-    if (activeProfile?.id === profileId && nextProfile && session?.userId) {
+    if (!activeProfileWasDeleted) return;
+
+    if (nextProfile && session?.userId) {
       await AsyncStorage.setItem(`financas-mobile:financial-profile:${session.userId}`, nextProfile.id);
       setFinancialProfileId(nextProfile.id);
       setActiveProfile(nextProfile);
+      return;
     }
+
+    if (session?.userId) {
+      await AsyncStorage.removeItem(`financas-mobile:financial-profile:${session.userId}`);
+    }
+    setFinancialProfileId(undefined);
+    setActiveProfile(null);
   }, [activeProfile, profiles, session?.userId]);
 
   const value = useMemo(
