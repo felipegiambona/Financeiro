@@ -103,9 +103,13 @@ export default function InvestmentsScreen() {
   } = useInvestments();
   const routeAssetType = Array.isArray(assetTypeParam) ? assetTypeParam[0] : assetTypeParam;
   const selectedAssetType = ASSET_TYPES.find((item) => item.value === routeAssetType)?.value ?? null;
+  const [favoriteOnly, setFavoriteOnly] = useState(false);
   const filteredInvestments = useMemo(
-    () => selectedAssetType ? investments.filter((investment) => investment.assetType === selectedAssetType) : investments,
-    [investments, selectedAssetType],
+    () => investments.filter((investment) => (
+      (!selectedAssetType || investment.assetType === selectedAssetType)
+      && (!favoriteOnly || investment.isFavorite)
+    )),
+    [favoriteOnly, investments, selectedAssetType],
   );
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
@@ -304,6 +308,23 @@ export default function InvestmentsScreen() {
             </Pressable>
           </View>
         ) : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: favoriteOnly }}
+          accessibilityLabel={favoriteOnly ? 'Exibindo apenas favoritos' : 'Exibir apenas favoritos'}
+          testID="investments-favorites-filter"
+          onPress={() => setFavoriteOnly((current) => !current)}
+          style={({ pressed }) => [
+            styles.favoriteFilter,
+            { backgroundColor: favoriteOnly ? colors.accent : colors.card, borderColor: favoriteOnly ? colors.accent : colors.border },
+            pressed && styles.pressed,
+          ]}
+        >
+          <Feather name="star" size={14} color={favoriteOnly ? colors.accentForeground : colors.foreground} />
+          <Text style={[styles.favoriteFilterText, { color: favoriteOnly ? colors.accentForeground : colors.foreground }]}>
+            {favoriteOnly ? 'Favoritos selecionados' : 'Mostrar favoritos'}
+          </Text>
+        </Pressable>
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
           <>
             <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
@@ -338,8 +359,14 @@ export default function InvestmentsScreen() {
             </View>
             {filteredInvestments.length === 0 ? (
               <View style={styles.emptyWrap}>
-                <EmptyState message={selectedAssetType ? `Você ainda não cadastrou investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.` : 'Você ainda não cadastrou nenhum investimento.'} />
-                {!selectedAssetType ? (
+                <EmptyState message={
+                  favoriteOnly
+                    ? 'Você ainda não favoritou nenhum investimento.'
+                    : selectedAssetType
+                      ? `Você ainda não cadastrou investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.`
+                      : 'Você ainda não cadastrou nenhum investimento.'
+                } />
+                {!selectedAssetType && !favoriteOnly ? (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Cadastrar primeiro investimento"
@@ -677,6 +704,8 @@ const styles = StyleSheet.create({
   activeFilter: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 11, paddingRight: 5, marginTop: -7, marginBottom: 12 },
   activeFilterCopy: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   activeFilterText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  favoriteFilter: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 7, paddingHorizontal: 11, marginTop: -5, marginBottom: 12 },
+  favoriteFilterText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   clearFilterButton: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   summaryCard: { minHeight: 166, borderRadius: 9, padding: 17, justifyContent: 'space-between' },
   summaryLabel: { color: '#D4D4D4', fontSize: 12, fontFamily: 'Inter_500Medium' },

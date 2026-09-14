@@ -275,6 +275,19 @@ export default function DashboardScreen() {
                       onDelete={() => router.push({ pathname: '/more/goals', params: { deleteId: goal.id } })}
                     />
                   ))}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Criar nova meta"
+                    testID="dashboard-new-goal-card"
+                    onPress={() => router.push({ pathname: '/more/goals', params: { openNew: '1' } })}
+                    style={({ pressed }) => [styles.dashboardAddCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                  >
+                    <View style={[styles.dashboardAddIcon, { backgroundColor: colors.secondary }]}>
+                      <Feather name="plus" size={19} color={colors.foreground} />
+                    </View>
+                    <Text style={[styles.dashboardAddTitle, { color: colors.foreground }]}>Nova meta</Text>
+                    <Text style={[styles.dashboardAddHint, { color: colors.mutedForeground }]}>Adicionar objetivo</Text>
+                  </Pressable>
                 </ScrollView>
               )}
             </View> : null}
@@ -316,6 +329,19 @@ export default function DashboardScreen() {
                       onDelete={() => router.push({ pathname: '/more/limits', params: { deleteId: limit.id } })}
                     />
                   ))}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Criar novo limite"
+                    testID="dashboard-new-limit-card"
+                    onPress={() => router.push({ pathname: '/more/limits', params: { openNew: '1' } })}
+                    style={({ pressed }) => [styles.dashboardAddCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                  >
+                    <View style={[styles.dashboardAddIcon, { backgroundColor: colors.secondary }]}>
+                      <Feather name="plus" size={19} color={colors.foreground} />
+                    </View>
+                    <Text style={[styles.dashboardAddTitle, { color: colors.foreground }]}>Novo limite</Text>
+                    <Text style={[styles.dashboardAddHint, { color: colors.mutedForeground }]}>Controlar gastos</Text>
+                  </Pressable>
                 </ScrollView>
               )}
             </View> : null}
@@ -362,6 +388,19 @@ export default function DashboardScreen() {
                       onPay={() => handlePayCard(card.id, card.name)}
                     />
                   ))}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Criar novo cartão"
+                    testID="dashboard-new-card-card"
+                    onPress={() => router.push({ pathname: '/more/cards', params: { openNew: '1' } })}
+                    style={({ pressed }) => [styles.dashboardAddCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                  >
+                    <View style={[styles.dashboardAddIcon, { backgroundColor: colors.secondary }]}>
+                      <Feather name="plus" size={19} color={colors.foreground} />
+                    </View>
+                    <Text style={[styles.dashboardAddTitle, { color: colors.foreground }]}>Novo cartão</Text>
+                    <Text style={[styles.dashboardAddHint, { color: colors.mutedForeground }]}>Cadastrar cartão</Text>
+                  </Pressable>
                 </ScrollView>
               )}
             </View> : null}
@@ -499,6 +538,10 @@ const styles = StyleSheet.create({
   cardsSection: { marginTop: 24 },
   horizontalCardsContent: { gap: DASHBOARD_CARD_GAP },
   dashboardCarouselCard: { width: 304, marginBottom: 0 },
+  dashboardAddCard: { width: 304, minHeight: 132, borderWidth: 1, borderRadius: 10, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  dashboardAddIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 9 },
+  dashboardAddTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
+  dashboardAddHint: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
   cardsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   investmentsSection: { marginTop: 24 },
   investmentsHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
