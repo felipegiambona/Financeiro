@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createInvestment as persistInvestment,
   deleteInvestment as removeInvestment,
@@ -13,13 +14,54 @@ import {
 } from '@workspace/api-client-react';
 import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 
+export type RecentInvestmentAsset = InvestmentSearchResult;
+
+export const MAX_RECENT_INVESTMENT_ASSETS = 8;
+
+const RECENT_INVESTMENT_ASSETS_KEY_PREFIX = '@financas-mobile/recent-investment-assets:';
+const INVESTMENT_ASSET_TYPES = new Set<InvestmentSearchResult['assetType']>([
+  'stock',
+  'fii',
+  'etf',
+  'fund',
+  'fixed_income',
+  'crypto',
+  'other',
+]);
+
+function recentAssetKey(asset: RecentInvestmentAsset): string {
+  return `${asset.assetType}:${asset.ticker.trim().toLocaleLowerCase() || asset.name.trim().toLocaleLowerCase()}`;
+}
+
+function parseRecentInvestmentAssets(value: string | null): RecentInvestmentAsset[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is RecentInvestmentAsset => (
+        typeof item === 'object'
+        && item !== null
+        && typeof item.name === 'string'
+        && typeof item.ticker === 'string'
+        && INVESTMENT_ASSET_TYPES.has(item.assetType)
+      ))
+      .slice(0, MAX_RECENT_INVESTMENT_ASSETS);
+  } catch {
+    return [];
+  }
+}
+
 interface InvestmentContextValue {
   investments: Investment[];
+  recentAssets: RecentInvestmentAsset[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
   refreshQuotes: () => Promise<void>;
   searchInvestmentAssets: (query: string) => Promise<InvestmentSearchResult[]>;
+  rememberRecentAsset: (asset: RecentInvestmentAsset) => Promise<void>;
+  removeRecentAsset: (asset: RecentInvestmentAsset) => Promise<void>;
   createInvestment: (input: InvestmentInput) => Promise<Investment>;
   updateInvestment: (id: string, updates: InvestmentUpdate) => Promise<Investment>;
   deleteInvestment: (id: string) => Promise<void>;
@@ -30,8 +72,63 @@ const InvestmentContext = createContext<InvestmentContextValue | null>(null);
 export function InvestmentProvider({ children }: React.PropsWithChildren) {
   const { activeProfile } = useFinancialProfiles();
   const [investments, setInvestments] = useState<Investment[]>([]);
+  const [recentAssets, setRecentAssets] = useState<RecentInvestmentAsset[]>([]);
+  const recentAssetsRef = useRef<RecentInvestmentAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const recentAssetsStorageKey = activeProfile?.type === 'personal' && activeProfile.id
+    ? `${RECENT_INVESTMENT_ASSETS_KEY_PREFIX}${activeProfile.id}`
+    : null;
+
+  useEffect(() => {
+    let mounted = true;
+    recentAssetsRef.current = [];
+    setRecentAssets([]);
+    if (!recentAssetsStorageKey) return undefined;
+
+    void AsyncStorage.getItem(recentAssetsStorageKey)
+      .then((stored) => {
+        if (!mounted) return;
+        const loaded = parseRecentInvestmentAssets(stored);
+        recentAssetsRef.current = loaded;
+        setRecentAssets(loaded);
+      })
+      .catch(() => {
+        // Local suggestions are optional and should not block the investment form.
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [recentAssetsStorageKey]);
+
+  const rememberRecentAsset = useCallback(async (asset: RecentInvestmentAsset) => {
+    if (!recentAssetsStorageKey) return;
+    const next = [
+      asset,
+      ...recentAssetsRef.current.filter((current) => recentAssetKey(current) !== recentAssetKey(asset)),
+    ].slice(0, MAX_RECENT_INVESTMENT_ASSETS);
+    recentAssetsRef.current = next;
+    setRecentAssets(next);
+    try {
+      await AsyncStorage.setItem(recentAssetsStorageKey, JSON.stringify(next));
+    } catch {
+      // Local suggestions are optional and should not block a saved investment.
+    }
+  }, [recentAssetsStorageKey]);
+
+  const removeRecentAsset = useCallback(async (asset: RecentInvestmentAsset) => {
+    if (!recentAssetsStorageKey) return;
+    const next = recentAssetsRef.current.filter((current) => recentAssetKey(current) !== recentAssetKey(asset));
+    recentAssetsRef.current = next;
+    setRecentAssets(next);
+    try {
+      await AsyncStorage.setItem(recentAssetsStorageKey, JSON.stringify(next));
+    } catch {
+      // The UI update remains useful even if local storage is temporarily unavailable.
+    }
+  }, [recentAssetsStorageKey]);
 
   const refresh = useCallback(async () => {
     if (activeProfile?.type !== 'personal') {
@@ -116,8 +213,8 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   const value = useMemo(
-    () => ({ investments, loading, error, refresh, refreshQuotes, searchInvestmentAssets, createInvestment, updateInvestment, deleteInvestment }),
-    [createInvestment, deleteInvestment, error, investments, loading, refresh, refreshQuotes, searchInvestmentAssets, updateInvestment],
+    () => ({ investments, recentAssets, loading, error, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, createInvestment, updateInvestment, deleteInvestment }),
+    [createInvestment, deleteInvestment, error, investments, loading, recentAssets, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, updateInvestment],
   );
 
   return <InvestmentContext.Provider value={value}>{children}</InvestmentContext.Provider>;

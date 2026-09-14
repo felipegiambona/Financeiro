@@ -7,7 +7,7 @@ import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { useInvestments } from '@/context/InvestmentContext';
+import { useInvestments, type RecentInvestmentAsset } from '@/context/InvestmentContext';
 import { useColors } from '@/hooks/useColors';
 import type { Investment, InvestmentAssetType, InvestmentInput, InvestmentSearchResult, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
@@ -85,7 +85,20 @@ function getInitialForm(investment?: Investment) {
 export default function InvestmentsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { investments, loading, error, refresh, refreshQuotes, searchInvestmentAssets, createInvestment, updateInvestment, deleteInvestment } = useInvestments();
+  const {
+    investments,
+    recentAssets,
+    loading,
+    error,
+    refresh,
+    refreshQuotes,
+    searchInvestmentAssets,
+    rememberRecentAsset,
+    removeRecentAsset,
+    createInvestment,
+    updateInvestment,
+    deleteInvestment,
+  } = useInvestments();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [form, setForm] = useState(() => getInitialForm());
@@ -104,6 +117,22 @@ export default function InvestmentsScreen() {
     result: summary.result + investment.returnAmount,
   }), { invested: 0, current: 0, result: 0 }), [investments]);
   const totalPercentage = totals.invested > 0 ? (totals.result / totals.invested) * 100 : 0;
+  const matchingRecentAssets = useMemo(() => {
+    const query = form.name.trim().toLocaleLowerCase();
+    if (!nameFocused) return [];
+    return recentAssets.filter((asset) => (
+      !query
+      || asset.name.toLocaleLowerCase().includes(query)
+      || asset.ticker.toLocaleLowerCase().includes(query)
+    ));
+  }, [form.name, nameFocused, recentAssets]);
+  const catalogSuggestions = useMemo(() => {
+    const recentKeys = new Set(matchingRecentAssets.map((asset) => `${asset.assetType}:${asset.ticker.trim().toLocaleLowerCase() || asset.name.trim().toLocaleLowerCase()}`));
+    return assetSuggestions.filter((suggestion) => (
+      !recentKeys.has(`${suggestion.assetType}:${suggestion.ticker.trim().toLocaleLowerCase() || suggestion.name.trim().toLocaleLowerCase()}`)
+    ));
+  }, [assetSuggestions, matchingRecentAssets]);
+
   useEffect(() => {
     const query = form.name.trim();
     if (!nameFocused || query.length < 2) {
@@ -146,6 +175,18 @@ export default function InvestmentsScreen() {
       ticker: suggestion.ticker,
       assetType: suggestion.assetType,
     }));
+    void rememberRecentAsset(suggestion).catch(() => undefined);
+    setNameFocused(false);
+  };
+
+  const selectRecentAsset = (asset: RecentInvestmentAsset) => {
+    setForm((current) => ({
+      ...current,
+      name: asset.name,
+      ticker: asset.ticker,
+      assetType: asset.assetType,
+    }));
+    void rememberRecentAsset(asset).catch(() => undefined);
     setNameFocused(false);
   };
 
@@ -191,6 +232,11 @@ export default function InvestmentsScreen() {
       } else {
         await createInvestment(input);
       }
+      await rememberRecentAsset({
+        name,
+        ticker: normalizedTicker,
+        assetType: form.assetType,
+      });
       setEditorOpen(false);
       if (form.valuationMode === 'automatic') {
         void refreshQuotes().catch(() => undefined);
@@ -399,30 +445,65 @@ export default function InvestmentsScreen() {
                 }}
                 style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
               />
-              {nameFocused && form.name.trim().length >= 2 && (
+              {nameFocused && (
                 <View
                   accessibilityLabel="Sugestões de ativos"
                   style={[styles.suggestionList, { backgroundColor: colors.card, borderColor: colors.border }]}
                 >
-                  {searchingAssets ? (
-                    <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Buscando ativos...</Text>
-                  ) : assetSuggestions.length > 0 ? assetSuggestions.map((suggestion) => (
-                    <Pressable
-                      key={suggestion.ticker}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Usar ${suggestion.name}, código ${suggestion.ticker}`}
-                      accessibilityHint="Preenche o nome, o código e o tipo do ativo"
-                      onPress={() => selectAssetSuggestion(suggestion)}
-                      style={({ pressed }) => [styles.suggestionItem, pressed && styles.pressed]}
-                    >
-                      <View style={styles.suggestionCopy}>
-                        <Text numberOfLines={1} style={[styles.suggestionName, { color: colors.foreground }]}>{suggestion.name}</Text>
-                        <Text style={[styles.suggestionMeta, { color: colors.mutedForeground }]}>{suggestion.ticker}</Text>
-                      </View>
-                      <Text style={[styles.suggestionType, { color: colors.mutedForeground }]}>{assetTypeLabel(suggestion.assetType)}</Text>
-                    </Pressable>
-                  )) : (
-                    <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Nenhum resultado. Você pode cadastrar manualmente.</Text>
+                  {matchingRecentAssets.length > 0 && (
+                    <>
+                      <Text style={[styles.suggestionSectionLabel, { color: colors.mutedForeground }]}>Usados recentemente</Text>
+                      {matchingRecentAssets.map((asset) => (
+                        <View key={`recent-${asset.assetType}-${asset.ticker || asset.name}`} style={styles.suggestionRow}>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Usar ${asset.name}${asset.ticker ? `, código ${asset.ticker}` : ''}`}
+                            accessibilityHint="Preenche o nome, o código e o tipo do ativo"
+                            onPress={() => selectRecentAsset(asset)}
+                            style={({ pressed }) => [styles.suggestionItem, styles.suggestionItemMain, pressed && styles.pressed]}
+                          >
+                            <View style={styles.suggestionCopy}>
+                              <Text numberOfLines={1} style={[styles.suggestionName, { color: colors.foreground }]}>{asset.name}</Text>
+                              <Text style={[styles.suggestionMeta, { color: colors.mutedForeground }]}>{asset.ticker || 'Sem código'}</Text>
+                            </View>
+                            <Text style={[styles.suggestionType, { color: colors.mutedForeground }]}>{assetTypeLabel(asset.assetType)}</Text>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remover ${asset.name} dos usados recentemente`}
+                            onPress={() => void removeRecentAsset(asset).catch(() => undefined)}
+                            style={({ pressed }) => [styles.removeRecentButton, pressed && styles.pressed]}
+                          >
+                            <Feather name="x" size={14} color={colors.mutedForeground} />
+                          </Pressable>
+                        </View>
+                      ))}
+                    </>
+                  )}
+                  {form.name.trim().length >= 2 && (
+                    <>
+                      {matchingRecentAssets.length > 0 && <View style={[styles.suggestionDivider, { backgroundColor: colors.border }]} />}
+                      {searchingAssets ? (
+                        <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Buscando no catálogo...</Text>
+                      ) : catalogSuggestions.length > 0 ? catalogSuggestions.map((suggestion) => (
+                        <Pressable
+                          key={`catalog-${suggestion.assetType}-${suggestion.ticker}`}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Usar ${suggestion.name}, código ${suggestion.ticker}`}
+                          accessibilityHint="Preenche o nome, o código e o tipo do ativo"
+                          onPress={() => selectAssetSuggestion(suggestion)}
+                          style={({ pressed }) => [styles.suggestionItem, pressed && styles.pressed]}
+                        >
+                          <View style={styles.suggestionCopy}>
+                            <Text numberOfLines={1} style={[styles.suggestionName, { color: colors.foreground }]}>{suggestion.name}</Text>
+                            <Text style={[styles.suggestionMeta, { color: colors.mutedForeground }]}>{suggestion.ticker}</Text>
+                          </View>
+                          <Text style={[styles.suggestionType, { color: colors.mutedForeground }]}>{assetTypeLabel(suggestion.assetType)}</Text>
+                        </Pressable>
+                      )) : (
+                        <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Nenhum resultado. Você pode cadastrar manualmente.</Text>
+                      )}
+                    </>
                   )}
                 </View>
               )}
@@ -605,8 +686,13 @@ const styles = StyleSheet.create({
   modeDescription: { fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 4 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   suggestionList: { borderWidth: 1, borderRadius: 8, marginTop: 6, overflow: 'hidden' },
+  suggestionSectionLabel: { fontSize: 9, fontFamily: 'Inter_700Bold', letterSpacing: 0.7, textTransform: 'uppercase', paddingHorizontal: 11, paddingTop: 10, paddingBottom: 3 },
   suggestionState: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingHorizontal: 11, paddingVertical: 11 },
+  suggestionDivider: { height: 1, marginHorizontal: 11 },
+  suggestionRow: { flexDirection: 'row', alignItems: 'center' },
   suggestionItem: { minHeight: 47, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 11, paddingVertical: 7 },
+  suggestionItemMain: { flex: 1 },
+  removeRecentButton: { width: 36, minHeight: 47, alignItems: 'center', justifyContent: 'center' },
   suggestionCopy: { flex: 1, minWidth: 0 },
   suggestionName: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   suggestionMeta: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 2 },
