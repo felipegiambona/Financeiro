@@ -124,6 +124,33 @@ paths:
           description: Invalid investment
         "403":
           description: Investments are only available for personal profiles
+  /investments/search:
+    get:
+      operationId: searchInvestments
+      tags: [investments]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 40
+      responses:
+        "200":
+          description: Investment assets matching the search
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvestmentSearchResult"
+        "400":
+          description: Search query is too short or invalid
+        "403":
+          description: Investments are only available for personal profiles
+        "502":
+          description: Investment catalog provider unavailable
   /investments/{id}:
     patch:
       operationId: updateInvestment
@@ -832,6 +859,15 @@ components:
         returnPercentage: { type: number }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+    InvestmentSearchResult:
+      type: object
+      required: [name, ticker, assetType]
+      properties:
+        name: { type: string }
+        ticker: { type: string }
+        assetType:
+          type: string
+          enum: [stock, fii, etf, fund, fixed_income, crypto, other]
     InvestmentInput:
       type: object
       required: [name, assetType, quantity, averagePrice, investedAmount, currentValue]

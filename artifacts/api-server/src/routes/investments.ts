@@ -5,6 +5,7 @@ import {
   CreateInvestmentResponse,
   DeleteInvestmentParams,
   ListInvestmentsResponse,
+  InvestmentSearchResponse,
   UpdateInvestmentBody,
   UpdateInvestmentParams,
   UpdateInvestmentResponse,
@@ -24,6 +25,7 @@ import {
   refreshInvestmentQuote,
   type InvestmentQuoteStore,
 } from "../lib/investmentQuotes";
+import { searchInvestmentCatalog } from "../lib/investmentCatalog";
 
 const router: IRouter = Router();
 router.use("/investments", requireAuth, resolveFinancialProfile);
@@ -139,6 +141,21 @@ router.get("/investments", async (req, res): Promise<void> => {
     ))
     .orderBy(asc(investmentsTable.createdAt));
   res.json(ListInvestmentsResponse.parse(rows.map(toResponse)));
+});
+
+router.get("/investments/search", async (req, res): Promise<void> => {
+  if (!assertPersonalProfile(req, res)) return;
+  const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (query.length < 2 || query.length > 40) {
+    res.status(400).json({ error: "Search query must have between 2 and 40 characters" });
+    return;
+  }
+
+  try {
+    res.json(InvestmentSearchResponse.parse(await searchInvestmentCatalog(query)));
+  } catch {
+    res.status(502).json({ error: "Investment catalog is temporarily unavailable" });
+  }
 });
 
 router.post("/investments/refresh", async (req, res): Promise<void> => {
