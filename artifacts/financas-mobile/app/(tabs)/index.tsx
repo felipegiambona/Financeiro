@@ -116,16 +116,20 @@ export default function DashboardScreen() {
           onAction={() => void signOut()}
         />
         {activeProfile?.type === 'business' ? (
-          <View style={[styles.businessProfileNotice, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-            <View style={[styles.businessProfileNoticeIcon, { backgroundColor: colors.card }]}>
-              <Feather name="briefcase" size={15} color={colors.foreground} />
-            </View>
+          <View style={styles.businessProfileNotice}>
             <View style={styles.businessProfileNoticeCopy}>
-              <Text style={[styles.businessProfileNoticeLabel, { color: colors.mutedForeground }]}>Perfil empresarial ativo</Text>
-              <Text numberOfLines={1} style={[styles.businessProfileNoticeName, { color: colors.foreground }]}>
-                {activeProfile.businessName || 'Empresarial'}
+              <Text numberOfLines={1} style={[styles.businessProfileNoticeName, { color: colors.mutedForeground }]}>
+                Perfil empresarial ativo: {activeProfile.businessName || 'Empresarial'}
               </Text>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Trocar perfil"
+              onPress={() => router.push('/more/profile')}
+              style={({ pressed }) => [styles.businessProfileSwitchButton, { backgroundColor: colors.secondary, borderColor: colors.border }, pressed && styles.pressed]}
+            >
+              <Text style={[styles.businessProfileSwitchText, { color: colors.foreground }]}>Trocar perfil</Text>
+            </Pressable>
           </View>
         ) : null}
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
@@ -555,11 +559,11 @@ const styles = StyleSheet.create({
   dashboardAddIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 9 },
   dashboardAddTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   dashboardAddHint: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
-  businessProfileNotice: { minHeight: 57, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, marginBottom: 2 },
-  businessProfileNoticeIcon: { width: 31, height: 31, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  businessProfileNotice: { minHeight: 30, flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 2 },
   businessProfileNoticeCopy: { flex: 1, minWidth: 0 },
-  businessProfileNoticeLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
-  businessProfileNoticeName: { fontSize: 13, fontFamily: 'Inter_700Bold', marginTop: 3 },
+  businessProfileNoticeName: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  businessProfileSwitchButton: { minHeight: 28, borderWidth: 1, borderRadius: 7, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
+  businessProfileSwitchText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   cardsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   investmentsSection: { marginTop: 24 },
   investmentsHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 },

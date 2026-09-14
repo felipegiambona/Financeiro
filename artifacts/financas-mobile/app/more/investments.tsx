@@ -270,6 +270,21 @@ export default function InvestmentsScreen() {
     }
   };
 
+  const clearFavoriteSearch = () => {
+    favoriteSearchRequestRef.current += 1;
+    setFavoriteSearchQuery('');
+    setFavoriteSearchResults([]);
+    setFavoriteSearchLoading(false);
+  };
+
+  const clearAssetSearch = () => {
+    searchRequestRef.current += 1;
+    setForm((current) => ({ ...current, name: '' }));
+    setAssetSuggestions([]);
+    setSearchingAssets(false);
+    setNameFocused(false);
+  };
+
   const saveInvestment = async () => {
     const name = form.name.trim();
     const normalizedTicker = normalizeQuoteIdentifier(form.assetType, form.ticker);
@@ -400,21 +415,34 @@ export default function InvestmentsScreen() {
               <View style={styles.favoriteAddCopy}>
                 <Text style={[styles.favoriteAddTitle, { color: colors.foreground }]}>Adicionar favorito</Text>
                 <Text style={[styles.favoriteAddHint, { color: colors.mutedForeground }]}>
-                  Busque um ativo para favoritar ou cadastrar já marcado como favorito.
+                  Busque um ativo para adicionar aos favoritos.
                 </Text>
               </View>
               <Feather name="star" size={16} color={colors.accent} />
             </View>
-            <TextInput
-              accessibilityLabel="Buscar ativo para adicionar aos favoritos"
-              testID="favorite-asset-search-input"
-              value={favoriteSearchQuery}
-              onChangeText={setFavoriteSearchQuery}
-              placeholder="Nome, ticker ou código do ativo"
-              placeholderTextColor={colors.mutedForeground}
-              autoCapitalize="none"
-              style={[styles.input, styles.favoriteSearchInput, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
-            />
+            <View style={styles.inputWithClear}>
+              <TextInput
+                accessibilityLabel="Buscar ativo para adicionar aos favoritos"
+                testID="favorite-asset-search-input"
+                value={favoriteSearchQuery}
+                onChangeText={setFavoriteSearchQuery}
+                placeholder="Nome, ticker ou código do ativo"
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="none"
+                style={[styles.input, styles.inputWithClearField, styles.favoriteSearchInput, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
+              />
+              {favoriteSearchQuery ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Limpar busca de favoritos"
+                  onPress={clearFavoriteSearch}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.clearSearchButton, pressed && styles.pressed]}
+                >
+                  <Feather name="x" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
+            </View>
             {favoriteSearchQuery.trim().length >= 2 ? (
               <View style={[styles.favoriteSearchResults, { borderColor: colors.border }]}>
                 {favoriteSearchLoading ? (
@@ -455,7 +483,7 @@ export default function InvestmentsScreen() {
                           <Pressable
                             key={`${suggestion.assetType}:${suggestion.ticker}:${suggestion.name}`}
                             accessibilityRole="button"
-                            accessibilityLabel={`Cadastrar ${suggestion.name} como favorito`}
+                            accessibilityLabel={`Adicionar ${suggestion.name} aos favoritos`}
                             onPress={() => openEditor(undefined, suggestion, true)}
                             style={({ pressed }) => [styles.favoriteSearchRow, { borderBottomColor: colors.border }, pressed && styles.pressed]}
                           >
@@ -467,7 +495,7 @@ export default function InvestmentsScreen() {
                             </View>
                             <View style={styles.favoriteSearchAction}>
                               <Feather name="plus" size={14} color={colors.foreground} />
-                              <Text style={[styles.favoriteSearchActionText, { color: colors.foreground }]}>Cadastrar</Text>
+                              <Text style={[styles.favoriteSearchActionText, { color: colors.foreground }]}>Adicionar</Text>
                             </View>
                           </Pressable>
                         ))}
@@ -668,20 +696,33 @@ export default function InvestmentsScreen() {
                 ))}
               </View>
               <Text style={[styles.label, { color: colors.foreground }]}>Nome ou código do ativo</Text>
-              <TextInput
-                accessibilityLabel="Nome ou código do ativo"
-                autoCapitalize="characters"
-                placeholder="Ex.: PETR4 ou Tesouro Selic"
-                placeholderTextColor={colors.mutedForeground}
-                value={form.name}
-                onFocus={() => setNameFocused(true)}
-                onBlur={() => setTimeout(() => setNameFocused(false), 120)}
-                onChangeText={(name) => {
-                  setNameFocused(name.trim().length > 0);
-                  setForm((current) => ({ ...current, name }));
-                }}
-                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
-              />
+              <View style={styles.inputWithClear}>
+                <TextInput
+                  accessibilityLabel="Nome ou código do ativo"
+                  autoCapitalize="characters"
+                  placeholder="Ex.: PETR4 ou Tesouro Selic"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={form.name}
+                  onFocus={() => setNameFocused(true)}
+                  onBlur={() => setTimeout(() => setNameFocused(false), 120)}
+                  onChangeText={(name) => {
+                    setNameFocused(name.trim().length > 0);
+                    setForm((current) => ({ ...current, name }));
+                  }}
+                  style={[styles.input, styles.inputWithClearField, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
+                />
+                {form.name ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Limpar busca de ativos"
+                    onPress={clearAssetSearch}
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.clearSearchButton, pressed && styles.pressed]}
+                  >
+                    <Feather name="x" size={16} color={colors.mutedForeground} />
+                  </Pressable>
+                ) : null}
+              </View>
               {nameFocused && (
                 <View
                   accessibilityLabel="Sugestões de ativos"
@@ -939,6 +980,9 @@ const styles = StyleSheet.create({
   modeTitle: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   modeDescription: { fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 4 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
+  inputWithClear: { position: 'relative', justifyContent: 'center' },
+  inputWithClearField: { paddingRight: 38 },
+  clearSearchButton: { position: 'absolute', right: 11, width: 24, height: 32, alignItems: 'center', justifyContent: 'center' },
   suggestionList: { borderWidth: 1, borderRadius: 8, marginTop: 6, overflow: 'hidden' },
   suggestionSectionLabel: { fontSize: 9, fontFamily: 'Inter_700Bold', letterSpacing: 0.7, textTransform: 'uppercase', paddingHorizontal: 11, paddingTop: 10, paddingBottom: 3 },
   suggestionState: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingHorizontal: 11, paddingVertical: 11 },
