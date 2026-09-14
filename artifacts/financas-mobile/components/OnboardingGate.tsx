@@ -29,6 +29,7 @@ function storageKeys(userId: string, profileId: string) {
   const prefix = `financas-mobile:onboarding:${userId}:${profileId}`;
   return {
     complete: `${prefix}:complete`,
+    cancelled: `${prefix}:cancelled`,
     started: `${prefix}:started`,
     step: `${prefix}:step`,
   };
@@ -57,10 +58,14 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
     if (!session?.userId || !activeProfile?.id || walletsLoading) return;
     let active = true;
     const keys = storageKeys(session.userId, activeProfile.id);
-    void AsyncStorage.multiGet([keys.complete, keys.started, keys.step]).then(async (entries) => {
+    void AsyncStorage.multiGet([keys.complete, keys.cancelled, keys.started, keys.step]).then(async (entries) => {
       if (!active) return;
       const values = new Map(entries);
       const shouldStartOnboarding = wallets.length === 0 || hasAutomaticPlaceholder;
+      if (values.get(keys.cancelled) === 'true') {
+        setMode('app');
+        return;
+      }
       if (!shouldStartOnboarding && values.get(keys.complete) === 'true') {
         setMode('app');
         return;
@@ -99,7 +104,7 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [activeProfile?.id, hasAutomaticPlaceholder, session?.userId, wallets.length, walletsLoading]);
+  }, [activeProfile?.id, activeProfile?.type, hasAutomaticPlaceholder, session?.userId, wallets.length, walletsLoading]);
 
   const handleStepChange = (nextStep: OnboardingStep) => {
     if (!session?.userId) return;
@@ -113,7 +118,15 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
     if (!session?.userId) return;
     if (!activeProfile?.id) return;
     const keys = storageKeys(session.userId, activeProfile.id);
-    void AsyncStorage.multiSet([[keys.complete, 'true'], [keys.started, 'false']])
+    void AsyncStorage.multiSet([[keys.cancelled, 'false'], [keys.complete, 'true'], [keys.started, 'false']])
+      .then(() => setMode('app'));
+  };
+
+  const handleCancel = () => {
+    if (!session?.userId) return;
+    if (!activeProfile?.id) return;
+    const keys = storageKeys(session.userId, activeProfile.id);
+    void AsyncStorage.multiSet([[keys.cancelled, 'true'], [keys.complete, 'false'], [keys.started, 'false']])
       .then(() => setMode('app'));
   };
 
@@ -125,7 +138,14 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
     );
   }
   if (mode === 'onboarding') {
-    return <OnboardingFlow initialStep={step} onStepChange={handleStepChange} onComplete={handleComplete} />;
+    return (
+      <OnboardingFlow
+        initialStep={step}
+        onStepChange={handleStepChange}
+        onComplete={handleComplete}
+        onCancel={handleCancel}
+      />
+    );
   }
   return <>{children}</>;
 }

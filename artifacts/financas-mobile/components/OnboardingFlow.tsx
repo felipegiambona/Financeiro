@@ -23,9 +23,17 @@ interface OnboardingFlowProps {
   initialStep: OnboardingStep;
   onStepChange: (step: OnboardingStep) => void;
   onComplete: () => void;
+  onCancel: () => void;
 }
 
 const STEPS: OnboardingStep[] = ['name', 'profile', 'wallet', 'goal', 'limit', 'card'];
+
+function getPreviousStep(step: OnboardingStep, initialStep: OnboardingStep): OnboardingStep | null {
+  const currentIndex = STEPS.indexOf(step);
+  const previousIndex = currentIndex - 1;
+  const firstStepIndex = initialStep === 'wallet' ? STEPS.indexOf('wallet') : 0;
+  return previousIndex >= firstStepIndex ? STEPS[previousIndex] : null;
+}
 
 function formatDateInput(date: Date): string {
   return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
@@ -129,11 +137,12 @@ function SkipButton({
   );
 }
 
-export function OnboardingFlow({ initialStep, onStepChange, onComplete }: OnboardingFlowProps) {
+export function OnboardingFlow({ initialStep, onStepChange, onComplete, onCancel }: OnboardingFlowProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState<OnboardingStep>(initialStep);
   const [error, setError] = useState('');
+  const previousStep = getPreviousStep(step, initialStep);
 
   const goTo = (nextStep: OnboardingStep) => {
     setError('');
@@ -160,6 +169,31 @@ export function OnboardingFlow({ initialStep, onStepChange, onComplete }: Onboar
           <Text style={[styles.brandText, { color: colors.mutedForeground }]}>FINANÇAS MOBILE</Text>
         </View>
         <StepProgress step={step} colors={colors} />
+        <View style={styles.navigationRow}>
+          {previousStep ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Voltar para a etapa anterior"
+              testID="onboarding-back-button"
+              onPress={() => goTo(previousStep)}
+              style={({ pressed }) => [styles.navigationButton, pressed && styles.pressed]}
+            >
+              <Feather name="arrow-left" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.navigationText, { color: colors.mutedForeground }]}>Voltar</Text>
+            </Pressable>
+          ) : null}
+          {step === initialStep ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar onboarding"
+              testID="onboarding-cancel-button"
+              onPress={onCancel}
+              style={({ pressed }) => [styles.navigationButton, styles.cancelButton, pressed && styles.pressed]}
+            >
+              <Text style={[styles.navigationText, { color: colors.mutedForeground }]}>Cancelar onboarding</Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         {step === 'name' ? (
           <NameStep colors={colors} onContinue={() => goTo('profile')} setError={setError} error={error} />
@@ -744,8 +778,12 @@ const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 24 },
   brandIcon: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   brandText: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 1.5 },
-  progressRow: { flexDirection: 'row', gap: 5, marginBottom: 34 },
+  progressRow: { flexDirection: 'row', gap: 5, marginBottom: 12 },
   progressSegment: { flex: 1, height: 4, borderRadius: 4 },
+  navigationRow: { minHeight: 26, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 },
+  navigationButton: { minHeight: 26, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  cancelButton: { marginLeft: 'auto' },
+  navigationText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   header: { marginBottom: 25 },
   eyebrow: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 1.5, marginBottom: 9 },
   title: { fontSize: 28, lineHeight: 34, fontFamily: 'Inter_700Bold', letterSpacing: -0.6 },
