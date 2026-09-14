@@ -39,7 +39,7 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
   const colors = useColors();
   const { session } = useAuth();
   const { setOnboardingActive } = useTheme();
-  const { wallets, loading: walletsLoading } = useWallets();
+  const { wallets, loading: walletsLoading, error: walletsError } = useWallets();
   const { activeProfile } = useFinancialProfiles();
   const [mode, setMode] = useState<GateMode>('checking');
   const [step, setStep] = useState<OnboardingStep>('name');
@@ -60,6 +60,13 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
     const keys = storageKeys(session.userId, activeProfile.id);
     void AsyncStorage.multiGet([keys.complete, keys.cancelled, keys.started, keys.step]).then(async (entries) => {
       if (!active) return;
+      // An unavailable wallet request is not the same as a new profile. Keep
+      // the app mounted so the profile-scoped screens can show their retry
+      // state instead of replacing the whole app with onboarding.
+      if (walletsError) {
+        setMode('app');
+        return;
+      }
       const values = new Map(entries);
       const shouldStartOnboarding = wallets.length === 0 || hasAutomaticPlaceholder;
       if (values.get(keys.cancelled) === 'true') {
@@ -72,6 +79,19 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
       }
       if (values.get(keys.started) === 'true') {
         const storedStep = values.get(keys.step) ?? null;
+        // Older builds could leave a personal profile marked as started after
+        // its wallet had already been created. Those profiles are initialized
+        // and must not reopen the name/profile screens when the user switches
+        // back to them.
+        if (
+          activeProfile.type === 'personal'
+          && wallets.length > 0
+          && (storedStep === null || storedStep === 'name' || storedStep === 'profile')
+        ) {
+          await AsyncStorage.multiSet([[keys.complete, 'true'], [keys.started, 'false']]);
+          if (active) setMode('app');
+          return;
+        }
         const fallbackStep = wallets.length === 0 ? initialStepForProfile(activeProfile.type) : 'wallet';
         const savedStep = isOnboardingStep(storedStep) ? storedStep : fallbackStep;
         const normalizedStep = normalizeStepForProfile(savedStep, activeProfile.type);
@@ -104,7 +124,7 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [activeProfile?.id, activeProfile?.type, hasAutomaticPlaceholder, session?.userId, wallets.length, walletsLoading]);
+  }, [activeProfile?.id, activeProfile?.type, hasAutomaticPlaceholder, session?.userId, wallets.length, walletsError, walletsLoading]);
 
   const handleStepChange = (nextStep: OnboardingStep) => {
     if (!session?.userId) return;

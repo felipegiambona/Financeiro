@@ -14,13 +14,18 @@ function userIdFrom(req: unknown): string {
 router.delete("/account", requireAuth, async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
 
-  await db.transaction(async (tx) => {
-    await deleteFinancialRowsForAccount(tx, userId);
-    await tx.delete(financialProfilesTable).where(eq(financialProfilesTable.userId, userId));
-  });
+  try {
+    await db.transaction(async (tx) => {
+      await deleteFinancialRowsForAccount(tx, userId);
+      await tx.delete(financialProfilesTable).where(eq(financialProfilesTable.userId, userId));
+    });
 
-  await clerkClient.users.deleteUser(userId);
-  res.sendStatus(204);
+    await clerkClient.users.deleteUser(userId);
+    res.sendStatus(204);
+  } catch (error) {
+    req.log?.error({ err: error, userId }, "Failed to delete account");
+    res.status(500).json({ error: "Unable to delete account" });
+  }
 });
 
 router.patch("/account/profile", requireAuth, async (req, res): Promise<void> => {

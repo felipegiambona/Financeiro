@@ -636,6 +636,21 @@ describe("financial profile deletion isolation", () => {
     assertStatus(createdBusiness, 201);
     const businessProfile = createdBusiness.body;
 
+    const personalWallet = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/wallets",
+      {
+        method: "POST",
+        body: {
+          title: "Carteira pessoal",
+          initialBalance: 1000,
+          icon: "wallet-outline",
+        },
+      },
+    );
+    assertStatus(personalWallet, 201);
+
     const personalInvestment = await profileRequest(
       identity.token,
       personalProfile.id,
@@ -647,6 +662,7 @@ describe("financial profile deletion isolation", () => {
           ticker: "TESOURO",
           assetType: "fixed_income",
           institution: "Corretora Pessoal",
+          walletId: personalWallet.body.id,
           quantity: 10,
           averagePrice: 100,
           investedAmount: 1000,
@@ -793,6 +809,10 @@ describe("financial profile deletion isolation", () => {
       personalInvestmentsBeforeDeletion.body.map((investment) => investment.id),
       [personalInvestment.body.id],
     );
+    const personalInvestmentTransaction = personalBeforeDeletion.transactions.find(
+      (transaction) => transaction.description === "Investimento · Tesouro Selic",
+    );
+    assert.ok(personalInvestmentTransaction);
     const businessBeforeDeletion = await readFinancialFixture(
       identity.token,
       businessProfile.id,
@@ -807,12 +827,12 @@ describe("financial profile deletion isolation", () => {
         transactions: personalBeforeDeletion.transactions.map((row) => row.id),
       },
       {
-        wallets: [personalFixture.walletId],
+        wallets: [personalWallet.body.id, personalFixture.walletId],
         categories: [personalFixture.categoryId],
         limits: [personalFixture.limitId],
         goals: [personalFixture.goalId],
         cards: [personalFixture.cardId],
-        transactions: [personalFixture.transactionId],
+        transactions: [personalInvestmentTransaction.id, personalFixture.transactionId],
       },
     );
     assert.deepEqual(
@@ -915,7 +935,12 @@ describe("financial profile deletion isolation", () => {
       identity.token,
       personalProfile.id,
     );
-    assert.deepEqual(personalAfterFailedDeletion, personalBeforeDeletion);
+    assert.deepEqual(personalAfterFailedDeletion, {
+      ...personalBeforeDeletion,
+      transactions: personalBeforeDeletion.transactions.filter(
+        (transaction) => transaction.description !== "Investimento · Tesouro Selic",
+      ),
+    });
   });
 });
 

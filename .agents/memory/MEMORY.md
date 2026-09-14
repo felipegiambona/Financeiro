@@ -10,3 +10,4 @@
 - [Investment quote provider fallback](investment-quote-provider-fallback.md) — BRAPI may return 401 for some B3 tickers; keep a Yahoo Finance fallback for market assets.
 - [Expo static build port](expo-static-build-port.md) — the static Expo build probes fixed Metro port 8081, which can be occupied by the mockup preview.
 - [Expo web preview loading](expo-web-clerk-loading.md) — do not gate web rendering on ClerkLoaded; AuthProvider already handles loading and otherwise the browser can remain blank.
+- [Onboarding state recovery](onboarding-state-recovery.md) — wallet load errors and stale local steps must not be treated as a new profile during profile switching.
