@@ -1,4 +1,4 @@
-import { index, jsonb, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -13,6 +13,7 @@ export const transactionsTable = pgTable("finance_transactions", {
   categoryId: uuid("category_id"),
   goalId: uuid("goal_id"),
   type: text("type").notNull(),
+  isInvestment: boolean("is_investment").notNull().default(false),
   amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
   description: text("description").notNull(),
   date: text("date").notNull(),

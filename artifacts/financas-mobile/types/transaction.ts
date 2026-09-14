@@ -45,6 +45,7 @@ export interface Transaction {
   categoryId?: string | null;
   goalId?: string | null;
   type: TransactionType;
+  isInvestment: boolean;
   amount: number;
   description: string;
   date: string;
@@ -61,6 +62,7 @@ export interface NewTransactionInput {
   destinationWalletId?: string | null;
   categoryId?: string | null;
   goalId?: string | null;
+  isInvestment?: boolean;
   type: TransactionType;
   amount: number;
   description: string;

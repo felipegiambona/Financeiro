@@ -18,8 +18,9 @@ export interface Transaction {
   cardEntryType: TransactionCardEntryType;
   destinationWalletId: string | null;
   categoryId: string | null;
-  goalId?: string | null;
+  goalId: string | null;
   type: TransactionType;
+  isInvestment: boolean;
   /** @exclusiveMinimum 0 */
   amount: number;
   description: string;

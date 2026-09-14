@@ -22,6 +22,8 @@ export interface Investment {
   ticker: string | null;
   assetType: InvestmentAssetType;
   /** @nullable */
+  walletId: string | null;
+  /** @nullable */
   institution: string | null;
   /** @minimum 0 */
   quantity: number;

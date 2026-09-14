@@ -10,6 +10,7 @@ export type TransactionExportFormat = 'csv' | 'pdf';
 export interface TransactionExportItem {
   date: string;
   type: 'income' | 'expense' | 'transfer';
+  isInvestment: boolean;
   description: string;
   category: string;
   wallet: string;
@@ -34,6 +35,10 @@ function recurrenceLabel(item: TransactionExportItem): string {
   return item.recurrence === 'none' ? 'Não recorrente' : item.recurrence;
 }
 
+function getTypeLabel(item: TransactionExportItem): string {
+  return item.isInvestment ? 'Investimento' : TYPE_LABELS[item.type];
+}
+
 function escapeCsvCell(value: string | number): string {
   const normalized = String(value).replace(/\r?\n/g, ' ');
   const protectedValue = /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
@@ -54,7 +59,7 @@ function createCsv(items: TransactionExportItem[]): string {
   ];
   const rows = items.map((item) => [
     formatDate(item.date),
-    TYPE_LABELS[item.type],
+    getTypeLabel(item),
     item.description,
     item.category,
     item.wallet,
@@ -80,12 +85,12 @@ function escapeHtml(value: string | number): string {
 
 function createPdfHtml(items: TransactionExportItem[], periodLabel: string): string {
   const rows = items.map((item) => {
-    const typeLabel = TYPE_LABELS[item.type];
-    const typeClass = item.type === 'income' ? 'income' : item.type === 'expense' ? 'expense' : 'transfer';
+    const label = getTypeLabel(item);
+    const typeClass = item.isInvestment ? 'investment' : item.type === 'income' ? 'income' : item.type === 'expense' ? 'expense' : 'transfer';
     return `
       <tr>
         <td>${escapeHtml(formatDate(item.date))}</td>
-        <td><span class="type ${typeClass}">${escapeHtml(typeLabel)}</span></td>
+        <td><span class="type ${typeClass}">${escapeHtml(label)}</span></td>
         <td>${escapeHtml(item.description)}</td>
         <td>${escapeHtml(item.category)}</td>
         <td>${escapeHtml(item.wallet)}${item.destinationWallet ? `<small>→ ${escapeHtml(item.destinationWallet)}</small>` : ''}</td>
@@ -115,9 +120,11 @@ function createPdfHtml(items: TransactionExportItem[], periodLabel: string): str
           .income { color: #287d45; }
           .expense { color: #b33a3a; }
           .transfer { color: #536171; }
+          .investment { color: #9a6b00; }
           .type.income { background: #e4f4e9; }
           .type.expense { background: #fce8e8; }
           .type.transfer { background: #eef0f1; }
+          .type.investment { background: #fff3cd; }
           .amount { font-weight: bold; text-align: right; white-space: nowrap; }
           footer { color: #7b8794; font-size: 9px; margin-top: 14px; }
         </style>

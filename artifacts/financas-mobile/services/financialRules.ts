@@ -25,6 +25,7 @@ export interface WalletTotal {
 }
 
 function transactionValue(transaction: Transaction): number {
+  if (transaction.isInvestment) return 0;
   if (transaction.type === 'income') return transaction.amount;
   if (transaction.type === 'expense') return -transaction.amount;
   return 0;
@@ -37,6 +38,7 @@ function walletTransactionValue(transaction: Transaction, walletId: string): num
     return 0;
   }
   if (transaction.walletId !== walletId) return 0;
+  if (transaction.isInvestment) return -transaction.amount;
   if (transaction.type === 'expense' && transaction.cardId && transaction.cardEntryType !== 'invoice_payment') return 0;
   return transactionValue(transaction);
 }
@@ -89,7 +91,7 @@ export function calculateCurrentBalance(
   transactions: Transaction[],
   now = new Date(),
 ): number {
-  return calculateWalletTotals(wallets, transactions, now)
+  return calculateWalletTotals(wallets, transactions.filter((transaction) => !transaction.isInvestment), now)
     .reduce((total, walletTotal) => total + walletTotal.total, 0);
 }
 
@@ -128,6 +130,7 @@ export function calculateMonthlyTotals(
   const occurrences = getTransactionOccurrencesForMonth(transactions, month);
   return occurrences.reduce(
     (totals, transaction) => {
+      if (transaction.isInvestment) return totals;
       if (transaction.type === 'income') {
         totals.income += transaction.amount;
         if (transaction.paymentStatus === 'unpaid') totals.receivable += transaction.amount;

@@ -79,10 +79,11 @@ export default function DashboardScreen() {
   const isPersonalProfile = activeProfile?.type === 'personal';
   const investmentSummary = useMemo(() => investments.reduce(
     (summary, investment) => ({
+      investedAmount: summary.investedAmount + investment.investedAmount,
       currentValue: summary.currentValue + investment.currentValue,
       returnAmount: summary.returnAmount + investment.returnAmount,
     }),
-    { currentValue: 0, returnAmount: 0 },
+    { investedAmount: 0, currentValue: 0, returnAmount: 0 },
   ), [investments]);
   const handlePayCard = useCallback((cardId: string, cardName: string) => {
     Alert.alert(
@@ -142,6 +143,11 @@ export default function DashboardScreen() {
                 </View>
               </View>
               <Text adjustsFontSizeToFit numberOfLines={1} style={styles.balanceValue}>{formatCurrency(balance)}</Text>
+              {investments.length > 0 ? (
+                <Text style={styles.balanceInvestmentsHint}>
+                  Investimentos aplicados: {formatCurrency(investmentSummary.investedAmount)}
+                </Text>
+              ) : null}
               <Text style={styles.balanceHint}>Receitas menos despesas</Text>
             </View> : null}
             {visibility.monthlySummary ? <View style={styles.summaryMetrics}>
@@ -527,6 +533,7 @@ const styles = StyleSheet.create({
   balanceLabel: { color: '#D4D4D4', fontSize: 12, fontFamily: 'Inter_500Medium' },
   balanceMark: { width: 30, height: 30, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
   balanceValue: { color: '#FFFFFF', fontSize: 30, lineHeight: 36, fontFamily: 'Inter_700Bold', letterSpacing: -0.8, marginTop: 17 },
+  balanceInvestmentsHint: { color: '#D4D4D4', fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 5 },
   balanceHint: { color: '#999999', fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 3 },
   summaryMetrics: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   pendingMetrics: { flexDirection: 'row', gap: 10, marginBottom: 24 },

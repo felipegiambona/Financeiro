@@ -30,6 +30,7 @@ export const investmentsTable = pgTable("finance_investments", {
   name: text("name").notNull(),
   ticker: text("ticker"),
   assetType: investmentAssetType("asset_type").notNull(),
+  walletId: uuid("wallet_id"),
   institution: text("institution"),
   quantity: numeric("quantity", { precision: 20, scale: 8 }).notNull(),
   averagePrice: numeric("average_price", { precision: 20, scale: 8 }).notNull(),

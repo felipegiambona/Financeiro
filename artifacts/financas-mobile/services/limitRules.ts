@@ -70,6 +70,8 @@ export function calculateLimitUsage(
   const expectedDescription = limit.description ? normalizeName(limit.description) : null;
   const used = occurrences.reduce((total, transaction) => {
     if (
+      transaction.isInvestment
+      ||
       transaction.type !== 'expense'
       || transaction.paymentStatus !== 'paid'
       || transaction.categoryId !== limit.categoryId

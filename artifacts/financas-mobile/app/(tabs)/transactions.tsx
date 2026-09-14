@@ -200,6 +200,7 @@ export default function TransactionsScreen() {
     () => filteredTransactions.map((transaction) => ({
       date: transaction.date,
       type: transaction.type,
+      isInvestment: transaction.isInvestment,
       description: transaction.description,
       category: categories.find((category) => category.id === transaction.categoryId)?.name ?? 'Sem categoria',
       wallet: wallets.find((wallet) => wallet.id === transaction.walletId)?.title ?? 'Carteira não encontrada',
@@ -237,6 +238,7 @@ export default function TransactionsScreen() {
       label: formatTransactionGroupLabel(groupTransactions[0].date),
       transactions: groupTransactions,
       total: groupTransactions.reduce((total, transaction) => {
+        if (transaction.isInvestment) return total;
         if (transaction.type === 'income') return total + transaction.amount;
         if (transaction.type === 'expense') return total - transaction.amount;
         if (typeFilter === 'transfer') return total + transaction.amount;
@@ -249,6 +251,7 @@ export default function TransactionsScreen() {
   const filteredSummary = useMemo(
     () => filteredTransactions.reduce(
       (summary, transaction) => {
+        if (transaction.isInvestment) return summary;
         if (transaction.type === 'income') {
           summary.income += transaction.amount;
         } else if (transaction.type === 'expense') {

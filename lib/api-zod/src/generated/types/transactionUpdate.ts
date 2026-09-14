@@ -17,6 +17,7 @@ export interface TransactionUpdate {
   categoryId?: string | null;
   goalId?: string | null;
   type?: TransactionUpdateType;
+  isInvestment?: boolean;
   /** @exclusiveMinimum 0 */
   amount?: number;
   /** @minLength 1 */

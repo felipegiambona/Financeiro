@@ -14,7 +14,7 @@ import {
   UpdateInvestmentParams,
   UpdateInvestmentResponse,
 } from "@workspace/api-zod";
-import { db, investmentFavoritesTable, investmentsTable } from "@workspace/db";
+import { db, investmentFavoritesTable, investmentsTable, transactionsTable } from "@workspace/db";
 import {
   financialProfileTypeFrom,
   profileIdFrom,
@@ -31,6 +31,7 @@ import {
   type InvestmentQuoteStore,
 } from "../lib/investmentQuotes";
 import { searchInvestmentCatalog } from "../lib/investmentCatalog";
+import { getUserWallet } from "./wallets";
 
 const router: IRouter = Router();
 router.use("/investments", requireAuth, resolveFinancialProfile);
@@ -63,6 +64,7 @@ function toResponse(row: typeof investmentsTable.$inferSelect) {
     name: row.name,
     ticker: row.ticker,
     assetType: row.assetType,
+    walletId: row.walletId,
     institution: row.institution,
     quantity: Number(row.quantity),
     averagePrice: Number(row.averagePrice),
@@ -270,23 +272,52 @@ router.post("/investments", async (req, res): Promise<void> => {
       return;
     }
   }
-  const [row] = await db.insert(investmentsTable).values({
-    userId: scopedUserIdFrom(req),
-    profileId: profileIdFrom(req),
-    name: parsed.data.name.trim(),
-    ticker: ticker || null,
-    assetType: parsed.data.assetType,
-    institution: optionalText(parsed.data.institution),
-    quantity: String(parsed.data.quantity),
-    averagePrice: String(parsed.data.averagePrice),
-    investedAmount: String(parsed.data.investedAmount),
-    currentValue: String(parsed.data.currentValue),
-    manualCurrentValue: String(parsed.data.currentValue),
-    valuationMode,
-    quoteSource: valuationMode === "automatic" ? quoteSourceForAssetType(parsed.data.assetType) : null,
-    quoteStatus: valuationMode === "automatic" ? "pending" : "not_configured",
-    isFavorite: parsed.data.isFavorite ?? false,
-  }).returning();
+  const userId = scopedUserIdFrom(req);
+  const wallet = await getUserWallet(userId, parsed.data.walletId);
+  if (!wallet) {
+    res.status(400).json({ error: "Wallet not found" });
+    return;
+  }
+  const [row] = await db.transaction(async (tx) => {
+    const [investment] = await tx.insert(investmentsTable).values({
+      userId,
+      profileId: profileIdFrom(req),
+      name: parsed.data.name.trim(),
+      ticker: ticker || null,
+      assetType: parsed.data.assetType,
+      walletId: wallet.id,
+      institution: optionalText(parsed.data.institution),
+      quantity: String(parsed.data.quantity),
+      averagePrice: String(parsed.data.averagePrice),
+      investedAmount: String(parsed.data.investedAmount),
+      currentValue: String(parsed.data.currentValue),
+      manualCurrentValue: String(parsed.data.currentValue),
+      valuationMode,
+      quoteSource: valuationMode === "automatic" ? quoteSourceForAssetType(parsed.data.assetType) : null,
+      quoteStatus: valuationMode === "automatic" ? "pending" : "not_configured",
+      isFavorite: parsed.data.isFavorite ?? false,
+    }).returning();
+    await tx.insert(transactionsTable).values({
+      userId,
+      profileId: profileIdFrom(req),
+      walletId: wallet.id,
+      cardId: null,
+      cardEntryType: "purchase",
+      destinationWalletId: null,
+      categoryId: null,
+      goalId: null,
+      type: "expense",
+      isInvestment: true,
+      amount: String(parsed.data.investedAmount),
+      description: `Investimento · ${parsed.data.name.trim()}`,
+      date: new Date().toISOString().slice(0, 10),
+      dueDate: null,
+      recurrence: { kind: "none" },
+      paymentStatus: "paid",
+      paymentStatusOverrides: {},
+    });
+    return [investment];
+  });
   res.status(201).json(CreateInvestmentResponse.parse(toResponse(row)));
 });
 
@@ -311,6 +342,13 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
   if (!existing) {
     res.status(404).json({ error: "Investment not found" });
     return;
+  }
+  if (body.data.walletId !== undefined) {
+    const wallet = await getUserWallet(scopedUserIdFrom(req), body.data.walletId ?? undefined);
+    if (!wallet) {
+      res.status(400).json({ error: "Wallet not found" });
+      return;
+    }
   }
   const valuationMode = body.data.valuationMode ?? existing.valuationMode;
   const assetType = body.data.assetType ?? existing.assetType;
@@ -341,6 +379,7 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
     ...(body.data.name === undefined ? {} : { name: body.data.name.trim() }),
     ...(body.data.ticker === undefined ? {} : { ticker: ticker || null }),
     ...(body.data.assetType === undefined ? {} : { assetType }),
+    ...(body.data.walletId === undefined ? {} : { walletId: body.data.walletId }),
     ...(body.data.institution === undefined ? {} : { institution: optionalText(body.data.institution) }),
     ...(body.data.quantity === undefined ? {} : { quantity: String(body.data.quantity) }),
     ...(body.data.averagePrice === undefined ? {} : { averagePrice: String(body.data.averagePrice) }),

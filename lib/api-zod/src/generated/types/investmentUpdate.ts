@@ -19,6 +19,8 @@ export interface InvestmentUpdate {
   ticker?: string | null;
   assetType?: InvestmentUpdateAssetType;
   /** @nullable */
+  walletId?: string | null;
+  /** @nullable */
   institution?: string | null;
   /** @minimum 0 */
   quantity?: number;

@@ -18,6 +18,7 @@ export interface InvestmentInput {
      */
   ticker?: string;
   assetType: InvestmentInputAssetType;
+  walletId: string;
   institution?: string;
   /** @minimum 0 */
   quantity: number;

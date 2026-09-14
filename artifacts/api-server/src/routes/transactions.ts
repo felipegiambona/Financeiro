@@ -124,6 +124,7 @@ router.post("/transactions", async (req, res): Promise<void> => {
     destinationWalletId: parsed.data.type === "transfer" ? destinationWallet?.id : null,
     categoryId: parsed.data.categoryId ?? null,
     goalId: parsed.data.goalId ?? null,
+    isInvestment: parsed.data.isInvestment ?? false,
     amount: String(parsed.data.amount),
     date: dateOnly(parsed.data.date),
     dueDate: dateOnly(parsed.data.dueDate),

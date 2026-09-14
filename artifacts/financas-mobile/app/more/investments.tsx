@@ -8,6 +8,8 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useInvestments, type RecentInvestmentAsset } from '@/context/InvestmentContext';
+import { useFinance } from '@/context/FinanceContext';
+import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 import type { Investment, InvestmentAssetType, InvestmentFavorite, InvestmentInput, InvestmentSearchResult, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
@@ -86,6 +88,7 @@ function catalogFavoriteAsInvestment(favorite: InvestmentFavorite): Investment {
     name: favorite.name,
     ticker: favorite.ticker,
     assetType: favorite.assetType,
+    walletId: null,
     institution: null,
     quantity: 0,
     averagePrice: 0,
@@ -111,7 +114,7 @@ function getInitialForm(investment?: Investment) {
     name: investment?.name ?? '',
     ticker: investment?.ticker ?? '',
     assetType: investment?.assetType ?? 'stock' as InvestmentAssetType,
-    institution: investment?.institution ?? '',
+    walletId: investment?.walletId ?? '',
     quantity: investment ? formatQuantityInput(String(investment.quantity).replace('.', ',')) : '',
     averagePrice: investment ? formatAmountValue(investment.averagePrice) : '',
     investedAmount: investment ? formatAmountValue(investment.investedAmount) : '',
@@ -142,6 +145,8 @@ export default function InvestmentsScreen() {
     toggleFavorite,
     deleteInvestment,
   } = useInvestments();
+  const { wallets, refresh: refreshWallets } = useWallets();
+  const { refresh: refreshFinance } = useFinance();
   const routeAssetType = Array.isArray(assetTypeParam) ? assetTypeParam[0] : assetTypeParam;
   const selectedAssetType = ASSET_TYPES.find((item) => item.value === routeAssetType)?.value ?? null;
   const [activeTab, setActiveTab] = useState<'assets' | 'favorites'>('assets');
@@ -183,7 +188,13 @@ export default function InvestmentsScreen() {
   const [deleting, setDeleting] = useState(false);
   const [investmentToDelete, setInvestmentToDelete] = useState<Investment | null>(null);
   const [favoriteOnCreate, setFavoriteOnCreate] = useState(false);
+  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const quoteGuidance = QUOTE_GUIDANCE[form.assetType];
+  const walletTitleFor = (investment: Investment) => (
+    wallets.find((wallet) => wallet.id === investment.walletId)?.title
+      ?? investment.institution
+      ?? 'Carteira não vinculada'
+  );
 
   const totalsInvestments = favoriteOnly ? favoritePortfolioInvestments : filteredInvestments;
   const totals = useMemo(() => totalsInvestments.reduce((summary, investment) => ({
@@ -392,6 +403,10 @@ export default function InvestmentsScreen() {
       Alert.alert('Nome obrigatório', 'Informe o nome ou código do ativo.');
       return;
     }
+    if (!form.walletId) {
+      Alert.alert('Carteira obrigatória', 'Selecione a carteira onde o investimento será aplicado.');
+      return;
+    }
     if ([quantity, averagePrice, investedAmount, currentValue].some((value) => !Number.isFinite(value) || value < 0)) {
       Alert.alert('Valores inválidos', 'Informe valores numéricos iguais ou maiores que zero.');
       return;
@@ -408,7 +423,7 @@ export default function InvestmentsScreen() {
       name,
       ticker: normalizedTicker || undefined,
       assetType: form.assetType,
-      institution: form.institution.trim() || undefined,
+      walletId: form.walletId,
       quantity,
       averagePrice,
       investedAmount,
@@ -423,6 +438,7 @@ export default function InvestmentsScreen() {
         await updateInvestment(editingInvestment.id, updates);
       } else {
         await createInvestment(input);
+        await Promise.all([refreshFinance(), refreshWallets()]);
         if (favoriteAssetToRegister) {
           await deleteFavoriteAsset(favoriteAssetToRegister);
         }
@@ -630,7 +646,7 @@ export default function InvestmentsScreen() {
         ) : null}
         {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
           <>
-            <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
+            {!favoriteOnly ? <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
               <Text style={styles.summaryLabel}>Patrimônio investido</Text>
               <Text adjustsFontSizeToFit numberOfLines={1} style={styles.summaryValue}>{formatCurrency(totals.current)}</Text>
               <View style={styles.summaryRow}>
@@ -659,7 +675,7 @@ export default function InvestmentsScreen() {
                   <Text style={styles.quoteRefreshText}>Atualizar cotações</Text>
                 </Pressable>
               )}
-            </View>
+            </View> : null}
             {(favoriteOnly ? favoriteItems.length : filteredInvestments.length) === 0 ? (
               <View style={styles.emptyWrap}>
                 <EmptyState message={
@@ -728,8 +744,7 @@ export default function InvestmentsScreen() {
                         <View style={styles.investmentCopy}>
                           <Text numberOfLines={1} style={[styles.investmentName, { color: colors.foreground }]}>{investment.name}</Text>
                           <Text style={[styles.investmentMeta, { color: colors.mutedForeground }]}>
-                            {investment.ticker ? `${investment.ticker} · ` : ''}{assetTypeLabel(investment.assetType)}
-                            {investment.institution ? ` · ${investment.institution}` : ''}
+                            {investment.ticker ? `${investment.ticker} · ` : ''}{assetTypeLabel(investment.assetType)} · {walletTitleFor(investment)}
                           </Text>
                         </View>
                       </View>
@@ -939,15 +954,23 @@ export default function InvestmentsScreen() {
                   />
                 </View>
                 <View style={styles.halfField}>
-                  <Text style={[styles.label, { color: colors.foreground }]}>Instituição opcional</Text>
-                  <TextInput
-                    accessibilityLabel="Instituição opcional"
-                    placeholder="Corretora ou banco"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={form.institution}
-                    onChangeText={(institution) => setForm((current) => ({ ...current, institution }))}
-                    style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
-                  />
+                  <Text style={[styles.label, { color: colors.foreground }]}>Carteira obrigatória</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Selecionar carteira do investimento"
+                    onPress={() => setWalletPickerOpen(true)}
+                    style={({ pressed }) => [
+                      styles.input,
+                      styles.selectInput,
+                      { backgroundColor: colors.card, borderColor: colors.input },
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text numberOfLines={1} style={{ color: form.walletId ? colors.foreground : colors.mutedForeground, fontSize: 12, fontFamily: 'Inter_400Regular' }}>
+                      {wallets.find((wallet) => wallet.id === form.walletId)?.title ?? 'Selecione uma carteira'}
+                    </Text>
+                    <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
+                  </Pressable>
                 </View>
               </View>
                {form.valuationMode === 'automatic' && (
@@ -1037,6 +1060,62 @@ export default function InvestmentsScreen() {
       <Modal
         animationType="fade"
         transparent
+        visible={walletPickerOpen}
+        onRequestClose={() => setWalletPickerOpen(false)}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setWalletPickerOpen(false)} />
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>Aplicação</Text>
+                <Text style={[styles.modalTitle, { color: colors.foreground }]}>Selecionar carteira</Text>
+              </View>
+              <Pressable
+                accessibilityLabel="Fechar seleção de carteira"
+                onPress={() => setWalletPickerOpen(false)}
+                style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
+              >
+                <Feather name="x" size={18} color={colors.foreground} />
+              </Pressable>
+            </View>
+            <Text style={[styles.helper, { color: colors.mutedForeground }]}>
+              O valor investido será debitado desta carteira e registrado nas transações.
+            </Text>
+            <View style={styles.walletOptions}>
+              {wallets.length === 0 ? (
+                <Text style={[styles.helper, { color: colors.mutedForeground }]}>Cadastre uma carteira antes de adicionar um investimento.</Text>
+              ) : wallets.map((wallet) => (
+                <Pressable
+                  key={wallet.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: form.walletId === wallet.id }}
+                  accessibilityLabel={`Aplicar investimento na carteira ${wallet.title}`}
+                  onPress={() => {
+                    setForm((current) => ({ ...current, walletId: wallet.id }));
+                    setWalletPickerOpen(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.walletOption,
+                    { backgroundColor: form.walletId === wallet.id ? colors.secondary : colors.card, borderColor: form.walletId === wallet.id ? colors.primary : colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={[styles.walletOptionIcon, { backgroundColor: colors.secondary }]}>
+                    <Feather name="briefcase" size={15} color={colors.foreground} />
+                  </View>
+                  <Text style={[styles.walletOptionTitle, { color: colors.foreground }]}>{wallet.title}</Text>
+                  {form.walletId === wallet.id ? <Feather name="check" size={16} color={colors.primary} /> : null}
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent
         visible={favoriteDetails !== null}
         onRequestClose={() => setFavoriteDetails(null)}
       >
@@ -1064,7 +1143,7 @@ export default function InvestmentsScreen() {
                 </View>
                 <Text style={[styles.favoriteDetailMeta, { color: colors.mutedForeground }]}>
                   {favoriteDetails.ticker ? `${favoriteDetails.ticker} · ` : ''}{assetTypeLabel(favoriteDetails.assetType)}
-                  {isPortfolioFavorite(favoriteDetails) && favoriteDetails.institution ? ` · ${favoriteDetails.institution}` : ''}
+                  {isPortfolioFavorite(favoriteDetails) ? ` · ${walletTitleFor(favoriteDetails)}` : ''}
                 </Text>
                 {isPortfolioFavorite(favoriteDetails) ? (
                   <>
@@ -1254,6 +1333,11 @@ const styles = StyleSheet.create({
   suggestionType: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   fieldsRow: { flexDirection: 'row', gap: 10 },
   halfField: { flex: 1, minWidth: 0 },
+  selectInput: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 11, borderWidth: 1, borderRadius: 7 },
+  walletOptions: { gap: 8, marginTop: 10 },
+  walletOption: { minHeight: 48, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  walletOptionIcon: { width: 29, height: 29, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  walletOptionTitle: { flex: 1, fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   assetTypeList: { gap: 7, paddingBottom: 2 },
   assetTypeChip: { minHeight: 34, borderRadius: 7, borderWidth: 1, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
   saveButton: { minHeight: 46, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 22 },

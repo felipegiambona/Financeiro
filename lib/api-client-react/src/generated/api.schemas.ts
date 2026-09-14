@@ -108,6 +108,8 @@ export interface Investment {
   ticker: string | null;
   assetType: InvestmentAssetType;
   /** @nullable */
+  walletId: string | null;
+  /** @nullable */
   institution: string | null;
   /** @minimum 0 */
   quantity: number;
@@ -222,6 +224,7 @@ export interface InvestmentInput {
      */
   ticker?: string;
   assetType: InvestmentInputAssetType;
+  walletId: string;
   institution?: string;
   /** @minimum 0 */
   quantity: number;
@@ -258,6 +261,8 @@ export interface InvestmentUpdate {
      */
   ticker?: string | null;
   assetType?: InvestmentUpdateAssetType;
+  /** @nullable */
+  walletId?: string | null;
   /** @nullable */
   institution?: string | null;
   /** @minimum 0 */
@@ -397,8 +402,9 @@ export interface Transaction {
   cardEntryType: TransactionCardEntryType;
   destinationWalletId: string | null;
   categoryId: string | null;
-  goalId?: string | null;
+  goalId: string | null;
   type: TransactionType;
+  isInvestment: boolean;
   /** @exclusiveMinimum 0 */
   amount: number;
   description: string;
@@ -434,6 +440,7 @@ export interface TransactionInput {
   categoryId?: string | null;
   goalId?: string | null;
   type: TransactionInputType;
+  isInvestment?: boolean;
   /** @exclusiveMinimum 0 */
   amount: number;
   /** @minLength 1 */
@@ -470,6 +477,7 @@ export interface TransactionUpdate {
   categoryId?: string | null;
   goalId?: string | null;
   type?: TransactionUpdateType;
+  isInvestment?: boolean;
   /** @exclusiveMinimum 0 */
   amount?: number;
   /** @minLength 1 */

@@ -35,10 +35,11 @@ export function TransactionRow({
   onSwipeClose,
 }: TransactionRowProps) {
   const colors = useColors();
+  const isInvestment = transaction.isInvestment;
   const isIncome = transaction.type === 'income';
   const isTransfer = transaction.type === 'transfer';
-  const tone = isTransfer ? colors.transfer : isIncome ? colors.income : colors.expense;
-  const softTone = isTransfer ? colors.transferSoft : isIncome ? colors.incomeSoft : colors.expenseSoft;
+  const tone = isInvestment ? colors.accent : isTransfer ? colors.transfer : isIncome ? colors.income : colors.expense;
+  const softTone = isInvestment ? colors.secondary : isTransfer ? colors.transferSoft : isIncome ? colors.incomeSoft : colors.expenseSoft;
   const isPaid = transaction.paymentStatus === 'paid';
   const translateX = useRef(new Animated.Value(0)).current;
   const position = useRef(0);
@@ -205,7 +206,7 @@ export function TransactionRow({
           style={({ pressed }) => [styles.editArea, pressed && styles.pressed]}
         >
           <View style={[styles.typeIcon, { backgroundColor: softTone }]}>
-            <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={18} color={tone} />
+            <Feather name={isInvestment ? 'briefcase' : isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={18} color={tone} />
           </View>
           <View style={styles.details}>
             <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>

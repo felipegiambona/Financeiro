@@ -16,6 +16,7 @@ export interface TransactionInput {
   categoryId?: string | null;
   goalId?: string | null;
   type: TransactionInputType;
+  isInvestment?: boolean;
   /** @exclusiveMinimum 0 */
   amount: number;
   /** @minLength 1 */

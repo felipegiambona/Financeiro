@@ -929,7 +929,7 @@ components:
         para criptoativos pelo ID único do CoinGecko.
     Investment:
       type: object
-      required: [id, name, ticker, assetType, institution, quantity, averagePrice, investedAmount, currentValue, manualCurrentValue, valuationMode, quoteSource, quotePrice, quoteStatus, quoteError, lastQuoteAt, isFavorite, returnAmount, returnPercentage, createdAt, updatedAt]
+      required: [id, name, ticker, assetType, walletId, institution, quantity, averagePrice, investedAmount, currentValue, manualCurrentValue, valuationMode, quoteSource, quotePrice, quoteStatus, quoteError, lastQuoteAt, isFavorite, returnAmount, returnPercentage, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -942,6 +942,7 @@ components:
         assetType:
           type: string
           enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+        walletId: { type: ["string", "null"], format: uuid }
         institution: { type: ["string", "null"] }
         quantity: { type: number, minimum: 0 }
         averagePrice: { type: number, minimum: 0 }
@@ -996,7 +997,7 @@ components:
           enum: [stock, fii, etf, fund, fixed_income, crypto, other]
     InvestmentInput:
       type: object
-      required: [name, assetType, quantity, averagePrice, investedAmount, currentValue]
+      required: [name, assetType, walletId, quantity, averagePrice, investedAmount, currentValue]
       properties:
         name: { type: string, minLength: 1 }
         ticker:
@@ -1008,6 +1009,7 @@ components:
         assetType:
           type: string
           enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+        walletId: { type: string, format: uuid }
         institution: { type: string }
         quantity: { type: number, minimum: 0 }
         averagePrice: { type: number, minimum: 0 }
@@ -1028,6 +1030,7 @@ components:
         assetType:
           type: string
           enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+        walletId: { type: ["string", "null"], format: uuid }
         institution: { type: ["string", "null"] }
         quantity: { type: number, minimum: 0 }
         averagePrice: { type: number, minimum: 0 }
@@ -1104,7 +1107,7 @@ components:
           enum: [installment, total]
     Transaction:
       type: object
-      required: [id, walletId, cardId, cardEntryType, destinationWalletId, categoryId, type, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
+      required: [id, walletId, cardId, cardEntryType, destinationWalletId, categoryId, goalId, type, isInvestment, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
       properties:
         id: { type: string, format: uuid }
         walletId: { type: string, format: uuid }
@@ -1114,6 +1117,7 @@ components:
         categoryId: { type: string, format: uuid, nullable: true }
         goalId: { type: string, format: uuid, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
+        isInvestment: { type: boolean }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string }
         date: { type: string, format: date }
@@ -1137,6 +1141,7 @@ components:
         categoryId: { type: string, format: uuid, nullable: true }
         goalId: { type: string, format: uuid, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
+        isInvestment: { type: boolean, default: false }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
         date: { type: string, format: date }
@@ -1153,6 +1158,7 @@ components:
         categoryId: { type: string, format: uuid, nullable: true }
         goalId: { type: string, format: uuid, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
+        isInvestment: { type: boolean }
         amount: { type: number, exclusiveMinimum: 0 }
         description: { type: string, minLength: 1 }
         date: { type: string, format: date }
