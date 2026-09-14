@@ -159,12 +159,12 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (Platform.OS === 'web' || fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (Platform.OS !== 'web' && !fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
