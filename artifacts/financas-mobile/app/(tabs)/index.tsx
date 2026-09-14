@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   dashboardAddIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 9 },
   dashboardAddTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   dashboardAddHint: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
-  businessProfileNotice: { minHeight: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 8, marginTop: -8, marginBottom: 2.5 },
+  businessProfileNotice: { minHeight: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 10, marginTop: -8, marginBottom: 2.5 },
   businessProfileNoticeCopy: { flexShrink: 1, minWidth: 0 },
   businessProfileNoticeName: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   businessProfileSwitchButton: { minHeight: 28, borderWidth: 1, borderRadius: 7, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
