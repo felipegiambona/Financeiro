@@ -66,13 +66,14 @@ async function createTemporaryIdentity(label) {
       skip_password_checks: true,
     }),
   });
-  temporaryIdentities.push({ userId: user.id });
+  const identity = { userId: user.id };
+  temporaryIdentities.push(identity);
 
   const session = await clerkRequest("/sessions", {
     method: "POST",
     body: JSON.stringify({ user_id: user.id }),
   });
-  temporaryIdentities.at(-1).sessionId = session.id;
+  identity.sessionId = session.id;
 
   const token = await clerkRequest(`/sessions/${session.id}/tokens`, {
     method: "POST",
@@ -81,7 +82,8 @@ async function createTemporaryIdentity(label) {
   assert.equal(typeof token.jwt, "string");
   assert.ok(token.jwt.length > 0);
 
-  return { token: token.jwt };
+  identity.token = token.jwt;
+  return identity;
 }
 
 function transactionInput(description) {
@@ -94,6 +96,134 @@ function transactionInput(description) {
     recurrence: { kind: "none" },
     paymentStatus: "unpaid",
   };
+}
+
+function profileRequest(token, profileId, path, options = {}) {
+  return apiRequest(token, path, {
+    ...options,
+    headers: {
+      "x-financial-profile-id": profileId,
+      ...options.headers,
+    },
+  });
+}
+
+async function createFinancialFixture(token, profileId, label) {
+  const wallet = await profileRequest(token, profileId, "/wallets", {
+    method: "POST",
+    body: {
+      title: `${label} wallet`,
+      initialBalance: 1000,
+      icon: "wallet-outline",
+    },
+  });
+  assertStatus(wallet, 201);
+
+  const category = await profileRequest(token, profileId, "/categories", {
+    method: "POST",
+    body: {
+      name: `${label} category`,
+      color: "#72A17D",
+    },
+  });
+  assertStatus(category, 201);
+
+  const limit = await profileRequest(token, profileId, "/limits", {
+    method: "POST",
+    body: {
+      categoryId: category.body.id,
+      description: `${label} limit`,
+      amount: 250,
+      period: "monthly",
+    },
+  });
+  assertStatus(limit, 201);
+
+  const goal = await profileRequest(token, profileId, "/goals", {
+    method: "POST",
+    body: {
+      title: `${label} goal`,
+      targetAmount: 500,
+      deadline: "2026-12-31",
+    },
+  });
+  assertStatus(goal, 201);
+
+  const movement = await profileRequest(token, profileId, `/goals/${goal.body.id}/movements`, {
+    method: "POST",
+    body: {
+      type: "contribution",
+      amount: 50,
+      description: `${label} contribution`,
+      date: "2026-09-08",
+    },
+  });
+  assertStatus(movement, 201);
+
+  const card = await profileRequest(token, profileId, "/cards", {
+    method: "POST",
+    body: {
+      name: `${label} card`,
+      dueDay: 10,
+      closingDay: 5,
+      availableLimit: 2000,
+    },
+  });
+  assertStatus(card, 201);
+
+  const transaction = await profileRequest(token, profileId, "/transactions", {
+    method: "POST",
+    body: {
+      ...transactionInput(`${label} transaction`),
+      walletId: wallet.body.id,
+      cardId: card.body.id,
+      categoryId: category.body.id,
+      goalId: goal.body.id,
+      paymentStatus: "paid",
+    },
+  });
+  assertStatus(transaction, 201);
+
+  return {
+    walletId: wallet.body.id,
+    categoryId: category.body.id,
+    limitId: limit.body.id,
+    goalId: goal.body.id,
+    movementId: movement.body.id,
+    cardId: card.body.id,
+    transactionId: transaction.body.id,
+  };
+}
+
+async function readFinancialFixture(token, profileId) {
+  const wallets = await profileRequest(token, profileId, "/wallets");
+  const categories = await profileRequest(token, profileId, "/categories");
+  const limits = await profileRequest(token, profileId, "/limits");
+  const goals = await profileRequest(token, profileId, "/goals");
+  const cards = await profileRequest(token, profileId, "/cards");
+  const transactions = await profileRequest(token, profileId, "/transactions");
+
+  for (const result of [wallets, categories, limits, goals, cards, transactions]) {
+    assertStatus(result, 200);
+  }
+
+  return {
+    wallets: wallets.body,
+    categories: categories.body,
+    limits: limits.body,
+    goals: goals.body,
+    cards: cards.body,
+    transactions: transactions.body,
+  };
+}
+
+async function assertGoalMovementExists(token, profileId, goalId, movementId) {
+  const goal = await profileRequest(token, profileId, `/goals/${goalId}`);
+  assertStatus(goal, 200);
+  assert.ok(
+    goal.body.history.some((entry) => entry.id === movementId),
+    `Expected goal movement ${movementId} to be present`,
+  );
 }
 
 function assertStatus(result, expectedStatus) {
@@ -135,6 +265,10 @@ describe("transaction account isolation", () => {
     }
 
     for (const identity of temporaryIdentities) {
+      if (identity.deletedViaApi) {
+        continue;
+      }
+
       if (identity.sessionId) {
         try {
           await clerkRequest(`/sessions/${identity.sessionId}/revoke`, {
@@ -331,5 +465,170 @@ describe("transaction account isolation", () => {
     );
     assertStatus(accountAAfterClear, 200);
     assert.deepEqual(accountAAfterClear.body, []);
+  });
+});
+
+describe("financial profile deletion isolation", () => {
+  let identity;
+
+  before(async () => {
+    requireTestConfiguration();
+    identity = await createTemporaryIdentity("financial-profile");
+  });
+
+  after(async () => {
+    if (!identity?.token) {
+      return;
+    }
+
+    const result = await apiRequest(identity.token, "/account", {
+      method: "DELETE",
+    });
+    assertStatus(result, 204);
+    identity.deletedViaApi = true;
+  });
+
+  it("deletes business data without changing the personal profile", async () => {
+    const initialProfiles = await apiRequest(identity.token, "/financial-profiles");
+    assertStatus(initialProfiles, 200);
+    assert.equal(initialProfiles.body.length, 1);
+    assert.equal(initialProfiles.body[0].type, "personal");
+    const personalProfile = initialProfiles.body[0];
+
+    const createdBusiness = await apiRequest(identity.token, "/financial-profiles", {
+      method: "POST",
+      body: {
+        type: "business",
+        name: "Empresa",
+        businessName: "Empresa de Teste Ltda.",
+      },
+    });
+    assertStatus(createdBusiness, 201);
+    const businessProfile = createdBusiness.body;
+
+    const profilesWithBusiness = await apiRequest(identity.token, "/financial-profiles");
+    assertStatus(profilesWithBusiness, 200);
+    assert.deepEqual(
+      profilesWithBusiness.body.map((profile) => profile.id),
+      [personalProfile.id, businessProfile.id],
+    );
+
+    const personalFixture = await createFinancialFixture(
+      identity.token,
+      personalProfile.id,
+      "personal",
+    );
+    const businessFixture = await createFinancialFixture(
+      identity.token,
+      businessProfile.id,
+      "business",
+    );
+    await assertGoalMovementExists(
+      identity.token,
+      personalProfile.id,
+      personalFixture.goalId,
+      personalFixture.movementId,
+    );
+    await assertGoalMovementExists(
+      identity.token,
+      businessProfile.id,
+      businessFixture.goalId,
+      businessFixture.movementId,
+    );
+
+    const personalBeforeDeletion = await readFinancialFixture(
+      identity.token,
+      personalProfile.id,
+    );
+    const businessBeforeDeletion = await readFinancialFixture(
+      identity.token,
+      businessProfile.id,
+    );
+    assert.deepEqual(
+      {
+        wallets: personalBeforeDeletion.wallets.map((row) => row.id),
+        categories: personalBeforeDeletion.categories.map((row) => row.id),
+        limits: personalBeforeDeletion.limits.map((row) => row.id),
+        goals: personalBeforeDeletion.goals.map((row) => row.id),
+        cards: personalBeforeDeletion.cards.map((row) => row.id),
+        transactions: personalBeforeDeletion.transactions.map((row) => row.id),
+      },
+      {
+        wallets: [personalFixture.walletId],
+        categories: [personalFixture.categoryId],
+        limits: [personalFixture.limitId],
+        goals: [personalFixture.goalId],
+        cards: [personalFixture.cardId],
+        transactions: [personalFixture.transactionId],
+      },
+    );
+    assert.deepEqual(
+      {
+        wallets: businessBeforeDeletion.wallets.map((row) => row.id),
+        categories: businessBeforeDeletion.categories.map((row) => row.id),
+        limits: businessBeforeDeletion.limits.map((row) => row.id),
+        goals: businessBeforeDeletion.goals.map((row) => row.id),
+        cards: businessBeforeDeletion.cards.map((row) => row.id),
+        transactions: businessBeforeDeletion.transactions.map((row) => row.id),
+      },
+      {
+        wallets: [businessFixture.walletId],
+        categories: [businessFixture.categoryId],
+        limits: [businessFixture.limitId],
+        goals: [businessFixture.goalId],
+        cards: [businessFixture.cardId],
+        transactions: [businessFixture.transactionId],
+      },
+    );
+
+    const deletedBusiness = await apiRequest(
+      identity.token,
+      `/financial-profiles/${businessProfile.id}`,
+      { method: "DELETE" },
+    );
+    assertStatus(deletedBusiness, 204);
+
+    const remainingProfiles = await apiRequest(identity.token, "/financial-profiles");
+    assertStatus(remainingProfiles, 200);
+    assert.deepEqual(
+      remainingProfiles.body.map((profile) => ({
+        id: profile.id,
+        type: profile.type,
+      })),
+      [{ id: personalProfile.id, type: "personal" }],
+    );
+
+    for (const path of [
+      "/wallets",
+      "/categories",
+      "/limits",
+      "/goals",
+      "/cards",
+      "/transactions",
+    ]) {
+      const deletedBusinessData = await profileRequest(
+        identity.token,
+        businessProfile.id,
+        path,
+      );
+      assertStatus(deletedBusinessData, 403);
+    }
+
+    const deletedPersonal = await apiRequest(
+      identity.token,
+      `/financial-profiles/${personalProfile.id}`,
+      { method: "DELETE" },
+    );
+    assertStatus(deletedPersonal, 400);
+    assert.equal(
+      deletedPersonal.body.error,
+      "The personal profile cannot be deleted",
+    );
+
+    const personalAfterFailedDeletion = await readFinancialFixture(
+      identity.token,
+      personalProfile.id,
+    );
+    assert.deepEqual(personalAfterFailedDeletion, personalBeforeDeletion);
   });
 });
