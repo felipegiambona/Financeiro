@@ -411,6 +411,10 @@ export default function InvestmentsScreen() {
       Alert.alert('Valores inválidos', 'Informe valores numéricos iguais ou maiores que zero.');
       return;
     }
+    if (!editingInvestment && investedAmount <= 0) {
+      Alert.alert('Valor aplicado obrigatório', 'Informe um valor aplicado maior que zero.');
+      return;
+    }
     if (form.valuationMode === 'automatic') {
       const identifierError = quoteIdentifierError(form.assetType, form.ticker);
       if (identifierError) {

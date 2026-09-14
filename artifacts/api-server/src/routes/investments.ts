@@ -262,6 +262,10 @@ router.post("/investments", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.success ? "Investment name is required" : parsed.error.message });
     return;
   }
+  if (parsed.data.investedAmount <= 0) {
+    res.status(400).json({ error: "Invested amount must be greater than zero" });
+    return;
+  }
 
   const valuationMode = parsed.data.valuationMode ?? "manual";
   const ticker = normalizeQuoteIdentifier(parsed.data.assetType, optionalText(parsed.data.ticker) ?? "");
@@ -306,6 +310,7 @@ router.post("/investments", async (req, res): Promise<void> => {
       destinationWalletId: null,
       categoryId: null,
       goalId: null,
+      investmentId: investment.id,
       type: "expense",
       isInvestment: true,
       amount: String(parsed.data.investedAmount),
@@ -418,11 +423,23 @@ router.delete("/investments/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid investment id" });
     return;
   }
-  const [row] = await db.delete(investmentsTable).where(and(
-    eq(investmentsTable.id, params.data.id),
-    eq(investmentsTable.userId, scopedUserIdFrom(req)),
-    eq(investmentsTable.profileId, profileIdFrom(req)),
-  )).returning({ id: investmentsTable.id });
+  const userId = scopedUserIdFrom(req);
+  const profileId = profileIdFrom(req);
+  const [row] = await db.transaction(async (tx) => {
+    const [deletedInvestment] = await tx.delete(investmentsTable).where(and(
+      eq(investmentsTable.id, params.data.id),
+      eq(investmentsTable.userId, userId),
+      eq(investmentsTable.profileId, profileId),
+    )).returning({ id: investmentsTable.id });
+    if (!deletedInvestment) return [];
+    await tx.delete(transactionsTable).where(and(
+      eq(transactionsTable.investmentId, deletedInvestment.id),
+      eq(transactionsTable.userId, userId),
+      eq(transactionsTable.profileId, profileId),
+      eq(transactionsTable.isInvestment, true),
+    ));
+    return [deletedInvestment];
+  });
   if (!row) {
     res.status(404).json({ error: "Investment not found" });
     return;
