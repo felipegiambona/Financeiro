@@ -61,6 +61,8 @@ function selectedPeriodLabel(period: RecurrencePeriod): string {
   return RECURRENCE_PERIODS.find((option) => option.value === period)?.label ?? 'Mensal';
 }
 
+type TransactionSource = 'wallet' | 'card';
+
 export default function NewTransactionScreen() {
   const { id, fromTab } = useLocalSearchParams<{ id?: string; fromTab?: string }>();
   const returnToTabs = fromTab === '1';
@@ -106,6 +108,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
   const [description, setDescription] = useState(transaction?.description ?? '');
   const [walletId, setWalletId] = useState(transaction?.walletId ?? '');
   const [cardId, setCardId] = useState<string | null>(transaction?.cardId ?? null);
+  const [transactionSource, setTransactionSource] = useState<TransactionSource>(transaction?.cardId ? 'card' : 'wallet');
   const [destinationWalletId, setDestinationWalletId] = useState(transaction?.destinationWalletId ?? '');
   const [dueDate, setDueDate] = useState(transaction?.dueDate ? toDateInput(transaction.dueDate) : '');
   const [recurrence, setRecurrence] = useState<RecurrenceKind>(transaction?.recurrence.kind ?? 'none');
@@ -147,6 +150,13 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
     if (!walletId && defaultWallet) setWalletId(defaultWallet.id);
   }, [defaultWallet, walletId]);
 
+  useEffect(() => {
+    if (type !== 'expense' && transactionSource === 'card') {
+      setTransactionSource('wallet');
+      setCardId(null);
+    }
+  }, [transactionSource, type]);
+
   const handleSave = async () => {
     const numericAmount = parseAmountInput(amount);
     if (!type || !numericAmount || numericAmount <= 0) {
@@ -157,11 +167,17 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
       setError('Informe uma descrição para o lançamento.');
       return;
     }
-    if (!walletId) {
+    const sourceWalletId = walletId || defaultWallet?.id;
+    const selectedCardId = type === 'expense' && transactionSource === 'card' ? cardId : null;
+    if (transactionSource === 'wallet' && !sourceWalletId) {
       setError('Selecione uma carteira para o lançamento.');
       return;
     }
-    if (type === 'transfer' && (!destinationWalletId || destinationWalletId === walletId)) {
+    if (type === 'expense' && transactionSource === 'card' && !selectedCardId) {
+      setError('Selecione um cartão para o lançamento.');
+      return;
+    }
+    if (type === 'transfer' && (!destinationWalletId || destinationWalletId === sourceWalletId)) {
       setError('Selecione uma carteira de destino diferente da origem.');
       return;
     }
@@ -209,8 +225,8 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           type,
           amount: numericAmount,
           description: description.trim(),
-          walletId,
-          cardId: type === 'expense' ? cardId : null,
+          walletId: sourceWalletId,
+          cardId: selectedCardId,
           categoryId,
           goalId: type === 'expense' || type === 'income' ? goalId : null,
           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
@@ -220,11 +236,11 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         });
       } else {
         await createTransaction({
-          walletId,
+          walletId: sourceWalletId,
           type,
           amount: numericAmount,
           description,
-          cardId: type === 'expense' ? cardId : null,
+          cardId: selectedCardId,
           categoryId,
           goalId: type === 'expense' || type === 'income' ? goalId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,
@@ -395,37 +411,91 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Selecionar carteira"
-          testID="wallet-select"
-          disabled={walletsLoading || wallets.length === 0}
-          onPress={() => {
-            setWalletPickerTarget('source');
-            setWalletPickerOpen(true);
-          }}
-          style={({ pressed }) => [
-            styles.formField,
-            styles.dateInputShell,
-            { backgroundColor: colors.card, borderColor: colors.input },
-            (walletsLoading || wallets.length === 0) && styles.disabled,
-            pressed && styles.pressed,
-          ]}
-        >
-          <WalletIconView
-            icon={(wallets.find((wallet) => wallet.id === walletId) ?? defaultWallet)?.icon ?? 'wallet-outline'}
-            size={17}
-            color={colors.mutedForeground}
-          />
-          <Text style={[styles.dateInput, { color: walletId ? colors.foreground : colors.mutedForeground }]}>
-            {walletsLoading
-              ? 'Carregando carteiras...'
-              : wallets.find((wallet) => wallet.id === walletId)?.title ?? 'Selecione uma carteira'}
-          </Text>
-          <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
-        </Pressable>
-
         {type === 'expense' ? (
+          <>
+            <Text style={[styles.label, { color: colors.foreground }]}>Como foi pago?</Text>
+            <View style={styles.sourceOptions}>
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected: transactionSource === 'wallet' }}
+                testID="wallet-source-option"
+                onPress={() => {
+                  setTransactionSource('wallet');
+                  setCardId(null);
+                }}
+                style={({ pressed }) => [
+                  styles.sourceOption,
+                  {
+                    backgroundColor: transactionSource === 'wallet' ? colors.primary : colors.card,
+                    borderColor: transactionSource === 'wallet' ? colors.primary : colors.border,
+                  },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <WalletIconView
+                  icon={defaultWallet?.icon ?? 'wallet-outline'}
+                  size={16}
+                  color={transactionSource === 'wallet' ? colors.primaryForeground : colors.mutedForeground}
+                />
+                <Text style={[styles.sourceOptionText, { color: transactionSource === 'wallet' ? colors.primaryForeground : colors.foreground }]}>Carteira</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected: transactionSource === 'card' }}
+                testID="card-source-option"
+                onPress={() => {
+                  setTransactionSource('card');
+                  setCardId(null);
+                }}
+                style={({ pressed }) => [
+                  styles.sourceOption,
+                  {
+                    backgroundColor: transactionSource === 'card' ? colors.primary : colors.card,
+                    borderColor: transactionSource === 'card' ? colors.primary : colors.border,
+                  },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Feather name="credit-card" size={16} color={transactionSource === 'card' ? colors.primaryForeground : colors.mutedForeground} />
+                <Text style={[styles.sourceOptionText, { color: transactionSource === 'card' ? colors.primaryForeground : colors.foreground }]}>Cartão</Text>
+              </Pressable>
+            </View>
+          </>
+        ) : null}
+
+        {type !== 'expense' || transactionSource === 'wallet' ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Selecionar carteira"
+            testID="wallet-select"
+            disabled={walletsLoading || wallets.length === 0}
+            onPress={() => {
+              setWalletPickerTarget('source');
+              setWalletPickerOpen(true);
+            }}
+            style={({ pressed }) => [
+              styles.formField,
+              styles.dateInputShell,
+              { backgroundColor: colors.card, borderColor: colors.input },
+              (walletsLoading || wallets.length === 0) && styles.disabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            <WalletIconView
+              icon={(wallets.find((wallet) => wallet.id === walletId) ?? defaultWallet)?.icon ?? 'wallet-outline'}
+              size={17}
+              color={colors.mutedForeground}
+            />
+            <Text style={[styles.dateInput, { color: walletId ? colors.foreground : colors.mutedForeground }]}>
+              {walletsLoading
+                ? 'Carregando carteiras...'
+                : wallets.find((wallet) => wallet.id === walletId)?.title ?? 'Selecione uma carteira'}
+            </Text>
+            <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+          </Pressable>
+        ) : null}
+
+        {type === 'expense' && transactionSource === 'card' ? (
           <>
             <Pressable
               accessibilityRole="button"
@@ -445,7 +515,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               <Text style={[styles.dateInput, { color: cardId ? colors.foreground : colors.mutedForeground }]}>
                 {cardsLoading
                   ? 'Carregando cartões...'
-                  : cards.find((card) => card.id === cardId)?.name ?? 'Selecione um cartão (opcional)'}
+                  : cards.find((card) => card.id === cardId)?.name ?? 'Selecione um cartão'}
               </Text>
               <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
             </Pressable>
@@ -1017,6 +1087,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               testID="card-option-none"
               onPress={() => {
                 setCardId(null);
+                setTransactionSource('wallet');
                 setCardPickerOpen(false);
               }}
               style={({ pressed }) => [
@@ -1118,6 +1189,9 @@ const styles = StyleSheet.create({
   scheduleFieldWide: { flex: 1, minWidth: 0, gap: 5 },
   scheduleFieldNarrow: { width: 104, gap: 5 },
   compactLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  sourceOptions: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  sourceOption: { flex: 1, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  sourceOptionText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   amountModeOptions: { flexDirection: 'row', gap: 8 },
   amountModeOption: { flex: 1, minHeight: 38, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   intervalInputShell: { width: '100%', minHeight: 42, borderRadius: 7, borderWidth: 1, justifyContent: 'center' },
