@@ -1,10 +1,22 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 import { randomUUID } from "node:crypto";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const clerkApiUrl = "https://api.clerk.com/v1";
 const apiUrl = process.env.API_BASE_URL ?? "http://127.0.0.1:8080/api";
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+const execFileAsync = promisify(execFile);
+const financialTables = [
+  "finance_transactions",
+  "finance_goal_movements",
+  "finance_limits",
+  "finance_goals",
+  "finance_cards",
+  "finance_categories",
+  "finance_wallets",
+];
 
 const temporaryIdentities = [];
 
@@ -12,6 +24,10 @@ function requireTestConfiguration() {
   assert.ok(
     clerkSecretKey,
     "CLERK_SECRET_KEY is required to run authenticated integration tests",
+  );
+  assert.ok(
+    process.env.DATABASE_URL,
+    "DATABASE_URL is required to prepare legacy financial rows",
   );
 }
 
@@ -232,6 +248,48 @@ function assertStatus(result, expectedStatus) {
     expectedStatus,
     JSON.stringify(result.body, null, 2),
   );
+}
+
+function sqlLiteral(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+async function runDatabaseQuery(sql) {
+  const { stdout } = await execFileAsync(
+    "psql",
+    [
+      process.env.DATABASE_URL,
+      "--no-psqlrc",
+      "--quiet",
+      "--tuples-only",
+      "--set",
+      "ON_ERROR_STOP=1",
+      "--command",
+      sql,
+    ],
+    { env: process.env },
+  );
+  return stdout.trim();
+}
+
+async function prepareLegacyFinancialFixture(userId, profileId) {
+  const scopedOwner = `${userId}::${profileId}`;
+  const owner = sqlLiteral(scopedOwner);
+  const profile = sqlLiteral(profileId);
+  const statements = financialTables.map((table) => (
+    `UPDATE ${table} SET user_id = ${owner}, profile_id = NULL ` +
+    `WHERE user_id = ${owner} AND profile_id = ${profile};`
+  ));
+
+  await runDatabaseQuery(`BEGIN; ${statements.join(" ")} COMMIT;`);
+}
+
+async function countRowsForOwner(userId, profileId, table) {
+  const scopedOwner = sqlLiteral(`${userId}::${profileId}`);
+  const result = await runDatabaseQuery(
+    `SELECT COUNT(*) FROM ${table} WHERE user_id = ${scopedOwner};`,
+  );
+  return Number(result);
 }
 
 async function clearIdentityData(identity) {
@@ -523,6 +581,7 @@ describe("financial profile deletion isolation", () => {
       businessProfile.id,
       "business",
     );
+    await prepareLegacyFinancialFixture(identity.userId, businessProfile.id);
     await assertGoalMovementExists(
       identity.token,
       personalProfile.id,
@@ -587,6 +646,14 @@ describe("financial profile deletion isolation", () => {
       { method: "DELETE" },
     );
     assertStatus(deletedBusiness, 204);
+
+    for (const table of financialTables) {
+      assert.equal(
+        await countRowsForOwner(identity.userId, businessProfile.id, table),
+        0,
+        `Expected legacy business rows in ${table} to be deleted`,
+      );
+    }
 
     const remainingProfiles = await apiRequest(identity.token, "/financial-profiles");
     assertStatus(remainingProfiles, 200);
