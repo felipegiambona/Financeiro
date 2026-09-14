@@ -31,6 +31,7 @@ import { CardProvider } from '@/context/CardContext';
 import { DashboardPreferencesProvider } from '@/context/DashboardPreferencesContext';
 import { useColors } from '@/hooks/useColors';
 import { OnboardingGate } from '@/components/OnboardingGate';
+import { FinancialProfileProvider, useFinancialProfiles } from '@/context/FinancialProfileContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -81,6 +82,16 @@ function AuthenticatedApp() {
   }
 
   return session ? (
+    <FinancialProfileProvider>
+      <ProfileScopedProviders />
+    </FinancialProfileProvider>
+  ) : <RootLayoutNav />;
+}
+
+function ProfileScopedProviders() {
+  const { activeProfile } = useFinancialProfiles();
+  return (
+    <React.Fragment key={activeProfile?.id ?? 'profile-loading'}>
     <FinanceProvider>
       <WalletProvider>
         <CategoryProvider>
@@ -98,7 +109,8 @@ function AuthenticatedApp() {
         </CategoryProvider>
       </WalletProvider>
     </FinanceProvider>
-  ) : <RootLayoutNav />;
+    </React.Fragment>
+  );
 }
 
 function ThemedApp() {

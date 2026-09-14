@@ -7,10 +7,12 @@ import categoriesRouter from "./categories";
 import limitsRouter from "./limits";
 import goalsRouter from "./goals";
 import cardsRouter from "./cards";
+import financialProfilesRouter from "./financialProfiles";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(financialProfilesRouter);
 router.use(transactionsRouter);
 router.use(walletsRouter);
 router.use(accountRouter);

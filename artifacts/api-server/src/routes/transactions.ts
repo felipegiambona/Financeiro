@@ -13,11 +13,11 @@ import {
   UpdateTransactionParams,
   UpdateTransactionResponse,
 } from "@workspace/api-zod";
-import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
 import { ensureDefaultWallet, getUserWallet } from "./wallets";
 
 const router: IRouter = Router();
-router.use("/transactions", requireAuth);
+router.use("/transactions", requireAuth, resolveFinancialProfile);
 
 function toResponse(row: typeof transactionsTable.$inferSelect) {
   return {
@@ -48,9 +48,7 @@ function serializeTransaction(
   };
 }
 
-function userIdFrom(req: unknown): string {
-  return (req as AuthenticatedRequest).userId;
-}
+const userIdFrom = scopedUserIdFrom;
 
 router.get("/transactions", async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
@@ -119,6 +117,7 @@ router.post("/transactions", async (req, res): Promise<void> => {
   const [row] = await db.insert(transactionsTable).values({
     ...parsed.data,
     userId,
+    profileId: profileIdFrom(req),
     walletId: wallet.id,
     cardId: parsed.data.type === "expense" ? parsed.data.cardId ?? null : null,
     cardEntryType: "purchase",

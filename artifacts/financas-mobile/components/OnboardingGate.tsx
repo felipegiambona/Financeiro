@@ -5,16 +5,17 @@ import { OnboardingFlow, type OnboardingStep } from '@/components/OnboardingFlow
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useWallets } from '@/context/WalletContext';
+import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 import { useColors } from '@/hooks/useColors';
 
 type GateMode = 'checking' | 'onboarding' | 'app';
 
 function isOnboardingStep(value: string | null): value is OnboardingStep {
-  return value === 'name' || value === 'wallet' || value === 'goal' || value === 'limit' || value === 'card';
+  return value === 'name' || value === 'profile' || value === 'wallet' || value === 'goal' || value === 'limit' || value === 'card';
 }
 
-function storageKeys(userId: string) {
-  const prefix = `financas-mobile:onboarding:${userId}`;
+function storageKeys(userId: string, profileId: string) {
+  const prefix = `financas-mobile:onboarding:${userId}:${profileId}`;
   return {
     complete: `${prefix}:complete`,
     started: `${prefix}:started`,
@@ -27,6 +28,7 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
   const { session } = useAuth();
   const { setOnboardingActive } = useTheme();
   const { wallets, loading: walletsLoading } = useWallets();
+  const { activeProfile } = useFinancialProfiles();
   const [mode, setMode] = useState<GateMode>('checking');
   const [step, setStep] = useState<OnboardingStep>('name');
   const hasAutomaticPlaceholder = wallets.length === 1
@@ -41,9 +43,9 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
   }, [mode, session?.userId, setOnboardingActive]);
 
   useEffect(() => {
-    if (!session?.userId || walletsLoading) return;
+    if (!session?.userId || !activeProfile?.id || walletsLoading) return;
     let active = true;
-    const keys = storageKeys(session.userId);
+    const keys = storageKeys(session.userId, activeProfile.id);
     void AsyncStorage.multiGet([keys.complete, keys.started, keys.step]).then(async (entries) => {
       if (!active) return;
       const values = new Map(entries);
@@ -79,18 +81,20 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [hasAutomaticPlaceholder, session?.userId, wallets.length, walletsLoading]);
+  }, [activeProfile?.id, hasAutomaticPlaceholder, session?.userId, wallets.length, walletsLoading]);
 
   const handleStepChange = (nextStep: OnboardingStep) => {
     if (!session?.userId) return;
-    const keys = storageKeys(session.userId);
+    if (!activeProfile?.id) return;
+    const keys = storageKeys(session.userId, activeProfile.id);
     setStep(nextStep);
     void AsyncStorage.multiSet([[keys.started, 'true'], [keys.step, nextStep]]);
   };
 
   const handleComplete = () => {
     if (!session?.userId) return;
-    const keys = storageKeys(session.userId);
+    if (!activeProfile?.id) return;
+    const keys = storageKeys(session.userId, activeProfile.id);
     void AsyncStorage.multiSet([[keys.complete, 'true'], [keys.started, 'false']])
       .then(() => setMode('app'));
   };

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useAuth } from '@/context/AuthContext';
+import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 import { useColors } from '@/hooks/useColors';
 
 function getInitials(name: string, email: string): string {
@@ -35,6 +36,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const insets = useSafeAreaInsets();
   const { session, signOut, deleteAccount, updateProfile, updateProfileImage } = useAuth();
   const { user } = useUser();
+  const { profiles, activeProfile, switchProfile, createProfile } = useFinancialProfiles();
   const name = session?.name || 'Usuário';
   const email = session?.email || 'E-mail não informado';
   const initials = useMemo(() => getInitials(name, email), [email, name]);
@@ -43,6 +45,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileName, setProfileName] = useState(name);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [switchingProfile, setSwitchingProfile] = useState(false);
 
   const handleDeleteAccount = async () => {
     setDeletingAccount(true);
@@ -193,6 +196,59 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
           </Pressable>
         )}
 
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Perfil financeiro</Text>
+        <View style={[styles.profileSelector, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.selectorDescription, { color: colors.mutedForeground }]}>
+            Separe suas finanças pessoais das operações do negócio.
+          </Text>
+          {profiles.map((profile) => (
+            <Pressable
+              key={profile.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: profile.id === activeProfile?.id }}
+              disabled={switchingProfile}
+              onPress={() => {
+                if (profile.id === activeProfile?.id) return;
+                setSwitchingProfile(true);
+                void switchProfile(profile.id).finally(() => setSwitchingProfile(false));
+              }}
+              style={({ pressed }) => [
+                styles.profileOption,
+                { borderColor: profile.id === activeProfile?.id ? colors.primary : colors.border, backgroundColor: profile.id === activeProfile?.id ? colors.secondary : colors.card },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Feather name={profile.type === 'business' ? 'briefcase' : 'user'} size={16} color={colors.foreground} />
+              <View style={styles.profileOptionCopy}>
+                <Text style={[styles.profileOptionName, { color: colors.foreground }]}>{profile.name}</Text>
+                <Text style={[styles.profileOptionType, { color: colors.mutedForeground }]}>
+                  {profile.type === 'business' ? profile.businessName || 'Empresarial' : 'Pessoal'}
+                </Text>
+              </View>
+              {profile.id === activeProfile?.id ? <Feather name="check" size={17} color={colors.primary} /> : null}
+            </Pressable>
+          ))}
+          {!profiles.some((profile) => profile.type === 'business') ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={switchingProfile}
+              onPress={() => {
+                setSwitchingProfile(true);
+                void createProfile({ type: 'business', name: 'Empresarial', businessName: 'Meu negócio' })
+                  .catch(() => Alert.alert('Não foi possível criar o perfil', 'Tente novamente.'))
+                  .finally(() => setSwitchingProfile(false));
+              }}
+              style={({ pressed }) => [styles.addProfileButton, { borderColor: colors.border }, pressed && styles.pressed]}
+            >
+              <Feather name="plus" size={16} color={colors.foreground} />
+              <Text style={[styles.addProfileText, { color: colors.foreground }]}>Adicionar perfil empresarial</Text>
+            </Pressable>
+          ) : null}
+          <Text style={[styles.profileDisclaimer, { color: colors.mutedForeground }]}>
+            O perfil empresarial é para controle operacional e não substitui ERP, sistema comercial ou sistema contábil.
+          </Text>
+        </View>
+
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Informações da conta</Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.infoRow}>
@@ -291,6 +347,15 @@ const styles = StyleSheet.create({
   editProfileButton: { minHeight: 42, borderWidth: 1, borderRadius: 7, marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   editProfileText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   profileActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  profileSelector: { borderWidth: 1, borderRadius: 9, padding: 12, gap: 8 },
+  selectorDescription: { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_400Regular', marginBottom: 2 },
+  profileOption: { minHeight: 52, borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  profileOptionCopy: { flex: 1 },
+  profileOptionName: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  profileOptionType: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  addProfileButton: { minHeight: 42, borderRadius: 8, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 2 },
+  addProfileText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  profileDisclaimer: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular', marginTop: 4 },
   profileCancelButton: { flex: 1, minHeight: 42, borderWidth: 1, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   profileSaveButton: { flex: 1, minHeight: 42, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   profileCancelText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },

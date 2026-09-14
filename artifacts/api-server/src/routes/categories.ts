@@ -8,14 +8,12 @@ import {
   UpdateCategoryBody,
   UpdateCategoryParams,
 } from "@workspace/api-zod";
-import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
-router.use("/categories", requireAuth);
+router.use("/categories", requireAuth, resolveFinancialProfile);
 
-function userIdFrom(req: unknown): string {
-  return (req as AuthenticatedRequest).userId;
-}
+const userIdFrom = scopedUserIdFrom;
 
 function toResponse(row: typeof categoriesTable.$inferSelect) {
   return {
@@ -40,6 +38,7 @@ router.post("/categories", async (req, res): Promise<void> => {
   try {
     const [row] = await db.insert(categoriesTable).values({
       userId: userIdFrom(req),
+    profileId: (req as { profileId?: string }).profileId,
       name: parsed.data.name.trim(),
       color: parsed.data.color ?? "#72A17D",
     }).returning();

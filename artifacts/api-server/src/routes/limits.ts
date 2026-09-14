@@ -10,14 +10,12 @@ import {
   UpdateLimitParams,
   UpdateLimitResponse,
 } from "@workspace/api-zod";
-import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
-router.use("/limits", requireAuth);
+router.use("/limits", requireAuth, resolveFinancialProfile);
 
-function userIdFrom(req: unknown): string {
-  return (req as AuthenticatedRequest).userId;
-}
+const userIdFrom = scopedUserIdFrom;
 
 function toResponse(row: typeof limitsTable.$inferSelect) {
   return {
@@ -54,6 +52,7 @@ router.post("/limits", async (req, res): Promise<void> => {
   }
   const [row] = await db.insert(limitsTable).values({
     userId,
+    profileId: (req as { profileId?: string }).profileId,
     categoryId: parsed.data.categoryId,
     description: parsed.data.description?.trim() || null,
     amount: String(parsed.data.amount),

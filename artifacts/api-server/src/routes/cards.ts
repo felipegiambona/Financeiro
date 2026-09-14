@@ -16,15 +16,13 @@ import {
   UpdateCardParams,
   UpdateCardResponse,
 } from "@workspace/api-zod";
-import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
 import { ensureDefaultWallet } from "./wallets";
 
 const router: IRouter = Router();
-router.use("/cards", requireAuth);
+router.use("/cards", requireAuth, resolveFinancialProfile);
 
-function userIdFrom(req: unknown): string {
-  return (req as AuthenticatedRequest).userId;
-}
+const userIdFrom = scopedUserIdFrom;
 
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -89,6 +87,7 @@ router.post("/cards", async (req, res): Promise<void> => {
   }
   const [row] = await db.insert(cardsTable).values({
     userId: userIdFrom(req),
+    profileId: profileIdFrom(req),
     name: parsed.data.name.trim(),
     dueDay: parsed.data.dueDay,
     closingDay: parsed.data.closingDay,
@@ -178,6 +177,7 @@ router.post("/cards/:id/pay-invoice", async (req, res): Promise<void> => {
   const wallet = await ensureDefaultWallet(userId);
   await db.insert(transactionsTable).values({
     userId,
+    profileId: profileIdFrom(req),
     walletId: wallet.id,
     cardId: existing.id,
     cardEntryType: "invoice_payment",

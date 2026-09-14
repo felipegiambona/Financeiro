@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 export const transactionsTable = pgTable("finance_transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
+  profileId: uuid("profile_id"),
   walletId: uuid("wallet_id"),
   cardId: uuid("card_id"),
   cardEntryType: text("card_entry_type").notNull().default("purchase"),

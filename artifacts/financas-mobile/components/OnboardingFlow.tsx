@@ -10,13 +10,14 @@ import { useGoals } from '@/context/GoalContext';
 import { useLimits } from '@/context/LimitContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWallets } from '@/context/WalletContext';
+import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 import { useColors } from '@/hooks/useColors';
 import { CATEGORY_COLORS } from '@/types/category';
 import { LIMIT_PERIODS, type LimitPeriod } from '@/types/limit';
 import { createLocalIsoDate } from '@/utils/date';
 import { formatAmountInput, parseAmountInput } from '@/utils/currency';
 
-export type OnboardingStep = 'name' | 'wallet' | 'goal' | 'limit' | 'card';
+export type OnboardingStep = 'name' | 'profile' | 'wallet' | 'goal' | 'limit' | 'card';
 
 interface OnboardingFlowProps {
   initialStep: OnboardingStep;
@@ -24,7 +25,7 @@ interface OnboardingFlowProps {
   onComplete: () => void;
 }
 
-const STEPS: OnboardingStep[] = ['name', 'wallet', 'goal', 'limit', 'card'];
+const STEPS: OnboardingStep[] = ['name', 'profile', 'wallet', 'goal', 'limit', 'card'];
 
 function formatDateInput(date: Date): string {
   return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
@@ -161,7 +162,10 @@ export function OnboardingFlow({ initialStep, onStepChange, onComplete }: Onboar
         <StepProgress step={step} colors={colors} />
 
         {step === 'name' ? (
-          <NameStep colors={colors} onContinue={() => goTo('wallet')} setError={setError} error={error} />
+          <NameStep colors={colors} onContinue={() => goTo('profile')} setError={setError} error={error} />
+        ) : null}
+        {step === 'profile' ? (
+          <BusinessProfileStep colors={colors} onContinue={() => goTo('wallet')} setError={setError} error={error} />
         ) : null}
         {step === 'wallet' ? (
           <WalletStep colors={colors} onContinue={() => goTo('goal')} setError={setError} error={error} />
@@ -175,6 +179,52 @@ export function OnboardingFlow({ initialStep, onStepChange, onComplete }: Onboar
         {step === 'card' ? <CardStep colors={colors} onComplete={finish} setError={setError} error={error} /> : null}
       </KeyboardAwareScrollViewCompat>
     </View>
+  );
+}
+
+function BusinessProfileStep({ colors, onContinue, setError, error }: StepProps & { onContinue: () => void }) {
+  const { createProfile } = useFinancialProfiles();
+  const [saving, setSaving] = useState(false);
+
+  const addBusinessProfile = async () => {
+    try {
+      setSaving(true);
+      setError('');
+      await createProfile({ type: 'business', name: 'Empresarial', businessName: 'Meu negócio' }, { activate: false });
+      onContinue();
+    } catch {
+      setError('Não foi possível criar o perfil empresarial. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <StepHeader
+        eyebrow="PERFIL FINANCEIRO"
+        title="Você também controla um negócio?"
+        description="Crie um perfil separado para pequenas empresas, autônomos, freelancers e pequenos negócios."
+        colors={colors}
+      />
+      <View style={[styles.notice, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+        <Feather name="info" size={17} color={colors.foreground} />
+        <Text style={[styles.noticeText, { color: colors.foreground }]}>
+          O perfil empresarial é para controle financeiro operacional. Ele não substitui ERP, sistema comercial ou sistema contábil.
+        </Text>
+      </View>
+      <View style={styles.choiceStack}>
+        <ChoiceButton
+          label={saving ? 'Criando perfil...' : 'Sim, criar perfil empresarial'}
+          icon="briefcase"
+          onPress={() => void addBusinessProfile()}
+          colors={colors}
+          secondary={saving}
+        />
+        <ChoiceButton label="Agora não" icon="arrow-right" onPress={onContinue} colors={colors} secondary />
+      </View>
+      <ErrorMessage message={error} colors={colors} />
+    </>
   );
 }
 
@@ -723,5 +773,7 @@ const styles = StyleSheet.create({
   twoColumns: { flexDirection: 'row', gap: 10 },
   column: { flex: 1 },
   error: { fontSize: 12, lineHeight: 17, fontFamily: 'Inter_500Medium', marginTop: 9 },
+  notice: { borderWidth: 1, borderRadius: 9, padding: 12, flexDirection: 'row', gap: 9, marginTop: 4 },
+  noticeText: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular' },
   pressed: { opacity: 0.72 },
 });

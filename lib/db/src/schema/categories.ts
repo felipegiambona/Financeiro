@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 export const categoriesTable = pgTable("finance_categories", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
+  profileId: uuid("profile_id"),
   name: text("name").notNull(),
   color: text("color").notNull().default("#72A17D"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

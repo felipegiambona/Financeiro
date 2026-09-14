@@ -24,6 +24,8 @@ tags:
     description: Authenticated credit card management operations
   - name: account
     description: Authenticated account management operations
+  - name: financial-profiles
+    description: Financial profile management operations
 paths:
   /healthz:
     get:
@@ -38,6 +40,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /financial-profiles:
+    get:
+      operationId: listFinancialProfiles
+      tags: [financial-profiles]
+      responses:
+        "200":
+          description: Financial profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FinancialProfile"
+    post:
+      operationId: createFinancialProfile
+      tags: [financial-profiles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinancialProfileInput"
+      responses:
+        "201":
+          description: Created financial profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancialProfile"
   /transactions:
     get:
       operationId: listTransactions
@@ -631,6 +662,27 @@ components:
         type: string
         format: uuid
   schemas:
+    FinancialProfile:
+      type: object
+      required: [id, type, name, businessName, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        type:
+          type: string
+          enum: [personal, business]
+        name: { type: string }
+        businessName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    FinancialProfileInput:
+      type: object
+      required: [type, name]
+      properties:
+        type:
+          type: string
+          enum: [personal, business]
+        name: { type: string, minLength: 1 }
+        businessName: { type: string }
     HealthStatus:
       type: object
       properties:

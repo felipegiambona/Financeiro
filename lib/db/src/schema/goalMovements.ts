@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 export const goalMovementsTable = pgTable("finance_goal_movements", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
+  profileId: uuid("profile_id"),
   goalId: uuid("goal_id").notNull(),
   type: text("type").notNull(),
   amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),

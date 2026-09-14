@@ -17,6 +17,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _financialProfileId: string | undefined;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +43,10 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+export function setFinancialProfileId(profileId: string | undefined): void {
+  _financialProfileId = profileId;
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -356,6 +361,9 @@ export async function customFetch<T = unknown>(
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
     }
+  }
+  if (_financialProfileId && !headers.has("x-financial-profile-id")) {
+    headers.set("x-financial-profile-id", _financialProfileId);
   }
 
   const requestInfo = { method, url: resolveUrl(input) };

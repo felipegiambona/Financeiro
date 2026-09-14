@@ -1,7 +1,7 @@
 import { clerkClient } from "@clerk/express";
-import { eq } from "drizzle-orm";
+import { eq, like } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { cardsTable, categoriesTable, db, goalMovementsTable, goalsTable, limitsTable, transactionsTable, walletsTable } from "@workspace/db";
+import { cardsTable, categoriesTable, db, financialProfilesTable, goalMovementsTable, goalsTable, limitsTable, transactionsTable, walletsTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -14,13 +14,15 @@ router.delete("/account", requireAuth, async (req, res): Promise<void> => {
   const userId = userIdFrom(req);
 
   await db.transaction(async (tx) => {
-    await tx.delete(transactionsTable).where(eq(transactionsTable.userId, userId));
-    await tx.delete(goalMovementsTable).where(eq(goalMovementsTable.userId, userId));
-    await tx.delete(limitsTable).where(eq(limitsTable.userId, userId));
-    await tx.delete(goalsTable).where(eq(goalsTable.userId, userId));
-    await tx.delete(cardsTable).where(eq(cardsTable.userId, userId));
-    await tx.delete(categoriesTable).where(eq(categoriesTable.userId, userId));
-    await tx.delete(walletsTable).where(eq(walletsTable.userId, userId));
+    const scopedOwner = `${userId}::%`;
+    await tx.delete(transactionsTable).where(like(transactionsTable.userId, scopedOwner));
+    await tx.delete(goalMovementsTable).where(like(goalMovementsTable.userId, scopedOwner));
+    await tx.delete(limitsTable).where(like(limitsTable.userId, scopedOwner));
+    await tx.delete(goalsTable).where(like(goalsTable.userId, scopedOwner));
+    await tx.delete(cardsTable).where(like(cardsTable.userId, scopedOwner));
+    await tx.delete(categoriesTable).where(like(categoriesTable.userId, scopedOwner));
+    await tx.delete(walletsTable).where(like(walletsTable.userId, scopedOwner));
+    await tx.delete(financialProfilesTable).where(eq(financialProfilesTable.userId, userId));
   });
 
   await clerkClient.users.deleteUser(userId);

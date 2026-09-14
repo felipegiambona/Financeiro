@@ -15,15 +15,13 @@ import {
   UpdateGoalParams,
   UpdateGoalResponse,
 } from "@workspace/api-zod";
-import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
 import { ensureDefaultWallet } from "./wallets";
 
 const router: IRouter = Router();
-router.use("/goals", requireAuth);
+router.use("/goals", requireAuth, resolveFinancialProfile);
 
-function userIdFrom(req: unknown): string {
-  return (req as AuthenticatedRequest).userId;
-}
+const userIdFrom = scopedUserIdFrom;
 
 function dateOnly(value: Date | string | null | undefined): string | null {
   if (value == null) return null;
@@ -142,6 +140,7 @@ router.post("/goals", async (req, res): Promise<void> => {
   }
   const [row] = await db.insert(goalsTable).values({
     userId: userIdFrom(req),
+    profileId: profileIdFrom(req),
     title: parsed.data.title.trim(),
     targetAmount: String(parsed.data.targetAmount),
     imageData: parsed.data.imageData ?? null,
@@ -199,6 +198,7 @@ router.post("/goals/:id/movements", async (req, res): Promise<void> => {
     const description = body.data.description?.trim() || "Retirada da meta";
     const [transaction] = await db.insert(transactionsTable).values({
       userId,
+      profileId: profileIdFrom(req),
       walletId: wallet.id,
       destinationWalletId: null,
       categoryId: null,
@@ -227,6 +227,7 @@ router.post("/goals/:id/movements", async (req, res): Promise<void> => {
 
   const [row] = await db.insert(goalMovementsTable).values({
     userId,
+    profileId: profileIdFrom(req),
     goalId: goal.id,
     type: body.data.type,
     amount: String(body.data.amount),

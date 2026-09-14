@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 export const limitsTable = pgTable("finance_limits", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
+  profileId: uuid("profile_id"),
   categoryId: uuid("category_id").notNull(),
   description: text("description"),
   amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),

@@ -8,14 +8,12 @@ import {
   UpdateWalletBody,
   UpdateWalletParams,
 } from "@workspace/api-zod";
-import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
-router.use("/wallets", requireAuth);
+router.use("/wallets", requireAuth, resolveFinancialProfile);
 
-function userIdFrom(req: unknown): string {
-  return (req as AuthenticatedRequest).userId;
-}
+const userIdFrom = scopedUserIdFrom;
 
 type StoredWallet = typeof walletsTable.$inferSelect;
 const defaultWalletLocks = new Map<string, Promise<StoredWallet>>();
@@ -41,6 +39,7 @@ export async function ensureDefaultWallet(userId: string) {
 
     const [created] = await db.insert(walletsTable).values({
       userId,
+      profileId: userId.split("::")[1] ?? null,
       title: "Carteira padrão",
       initialBalance: "0",
       icon: "wallet-outline",
@@ -130,6 +129,7 @@ router.post("/wallets", async (req, res): Promise<void> => {
   const [row] = await db.insert(walletsTable).values({
     title: parsed.data.title,
     userId,
+    profileId: (req as { profileId?: string }).profileId,
     initialBalance: String(parsed.data.initialBalance),
     icon: "wallet-outline",
     isDefault: existing.length === 0,
@@ -182,6 +182,7 @@ router.delete("/wallets/:id", async (req, res): Promise<void> => {
   if (!replacement) {
     const [created] = await db.insert(walletsTable).values({
       userId,
+      profileId: userId.split("::")[1] ?? null,
       title: "Carteira padrão",
       initialBalance: "0",
       icon: "wallet-outline",
