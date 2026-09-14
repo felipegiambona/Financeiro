@@ -7,5 +7,6 @@
 - [Onboarding wallet detection](onboarding-default-wallet.md) — read-only wallet and transaction loads must not create the default wallet before first-access setup.
 - [Financial profile scope](profile-scope.md) — resolve profile membership server-side and preserve legacy rows during account-to-profile migration.
 - [Investment schema alignment](investment-schema-alignment.md) — integration databases can lag behind quote fields in the checked-in investment schema.
+- [Investment quote provider fallback](investment-quote-provider-fallback.md) — BRAPI may return 401 for some B3 tickers; keep a Yahoo Finance fallback for market assets.
 - [Expo static build port](expo-static-build-port.md) — the static Expo build probes fixed Metro port 8081, which can be occupied by the mockup preview.
 - [Expo web preview loading](expo-web-clerk-loading.md) — do not gate web rendering on ClerkLoaded; AuthProvider already handles loading and otherwise the browser can remain blank.

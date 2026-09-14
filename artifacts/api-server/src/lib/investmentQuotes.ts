@@ -171,7 +171,7 @@ export function quoteIsFresh(
     && now.getTime() - row.lastQuoteAt.getTime() < QUOTE_REFRESH_INTERVAL_MS;
 }
 
-export async function fetchBrapiQuote(ticker: string): Promise<number> {
+async function fetchBrapiQuoteDirect(ticker: string): Promise<number> {
   const payload = await fetchJson(`https://brapi.dev/api/quote/${encodeURIComponent(ticker)}`);
   if (
     !payload
@@ -190,6 +190,38 @@ export async function fetchBrapiQuote(ticker: string): Promise<number> {
     throw new Error("Quote provider returned an invalid price");
   }
   return quote;
+}
+
+export async function fetchYahooFinanceQuote(ticker: string): Promise<number> {
+  const payload = await fetchJson(
+    `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}.SA?range=5d&interval=1d`,
+  );
+  const chart = payload && typeof payload === "object" && "chart" in payload
+    ? payload.chart
+    : undefined;
+  const result = chart && typeof chart === "object" && "result" in chart && Array.isArray(chart.result)
+    ? chart.result[0]
+    : undefined;
+  const quote = result && typeof result === "object" && "meta" in result
+    && result.meta && typeof result.meta === "object" && "regularMarketPrice" in result.meta
+    ? result.meta.regularMarketPrice
+    : undefined;
+  if (!isValidQuote(quote)) {
+    throw new Error("Yahoo Finance returned an invalid price");
+  }
+  return quote;
+}
+
+export async function fetchBrapiQuote(ticker: string): Promise<number> {
+  try {
+    return await fetchBrapiQuoteDirect(ticker);
+  } catch (brapiError) {
+    try {
+      return await fetchYahooFinanceQuote(ticker);
+    } catch {
+      throw brapiError;
+    }
+  }
 }
 
 export async function fetchCoinGeckoQuote(identifier: string): Promise<number> {

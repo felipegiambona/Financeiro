@@ -142,6 +142,36 @@ describe("investment quote refresh", () => {
     });
   });
 
+  it("falls back to Yahoo Finance when BRAPI requires authentication", async () => {
+    const originalFetch = globalThis.fetch;
+    let requestCount = 0;
+    globalThis.fetch = async () => {
+      requestCount += 1;
+      if (requestCount === 1) {
+        return {
+          ok: false,
+          status: 401,
+          json: async () => ({ error: true }),
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          chart: {
+            result: [{ meta: { regularMarketPrice: 6.05 } }],
+          },
+        }),
+      };
+    };
+    try {
+      assert.equal(await fetchBrapiQuote("KISU11"), 6.05);
+      assert.equal(requestCount, 2);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it("rejects invalid responses from every quote source", async () => {
     await withMockFetch({
       json: { results: [{ regularMarketPrice: "37.42" }] },

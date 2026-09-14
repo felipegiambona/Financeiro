@@ -65,7 +65,9 @@ function quoteStatusText(investment: Investment): string {
   }
   if (investment.quoteStatus === 'pending') return `${quoteSourceLabel(investment.quoteSource)} · aguardando cotação`;
   if (investment.quoteStatus === 'unavailable') return `${quoteSourceLabel(investment.quoteSource)} · sem cotação`;
-  return `${quoteSourceLabel(investment.quoteSource)} · falha em ${formatQuoteDate(investment.lastQuoteAt)}`;
+  return investment.lastQuoteAt
+    ? `${quoteSourceLabel(investment.quoteSource)} · falha após ${formatQuoteDate(investment.lastQuoteAt)}`
+    : `${quoteSourceLabel(investment.quoteSource)} · ainda não consultada`;
 }
 
 function isFavoriteDraft(investment: Investment): boolean {
