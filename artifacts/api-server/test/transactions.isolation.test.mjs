@@ -285,10 +285,49 @@ async function prepareLegacyFinancialFixture(userId, profileId) {
   await runDatabaseQuery(`BEGIN; ${statements.join(" ")} COMMIT;`);
 }
 
+async function prepareSimpleLegacyFinancialFixture(userId, profileId) {
+  const scopedOwner = sqlLiteral(`${userId}::${profileId}`);
+  const owner = sqlLiteral(userId);
+  const profile = sqlLiteral(profileId);
+  const statements = financialTables.map((table) => (
+    `UPDATE ${table} SET user_id = ${owner}` +
+    `${table === "finance_investments" ? "" : ", profile_id = NULL"} ` +
+    `WHERE user_id = ${scopedOwner} AND profile_id = ${profile};`
+  ));
+
+  await runDatabaseQuery(`BEGIN; ${statements.join(" ")} COMMIT;`);
+}
+
+async function prepareLegacyInvestmentFixture(userId, personalProfileId, businessProfileId) {
+  const personalOwner = sqlLiteral(userId);
+  const businessOwner = sqlLiteral(`${userId}::${businessProfileId}`);
+  const personalProfile = sqlLiteral(personalProfileId);
+  const businessProfile = sqlLiteral(businessProfileId);
+  await runDatabaseQuery(
+    `INSERT INTO finance_investments ` +
+    `(user_id, profile_id, name, ticker, asset_type, institution, quantity, ` +
+    `average_price, invested_amount, current_value) VALUES ` +
+    `(${personalOwner}, ${personalProfile}, 'legacy simple investment', 'LEGACY-S', ` +
+    `'fixed_income', 'Legacy Bank', 1, 100, 100, 100), ` +
+    `(${businessOwner}, ${businessProfile}, 'legacy composite investment', 'LEGACY-C', ` +
+    `'fixed_income', 'Legacy Bank', 1, 100, 100, 100);`,
+  );
+}
+
 async function countRowsForOwner(userId, profileId, table) {
   const scopedOwner = sqlLiteral(`${userId}::${profileId}`);
   const result = await runDatabaseQuery(
     `SELECT COUNT(*) FROM ${table} WHERE user_id = ${scopedOwner};`,
+  );
+  return Number(result);
+}
+
+async function countRowsForAccount(userId, table) {
+  const owner = sqlLiteral(userId);
+  const scopedOwner = sqlLiteral(`${userId}::%`);
+  const result = await runDatabaseQuery(
+    `SELECT COUNT(*) FROM ${table} ` +
+    `WHERE user_id = ${owner} OR user_id LIKE ${scopedOwner};`,
   );
   return Number(result);
 }
@@ -526,6 +565,7 @@ describe("transaction account isolation", () => {
     assert.deepEqual(accountAAfterClear.body, []);
   });
 });
+
 
 describe("financial profile deletion isolation", () => {
   let identity;
@@ -775,5 +815,71 @@ describe("financial profile deletion isolation", () => {
       personalProfile.id,
     );
     assert.deepEqual(personalAfterFailedDeletion, personalBeforeDeletion);
+  });
+});
+
+describe("account deletion cleanup", () => {
+  let identity;
+
+  before(async () => {
+    requireTestConfiguration();
+    identity = await createTemporaryIdentity("account-deletion");
+  });
+
+  after(async () => {
+    if (!identity?.token || identity.deletedViaApi) {
+      return;
+    }
+
+    const result = await apiRequest(identity.token, "/account", {
+      method: "DELETE",
+    });
+    assertStatus(result, 204);
+    identity.deletedViaApi = true;
+  });
+
+  it("deletes financial rows with both simple and composite legacy owners", async () => {
+    const profiles = await apiRequest(identity.token, "/financial-profiles");
+    assertStatus(profiles, 200);
+    const personalProfile = profiles.body.find((profile) => profile.type === "personal");
+    assert.ok(personalProfile);
+
+    const business = await apiRequest(identity.token, "/financial-profiles", {
+      method: "POST",
+      body: {
+        type: "business",
+        name: "Empresa",
+        businessName: "Empresa de Teste Ltda.",
+      },
+    });
+    assertStatus(business, 201);
+
+    await createFinancialFixture(identity.token, personalProfile.id, "legacy simple");
+    await createFinancialFixture(identity.token, business.body.id, "legacy composite");
+    await prepareLegacyInvestmentFixture(
+      identity.userId,
+      personalProfile.id,
+      business.body.id,
+    );
+    await prepareSimpleLegacyFinancialFixture(identity.userId, personalProfile.id);
+
+    const deleted = await apiRequest(identity.token, "/account", {
+      method: "DELETE",
+    });
+    assertStatus(deleted, 204);
+    identity.deletedViaApi = true;
+
+    for (const table of financialTables) {
+      assert.equal(
+        await countRowsForAccount(identity.userId, table),
+        0,
+        `Expected account deletion to remove legacy rows from ${table}`,
+      );
+    }
+    assert.equal(
+      await countRowsForAccount(identity.userId, "financial_profiles"),
+      0,
+      "Expected account deletion to remove financial profiles",
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { clerkClient } from "@clerk/express";
-import { eq, like } from "drizzle-orm";
+import { eq, like, or } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { cardsTable, categoriesTable, db, financialProfilesTable, goalMovementsTable, goalsTable, investmentsTable, limitsTable, transactionsTable, walletsTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
@@ -15,14 +15,38 @@ router.delete("/account", requireAuth, async (req, res): Promise<void> => {
 
   await db.transaction(async (tx) => {
     const scopedOwner = `${userId}::%`;
-    await tx.delete(transactionsTable).where(like(transactionsTable.userId, scopedOwner));
-    await tx.delete(goalMovementsTable).where(like(goalMovementsTable.userId, scopedOwner));
-    await tx.delete(limitsTable).where(like(limitsTable.userId, scopedOwner));
-    await tx.delete(goalsTable).where(like(goalsTable.userId, scopedOwner));
-    await tx.delete(cardsTable).where(like(cardsTable.userId, scopedOwner));
-    await tx.delete(investmentsTable).where(like(investmentsTable.userId, scopedOwner));
-    await tx.delete(categoriesTable).where(like(categoriesTable.userId, scopedOwner));
-    await tx.delete(walletsTable).where(like(walletsTable.userId, scopedOwner));
+    await tx.delete(transactionsTable).where(or(
+      eq(transactionsTable.userId, userId),
+      like(transactionsTable.userId, scopedOwner),
+    ));
+    await tx.delete(goalMovementsTable).where(or(
+      eq(goalMovementsTable.userId, userId),
+      like(goalMovementsTable.userId, scopedOwner),
+    ));
+    await tx.delete(limitsTable).where(or(
+      eq(limitsTable.userId, userId),
+      like(limitsTable.userId, scopedOwner),
+    ));
+    await tx.delete(goalsTable).where(or(
+      eq(goalsTable.userId, userId),
+      like(goalsTable.userId, scopedOwner),
+    ));
+    await tx.delete(cardsTable).where(or(
+      eq(cardsTable.userId, userId),
+      like(cardsTable.userId, scopedOwner),
+    ));
+    await tx.delete(investmentsTable).where(or(
+      eq(investmentsTable.userId, userId),
+      like(investmentsTable.userId, scopedOwner),
+    ));
+    await tx.delete(categoriesTable).where(or(
+      eq(categoriesTable.userId, userId),
+      like(categoriesTable.userId, scopedOwner),
+    ));
+    await tx.delete(walletsTable).where(or(
+      eq(walletsTable.userId, userId),
+      like(walletsTable.userId, scopedOwner),
+    ));
     await tx.delete(financialProfilesTable).where(eq(financialProfilesTable.userId, userId));
   });
 
