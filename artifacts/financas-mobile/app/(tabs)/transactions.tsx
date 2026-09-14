@@ -238,7 +238,6 @@ export default function TransactionsScreen() {
       label: formatTransactionGroupLabel(groupTransactions[0].date),
       transactions: groupTransactions,
       total: groupTransactions.reduce((total, transaction) => {
-        if (transaction.isInvestment) return total;
         if (transaction.type === 'income') return total + transaction.amount;
         if (transaction.type === 'expense') return total - transaction.amount;
         if (typeFilter === 'transfer') return total + transaction.amount;
@@ -251,7 +250,6 @@ export default function TransactionsScreen() {
   const filteredSummary = useMemo(
     () => filteredTransactions.reduce(
       (summary, transaction) => {
-        if (transaction.isInvestment) return summary;
         if (transaction.type === 'income') {
           summary.income += transaction.amount;
         } else if (transaction.type === 'expense') {
