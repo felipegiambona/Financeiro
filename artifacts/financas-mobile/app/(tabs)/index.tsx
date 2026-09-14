@@ -141,76 +141,6 @@ export default function DashboardScreen() {
                 <Text style={[styles.metricValue, { color: colors.expense }]}>{formatCurrency(monthlyTotals.expense)}</Text>
               </View>
             </View> : null}
-            {isPersonalProfile && visibility.investments ? <View style={styles.investmentsSection}>
-              <View style={styles.investmentsHeader}>
-                <View>
-                  <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Investimentos</Text>
-                  <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Acompanhe o valor da sua carteira.</Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Gerenciar investimentos"
-                  onPress={() => router.push('/more/investments')}
-                  style={({ pressed }) => [
-                    styles.manageWalletButton,
-                    { backgroundColor: colors.secondary, borderColor: colors.border },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Ver carteira</Text>
-                </Pressable>
-              </View>
-              {investmentsLoading ? (
-                <View style={[styles.investmentStateCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <Text style={[styles.investmentState, { color: colors.mutedForeground }]}>Carregando investimentos...</Text>
-                </View>
-              ) : investmentsError ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Tentar carregar investimentos novamente"
-                  onPress={() => void refreshInvestments()}
-                  style={({ pressed }) => [styles.investmentStateCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
-                >
-                  <Feather name="alert-circle" size={19} color={colors.expense} />
-                  <Text style={[styles.investmentState, { color: colors.mutedForeground }]}>Não foi possível carregar seus investimentos. Toque para tentar novamente.</Text>
-                </Pressable>
-              ) : investments.length === 0 ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Adicionar primeiro investimento"
-                  onPress={() => router.push('/more/investments')}
-                  style={({ pressed }) => [styles.investmentStateCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
-                >
-                  <Feather name="bar-chart" size={19} color={colors.mutedForeground} />
-                  <Text style={[styles.investmentState, { color: colors.mutedForeground }]}>Cadastre um investimento para acompanhar sua carteira.</Text>
-                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-                </Pressable>
-              ) : (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Abrir resumo dos investimentos"
-                  onPress={() => router.push('/more/investments')}
-                  style={({ pressed }) => [styles.investmentSummaryCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
-                >
-                  <View style={[styles.investmentIcon, { backgroundColor: colors.secondary }]}>
-                    <Feather name="bar-chart" size={17} color={colors.foreground} />
-                  </View>
-                  <View style={styles.investmentSummaryValue}>
-                    <Text style={[styles.investmentLabel, { color: colors.mutedForeground }]}>Valor atual</Text>
-                    <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.investmentValue, { color: colors.foreground }]}>
-                      {formatCurrency(investmentSummary.currentValue)}
-                    </Text>
-                  </View>
-                  <View style={styles.investmentSummaryResult}>
-                    <Text style={[styles.investmentLabel, { color: colors.mutedForeground }]}>Resultado</Text>
-                    <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.investmentValue, { color: investmentSummary.returnAmount >= 0 ? colors.income : colors.expense }]}>
-                      {formatCurrency(investmentSummary.returnAmount)}
-                    </Text>
-                  </View>
-                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-                </Pressable>
-              )}
-            </View> : null}
             {visibility.pending ? <View style={styles.pendingMetrics}>
               <Pressable
                 accessibilityRole="button"
@@ -422,6 +352,76 @@ export default function DashboardScreen() {
                     onPay={() => handlePayCard(card.id, card.name)}
                   />
                 ))
+              )}
+            </View> : null}
+            {isPersonalProfile && visibility.investments ? <View style={styles.investmentsSection}>
+              <View style={styles.investmentsHeader}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Investimentos</Text>
+                  <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Acompanhe o valor da sua carteira.</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Gerenciar investimentos"
+                  onPress={() => router.push('/more/investments')}
+                  style={({ pressed }) => [
+                    styles.manageWalletButton,
+                    { backgroundColor: colors.secondary, borderColor: colors.border },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.manageWalletButtonText, { color: colors.foreground }]}>Ver carteira</Text>
+                </Pressable>
+              </View>
+              {investmentsLoading ? (
+                <View style={[styles.investmentStateCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.investmentState, { color: colors.mutedForeground }]}>Carregando investimentos...</Text>
+                </View>
+              ) : investmentsError ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Tentar carregar investimentos novamente"
+                  onPress={() => void refreshInvestments()}
+                  style={({ pressed }) => [styles.investmentStateCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Feather name="alert-circle" size={19} color={colors.expense} />
+                  <Text style={[styles.investmentState, { color: colors.mutedForeground }]}>Não foi possível carregar seus investimentos. Toque para tentar novamente.</Text>
+                </Pressable>
+              ) : investments.length === 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Adicionar primeiro investimento"
+                  onPress={() => router.push('/more/investments')}
+                  style={({ pressed }) => [styles.investmentStateCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Feather name="bar-chart" size={19} color={colors.mutedForeground} />
+                  <Text style={[styles.investmentState, { color: colors.mutedForeground }]}>Cadastre um investimento para acompanhar sua carteira.</Text>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Abrir resumo dos investimentos"
+                  onPress={() => router.push('/more/investments')}
+                  style={({ pressed }) => [styles.investmentSummaryCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <View style={[styles.investmentIcon, { backgroundColor: colors.secondary }]}>
+                    <Feather name="bar-chart" size={17} color={colors.foreground} />
+                  </View>
+                  <View style={styles.investmentSummaryValue}>
+                    <Text style={[styles.investmentLabel, { color: colors.mutedForeground }]}>Valor atual</Text>
+                    <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.investmentValue, { color: colors.foreground }]}>
+                      {formatCurrency(investmentSummary.currentValue)}
+                    </Text>
+                  </View>
+                  <View style={styles.investmentSummaryResult}>
+                    <Text style={[styles.investmentLabel, { color: colors.mutedForeground }]}>Resultado</Text>
+                    <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.investmentValue, { color: investmentSummary.returnAmount >= 0 ? colors.income : colors.expense }]}>
+                      {formatCurrency(investmentSummary.returnAmount)}
+                    </Text>
+                  </View>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                </Pressable>
               )}
             </View> : null}
             <View style={styles.customizeSection}>
