@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  fetchBcbSgsQuote,
+  fetchBrapiQuote,
+  fetchCoinGeckoQuote,
+  fetchCvmFundQuote,
   normalizeQuoteIdentifier,
   quoteIdentifierError,
   quoteProviderForAssetType,
@@ -60,12 +64,28 @@ function controlledStore() {
         calls.push({ type: "error", row });
         return {
           ...row,
+          quoteSource: quoteSourceForAssetType(row.assetType),
           quoteStatus: "error",
           quoteError: "Não foi possível obter a cotação agora. O último valor foi mantido.",
         };
       },
     },
   };
+}
+
+async function withMockFetch(response, callback) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => response.json,
+    text: async () => response.text,
+  });
+  try {
+    return await callback();
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 }
 
 describe("investment quote refresh", () => {
@@ -91,6 +111,106 @@ describe("investment quote refresh", () => {
     assert.equal(quoteProviderForAssetType("fixed_income")?.name, "fetchBcbSgsQuote");
     assert.equal(quoteProviderForAssetType("crypto")?.name, "fetchCoinGeckoQuote");
     assert.equal(quoteProviderForAssetType("other"), null);
+  });
+
+  it("keeps a contract for valid responses from every quote source", async () => {
+    await withMockFetch({
+      json: { results: [{ regularMarketPrice: 37.42 }] },
+    }, async () => {
+      assert.equal(await fetchBrapiQuote("PETR4"), 37.42);
+    });
+
+    await withMockFetch({
+      text: [
+        "TP_FUNDO;CNPJ_FUNDO;DT_COMPTC;VL_TOTAL;VL_QUOTA;VL_PATRIM_LIQ",
+        "FI;00.000.000/0001-91;2026-09-13;1000,00;12,3456;900,00",
+      ].join("\n"),
+    }, async () => {
+      assert.equal(await fetchCvmFundQuote("00.000.000/0001-91"), 12.3456);
+    });
+
+    await withMockFetch({
+      json: [{ valor: "13,57" }],
+    }, async () => {
+      assert.equal(await fetchBcbSgsQuote("1178"), 13.57);
+    });
+
+    await withMockFetch({
+      json: { bitcoin: { brl: 345678.9 } },
+    }, async () => {
+      assert.equal(await fetchCoinGeckoQuote("bitcoin"), 345678.9);
+    });
+  });
+
+  it("rejects invalid responses from every quote source", async () => {
+    await withMockFetch({
+      json: { results: [{ regularMarketPrice: "37.42" }] },
+    }, async () => {
+      await assert.rejects(fetchBrapiQuote("PETR4"), /invalid price/);
+    });
+
+    await withMockFetch({
+      text: [
+        "TP_FUNDO;CNPJ_FUNDO;DT_COMPTC;VL_TOTAL;VL_QUOTA;VL_PATRIM_LIQ",
+        "FI;00.000.000/0001-91;2026-09-13;1000,00;not-a-price;900,00",
+      ].join("\n"),
+    }, async () => {
+      await assert.rejects(
+        fetchCvmFundQuote("00.000.000/0001-92"),
+        /no quote for this fund CNPJ/,
+      );
+    });
+
+    await withMockFetch({
+      json: [{ valor: "not-a-number" }],
+    }, async () => {
+      await assert.rejects(fetchBcbSgsQuote("1178"), /invalid series value/);
+    });
+
+    await withMockFetch({
+      json: { bitcoin: { brl: null } },
+    }, async () => {
+      await assert.rejects(fetchCoinGeckoQuote("bitcoin"), /no BRL price/);
+    });
+  });
+
+  it("preserves the last value and records the matching source when a source fails", async () => {
+    const previousQuoteAt = new Date("2026-09-14T11:00:00.000Z");
+    const cases = [
+      { assetType: "stock", ticker: "TEST3", source: "BRAPI" },
+      { assetType: "fund", ticker: "00.000.000/0001-91", source: "CVM" },
+      { assetType: "fixed_income", ticker: "1178", source: "BCB_SGS" },
+      { assetType: "crypto", ticker: "bitcoin", source: "COINGECKO" },
+    ];
+
+    for (const { assetType, ticker, source } of cases) {
+      const controlled = controlledStore();
+      const refreshed = await refreshInvestmentQuote(investment({
+        assetType,
+        ticker,
+        quoteSource: "stale-source",
+        quoteStatus: "updated",
+        quotePrice: "27.75",
+        currentValue: "123.45",
+        manualCurrentValue: "99",
+        lastQuoteAt: previousQuoteAt,
+      }), {
+        quoteProvider: async () => {
+          throw new Error(`${source} offline`);
+        },
+        store: controlled.store,
+        now: () => now,
+      });
+
+      assert.equal(refreshed.currentValue, "123.45");
+      assert.equal(refreshed.quotePrice, "27.75");
+      assert.equal(refreshed.manualCurrentValue, "99");
+      assert.equal(refreshed.lastQuoteAt, previousQuoteAt);
+      assert.equal(refreshed.quoteSource, source);
+      assert.equal(refreshed.quoteStatus, "error");
+      assert.equal(refreshed.quoteError, "Não foi possível obter a cotação agora. O último valor foi mantido.");
+      assert.deepEqual(controlled.calls.map(({ type }) => type), ["error"]);
+    }
   });
 
   it("applies a controlled quote without changing the manual value", async () => {
