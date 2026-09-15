@@ -40,6 +40,9 @@ function walletTransactionValue(transaction: Transaction, walletId: string): num
   }
   if (transaction.walletId !== walletId) return 0;
   if (transaction.isInvestment) return -transaction.amount;
+  if (transaction.type === 'expense' && transaction.cardEntryType === 'invoice_payment') {
+    return -transaction.amount;
+  }
   if (transaction.type === 'expense' && transaction.cardId) return 0;
   return transactionValue(transaction);
 }
@@ -63,13 +66,6 @@ function cardOverdueTotalForCurrentMonth(cards: Card[], month: Date, now: Date):
     (total, card) => total + card.invoices
       .filter((invoice) => invoice.status === 'overdue' && invoice.invoiceMonth < currentMonthKey)
       .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
-    0,
-  );
-}
-
-function cardInvoiceTotal(cards: Card[]): number {
-  return cards.reduce(
-    (total, card) => total + card.invoices.reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
     0,
   );
 }
@@ -162,8 +158,7 @@ export function calculateWalletTotals(
       return balance + walletTransactionValue(transaction, wallet.id);
     }, wallet.initialBalance);
 
-    const cardAdjustment = wallet.isDefault ? cardInvoiceTotal(cards) : 0;
-    return { wallet, total: total - cardAdjustment };
+    return { wallet, total };
   });
 }
 
