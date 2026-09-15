@@ -464,6 +464,98 @@ export interface InvestmentUpdate {
   isFavorite?: boolean;
 }
 
+export type InvestmentDividendType = typeof InvestmentDividendType[keyof typeof InvestmentDividendType];
+
+
+export const InvestmentDividendType = {
+  dividend: 'dividend',
+  jcp: 'jcp',
+} as const;
+
+export type InvestmentDividendStatus = typeof InvestmentDividendStatus[keyof typeof InvestmentDividendStatus];
+
+
+export const InvestmentDividendStatus = {
+  expected: 'expected',
+  received: 'received',
+} as const;
+
+export interface InvestmentDividend {
+  id: string;
+  investmentId: string;
+  investmentName: string;
+  /** @nullable */
+  investmentTicker: string | null;
+  type: InvestmentDividendType;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  paymentDate: string;
+  status: InvestmentDividendStatus;
+  /** @nullable */
+  note: string | null;
+  /** @nullable */
+  transactionId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type InvestmentDividendInputType = typeof InvestmentDividendInputType[keyof typeof InvestmentDividendInputType];
+
+
+export const InvestmentDividendInputType = {
+  dividend: 'dividend',
+  jcp: 'jcp',
+} as const;
+
+export type InvestmentDividendInputStatus = typeof InvestmentDividendInputStatus[keyof typeof InvestmentDividendInputStatus];
+
+
+export const InvestmentDividendInputStatus = {
+  expected: 'expected',
+  received: 'received',
+} as const;
+
+export interface InvestmentDividendInput {
+  investmentId: string;
+  type: InvestmentDividendInputType;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  paymentDate: string;
+  status: InvestmentDividendInputStatus;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export type InvestmentDividendUpdateType = typeof InvestmentDividendUpdateType[keyof typeof InvestmentDividendUpdateType];
+
+
+export const InvestmentDividendUpdateType = {
+  dividend: 'dividend',
+  jcp: 'jcp',
+} as const;
+
+export type InvestmentDividendUpdateStatus = typeof InvestmentDividendUpdateStatus[keyof typeof InvestmentDividendUpdateStatus];
+
+
+export const InvestmentDividendUpdateStatus = {
+  expected: 'expected',
+  received: 'received',
+} as const;
+
+export interface InvestmentDividendUpdate {
+  investmentId?: string;
+  type?: InvestmentDividendUpdateType;
+  /** @exclusiveMinimum 0 */
+  amount?: number;
+  paymentDate?: string;
+  status?: InvestmentDividendUpdateStatus;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  note?: string | null;
+}
+
 export interface HealthStatus {
   status: string;
 }

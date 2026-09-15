@@ -316,6 +316,80 @@ paths:
                   $ref: "#/components/schemas/Investment"
         "403":
           description: Investments are only available for personal profiles
+  /investments/dividends:
+    get:
+      operationId: listInvestmentDividends
+      tags: [investments]
+      responses:
+        "200":
+          description: Investment dividend and interest-on-equity history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvestmentDividend"
+        "403":
+          description: Investments are only available for personal profiles
+    post:
+      operationId: createInvestmentDividend
+      tags: [investments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentDividendInput"
+      responses:
+        "201":
+          description: Investment dividend created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentDividend"
+        "400":
+          description: Invalid investment dividend
+        "403":
+          description: Investments are only available for personal profiles
+        "404":
+          description: Investment not found
+  /investments/dividends/{id}:
+    patch:
+      operationId: updateInvestmentDividend
+      tags: [investments]
+      parameters:
+        - $ref: "#/components/parameters/InvestmentDividendId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentDividendUpdate"
+      responses:
+        "200":
+          description: Investment dividend updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentDividend"
+        "400":
+          description: Invalid investment dividend
+        "403":
+          description: Investments are only available for personal profiles
+        "404":
+          description: Investment dividend not found
+    delete:
+      operationId: deleteInvestmentDividend
+      tags: [investments]
+      parameters:
+        - $ref: "#/components/parameters/InvestmentDividendId"
+      responses:
+        "204":
+          description: Investment dividend removed
+        "403":
+          description: Investments are only available for personal profiles
+        "404":
+          description: Investment dividend not found
   /transactions:
     get:
       operationId: listTransactions
@@ -1063,6 +1137,13 @@ components:
       schema:
         type: string
         format: uuid
+    InvestmentDividendId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     LegalDocument:
       type: object
@@ -1309,6 +1390,41 @@ components:
         valuationMode:
           $ref: "#/components/schemas/InvestmentValuationMode"
         isFavorite: { type: boolean }
+    InvestmentDividend:
+      type: object
+      required: [id, investmentId, investmentName, investmentTicker, type, amount, paymentDate, status, note, transactionId, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        investmentId: { type: string, format: uuid }
+        investmentName: { type: string }
+        investmentTicker: { type: ["string", "null"] }
+        type: { type: string, enum: [dividend, jcp] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        paymentDate: { type: string, format: date }
+        status: { type: string, enum: [expected, received] }
+        note: { type: ["string", "null"] }
+        transactionId: { type: ["string", "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    InvestmentDividendInput:
+      type: object
+      required: [investmentId, type, amount, paymentDate, status]
+      properties:
+        investmentId: { type: string, format: uuid }
+        type: { type: string, enum: [dividend, jcp] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        paymentDate: { type: string, format: date }
+        status: { type: string, enum: [expected, received] }
+        note: { type: string, maxLength: 500 }
+    InvestmentDividendUpdate:
+      type: object
+      properties:
+        investmentId: { type: string, format: uuid }
+        type: { type: string, enum: [dividend, jcp] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        paymentDate: { type: string, format: date }
+        status: { type: string, enum: [expected, received] }
+        note: { type: ["string", "null"], maxLength: 500 }
     HealthStatus:
       type: object
       properties:

@@ -379,6 +379,108 @@ export const RefreshInvestmentQuotesResponseItem = zod.object({
 export const RefreshInvestmentQuotesResponse = zod.array(RefreshInvestmentQuotesResponseItem)
 
 
+export const listInvestmentDividendsResponseAmountExclusiveMin = 0;
+
+
+
+export const ListInvestmentDividendsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "investmentId": zod.string().uuid(),
+  "investmentName": zod.string(),
+  "investmentTicker": zod.string().nullable(),
+  "type": zod.enum(['dividend', 'jcp']),
+  "amount": zod.number().gt(listInvestmentDividendsResponseAmountExclusiveMin),
+  "paymentDate": zod.coerce.date(),
+  "status": zod.enum(['expected', 'received']),
+  "note": zod.string().nullable(),
+  "transactionId": zod.string().uuid().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListInvestmentDividendsResponse = zod.array(ListInvestmentDividendsResponseItem)
+
+
+export const createInvestmentDividendBodyAmountExclusiveMin = 0;
+
+export const createInvestmentDividendBodyNoteMax = 500;
+
+
+
+export const CreateInvestmentDividendBody = zod.object({
+  "investmentId": zod.string().uuid(),
+  "type": zod.enum(['dividend', 'jcp']),
+  "amount": zod.number().gt(createInvestmentDividendBodyAmountExclusiveMin),
+  "paymentDate": zod.coerce.date(),
+  "status": zod.enum(['expected', 'received']),
+  "note": zod.string().max(createInvestmentDividendBodyNoteMax).optional()
+})
+
+export const createInvestmentDividendResponseAmountExclusiveMin = 0;
+
+
+
+export const CreateInvestmentDividendResponse = zod.object({
+  "id": zod.string().uuid(),
+  "investmentId": zod.string().uuid(),
+  "investmentName": zod.string(),
+  "investmentTicker": zod.string().nullable(),
+  "type": zod.enum(['dividend', 'jcp']),
+  "amount": zod.number().gt(createInvestmentDividendResponseAmountExclusiveMin),
+  "paymentDate": zod.coerce.date(),
+  "status": zod.enum(['expected', 'received']),
+  "note": zod.string().nullable(),
+  "transactionId": zod.string().uuid().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const UpdateInvestmentDividendParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateInvestmentDividendBodyAmountExclusiveMin = 0;
+
+export const updateInvestmentDividendBodyNoteMax = 500;
+
+
+
+export const UpdateInvestmentDividendBody = zod.object({
+  "investmentId": zod.string().uuid().optional(),
+  "type": zod.enum(['dividend', 'jcp']).optional(),
+  "amount": zod.number().gt(updateInvestmentDividendBodyAmountExclusiveMin).optional(),
+  "paymentDate": zod.coerce.date().optional(),
+  "status": zod.enum(['expected', 'received']).optional(),
+  "note": zod.string().max(updateInvestmentDividendBodyNoteMax).nullish()
+})
+
+export const updateInvestmentDividendResponseAmountExclusiveMin = 0;
+
+
+
+export const UpdateInvestmentDividendResponse = zod.object({
+  "id": zod.string().uuid(),
+  "investmentId": zod.string().uuid(),
+  "investmentName": zod.string(),
+  "investmentTicker": zod.string().nullable(),
+  "type": zod.enum(['dividend', 'jcp']),
+  "amount": zod.number().gt(updateInvestmentDividendResponseAmountExclusiveMin),
+  "paymentDate": zod.coerce.date(),
+  "status": zod.enum(['expected', 'received']),
+  "note": zod.string().nullable(),
+  "transactionId": zod.string().uuid().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+export const DeleteInvestmentDividendParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteInvestmentDividendResponse = zod.void()
+
+
 export const listTransactionsResponseAmountExclusiveMin = 0;
 
 

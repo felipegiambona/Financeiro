@@ -16,7 +16,7 @@ import {
   UpdateInvestmentParams,
   UpdateInvestmentResponse,
 } from "@workspace/api-zod";
-import { db, investmentFavoritesTable, investmentsTable, transactionsTable } from "@workspace/db";
+import { db, investmentDividendsTable, investmentFavoritesTable, investmentsTable, transactionsTable } from "@workspace/db";
 import {
   financialProfileTypeFrom,
   profileIdFrom,
@@ -461,6 +461,11 @@ router.delete("/investments/:id", async (req, res): Promise<void> => {
       eq(investmentsTable.profileId, profileId),
     )).returning({ id: investmentsTable.id });
     if (!deletedInvestment) return [];
+    await tx.delete(investmentDividendsTable).where(and(
+      eq(investmentDividendsTable.investmentId, deletedInvestment.id),
+      eq(investmentDividendsTable.userId, userId),
+      eq(investmentDividendsTable.profileId, profileId),
+    ));
     await tx.update(transactionsTable).set({ investmentId: null }).where(and(
       eq(transactionsTable.investmentId, deletedInvestment.id),
       eq(transactionsTable.userId, userId),

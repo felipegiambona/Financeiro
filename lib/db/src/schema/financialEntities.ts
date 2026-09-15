@@ -3,6 +3,7 @@ import { categoriesTable } from "./categories";
 import { goalMovementsTable } from "./goalMovements";
 import { goalsTable } from "./goals";
 import { investmentsTable } from "./investments";
+import { investmentDividendsTable } from "./investmentDividends";
 import { investmentFavoritesTable } from "./investmentFavorites";
 import { limitsTable } from "./limits";
 import { transactionsTable } from "./transactions";
@@ -22,6 +23,7 @@ export const financialEntityTables = [
   { name: "finance_limits", table: limitsTable },
   { name: "finance_goals", table: goalsTable },
   { name: "finance_cards", table: cardsTable },
+  { name: "finance_investment_dividends", table: investmentDividendsTable },
   { name: "finance_investments", table: investmentsTable },
   { name: "finance_investment_favorites", table: investmentFavoritesTable },
   { name: "finance_categories", table: categoriesTable },

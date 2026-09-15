@@ -10,6 +10,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { useInvestments, type RecentInvestmentAsset } from '@/context/InvestmentContext';
 import { useFinance } from '@/context/FinanceContext';
 import { useWallets } from '@/context/WalletContext';
+import { InvestmentDividends } from '@/components/InvestmentDividends';
 import { useColors } from '@/hooks/useColors';
 import type { Investment, InvestmentAssetType, InvestmentFavorite, InvestmentInput, InvestmentSearchResult, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
@@ -1097,6 +1098,7 @@ export default function InvestmentsScreen() {
             )}
           </>
         )}
+        {!favoriteOnly && !hasInvalidAssetType ? <InvestmentDividends /> : null}
       </KeyboardAwareScrollViewCompat>
 
       <Modal animationType="fade" transparent visible={editorOpen} onRequestClose={closeEditor}>
