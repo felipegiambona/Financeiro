@@ -28,7 +28,9 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
         <View style={styles.titleCopy}>
           <Text numberOfLines={1} style={[styles.title, { color: colors.foreground }]}>{card.name}</Text>
           <Text style={[styles.schedule, { color: colors.mutedForeground }]}>
-            Vencimento dia {card.dueDay} · Fecha dia {card.closingDay}
+            Vencimento dia {card.dueDay}
+            {'\n'}
+            Fecha dia {card.closingDay}
           </Text>
         </View>
         <View style={[styles.status, { backgroundColor: isOverdue ? colors.expenseSoft : isClosed ? colors.pendingSoft : colors.paidSoft }]}>
@@ -101,7 +103,7 @@ const styles = StyleSheet.create({
   icon: { width: 38, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   titleCopy: { flex: 1, minWidth: 0 },
   title: { fontSize: 13, fontFamily: 'Inter_700Bold' },
-  schedule: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  schedule: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular', marginTop: 3 },
   status: { borderRadius: 20, paddingHorizontal: 7, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 4 },
   statusDot: { width: 5, height: 5, borderRadius: 3 },
   statusText: { fontSize: 9, fontFamily: 'Inter_700Bold' },
