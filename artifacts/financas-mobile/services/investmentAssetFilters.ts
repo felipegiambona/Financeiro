@@ -134,6 +134,16 @@ export function countFavoriteItemsByAssetType(
   return counts;
 }
 
+export function toggleFavoriteGroup(
+  expandedTypes: ReadonlySet<InvestmentAssetType>,
+  assetType: InvestmentAssetType,
+): Set<InvestmentAssetType> {
+  const next = new Set(expandedTypes);
+  if (next.has(assetType)) next.delete(assetType);
+  else next.add(assetType);
+  return next;
+}
+
 export function investmentCompositionRoute(assetType: InvestmentAssetType) {
   return {
     pathname: '/more/investments' as const,

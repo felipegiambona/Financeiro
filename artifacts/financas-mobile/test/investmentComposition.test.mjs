@@ -9,6 +9,7 @@ import {
   resolveInvestmentAssetTypeParam,
   searchInvestmentsByNameOrTicker,
   summarizeInvestments,
+  toggleFavoriteGroup,
 } from '../services/investmentAssetFilters.ts';
 
 function investment(assetType, values = {}) {
@@ -149,5 +150,47 @@ test('mantém favoritos da carteira e do catálogo agrupados por tipo após reca
   assert.deepEqual(
     [...countFavoriteItemsByAssetType(reloaded).entries()],
     [['stock', 2], ['fii', 1], ['etf', 1], ['crypto', 1]],
+  );
+});
+
+test('cabeçalhos de favoritos recolhem e expandem apenas o próprio grupo', () => {
+  const favoriteItems = composeFavoriteItems(
+    [
+      investment('stock', { name: 'Ação 1' }),
+      investment('stock', { name: 'Ação 2' }),
+      investment('fii', { name: 'FII 1' }),
+      investment('crypto', { name: 'Cripto 1' }),
+    ].map((item) => ({ ...item, isFavorite: true })),
+    [favorite('stock', { name: 'Ação 3' })],
+  );
+  const counts = countFavoriteItemsByAssetType(favoriteItems);
+  let expandedTypes = new Set(['stock', 'fii', 'crypto']);
+
+  assert.deepEqual([...counts.entries()], [['stock', 3], ['fii', 1], ['crypto', 1]]);
+  assert.deepEqual(
+    favoriteItems.map(({ item }) => item.name),
+    ['Ação 1', 'Ação 2', 'Ação 3', 'FII 1', 'Cripto 1'],
+  );
+
+  expandedTypes = toggleFavoriteGroup(expandedTypes, 'stock');
+  assert.equal(expandedTypes.has('stock'), false);
+  assert.equal(expandedTypes.has('fii'), true);
+  assert.equal(expandedTypes.has('crypto'), true);
+  assert.deepEqual(
+    favoriteItems
+      .filter(({ item }) => expandedTypes.has(item.assetType))
+      .map(({ item }) => item.name),
+    ['FII 1', 'Cripto 1'],
+  );
+
+  expandedTypes = toggleFavoriteGroup(expandedTypes, 'stock');
+  assert.equal(expandedTypes.has('stock'), true);
+  assert.equal(expandedTypes.has('fii'), true);
+  assert.equal(expandedTypes.has('crypto'), true);
+  assert.deepEqual(
+    favoriteItems
+      .filter(({ item }) => expandedTypes.has(item.assetType))
+      .map(({ item }) => item.name),
+    ['Ação 1', 'Ação 2', 'Ação 3', 'FII 1', 'Cripto 1'],
   );
 });

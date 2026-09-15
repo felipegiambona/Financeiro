@@ -23,6 +23,7 @@ import {
   resolveInvestmentAssetTypeParam,
   searchInvestmentsByNameOrTicker,
   summarizeInvestments,
+  toggleFavoriteGroup as toggleFavoriteGroupState,
 } from '@/services/investmentAssetFilters';
 
 const ASSET_TYPES: Array<{ value: InvestmentAssetType; label: string }> = INVESTMENT_ASSET_TYPES.map((value) => ({
@@ -259,12 +260,7 @@ export default function InvestmentsScreen() {
       ?? 'Carteira não vinculada'
   );
   const toggleFavoriteGroup = (assetType: InvestmentAssetType) => {
-    setExpandedFavoriteTypes((current) => {
-      const next = new Set(current);
-      if (next.has(assetType)) next.delete(assetType);
-      else next.add(assetType);
-      return next;
-    });
+    setExpandedFavoriteTypes((current) => toggleFavoriteGroupState(current, assetType));
   };
 
   const totalsInvestments = favoriteOnly ? favoritePortfolioInvestments : filteredInvestments;
@@ -957,6 +953,7 @@ export default function InvestmentsScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`${favoriteGroupExpanded ? 'Recolher' : 'Expandir'} favoritos de ${assetTypeLabel(investment.assetType)}`}
                       accessibilityState={{ expanded: favoriteGroupExpanded }}
+                      testID={`favorite-group-header-${investment.assetType}`}
                       onPress={() => toggleFavoriteGroup(investment.assetType)}
                       style={({ pressed }) => [styles.favoriteGroupHeader, pressed && styles.pressed]}
                     >
@@ -964,7 +961,10 @@ export default function InvestmentsScreen() {
                         <Text style={[styles.favoriteGroupLabel, { color: colors.mutedForeground }]}>
                           {assetTypeLabel(investment.assetType)}
                         </Text>
-                        <View style={[styles.favoriteGroupCount, { backgroundColor: colors.secondary }]}>
+                        <View
+                          testID={`favorite-group-count-${investment.assetType}`}
+                          style={[styles.favoriteGroupCount, { backgroundColor: colors.secondary }]}
+                        >
                           <Text style={[styles.favoriteGroupCountText, { color: colors.mutedForeground }]}>
                             {favoriteGroupCounts.get(investment.assetType) ?? 0}
                           </Text>
