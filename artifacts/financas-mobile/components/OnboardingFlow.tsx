@@ -238,7 +238,6 @@ function BusinessProfileStep({ colors, onContinue, setError, error }: StepProps 
       setError('');
       await createProfile({
         type: 'business',
-        name: 'Empresarial',
         businessName: trimmedBusinessName,
         imageData,
       }, { activate: false });

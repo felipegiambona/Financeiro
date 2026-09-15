@@ -51,8 +51,12 @@ router.post("/financial-profiles", async (req, res): Promise<void> => {
   const businessName = typeof req.body?.businessName === "string" ? req.body.businessName.trim() : "";
   const imageData = typeof req.body?.imageData === "string" ? req.body.imageData : null;
 
-  if (!type || !name) {
-    res.status(400).json({ error: "type and name are required" });
+  if (!type) {
+    res.status(400).json({ error: "type is required" });
+    return;
+  }
+  if (type === "personal" && !name) {
+    res.status(400).json({ error: "name is required for personal profiles" });
     return;
   }
   if (type === "personal") {
@@ -73,7 +77,7 @@ router.post("/financial-profiles", async (req, res): Promise<void> => {
   const [profile] = await db.insert(financialProfilesTable).values({
     userId: userIdFrom(req),
     type,
-    name,
+    name: type === "business" ? businessName : name,
     businessName: type === "business" ? businessName : null,
     imageData: type === "business" ? imageData : null,
   }).returning();

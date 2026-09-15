@@ -1127,13 +1127,18 @@ components:
         updatedAt: { type: string, format: date-time }
     FinancialProfileInput:
       type: object
-      required: [type, name]
+      required: [type]
       properties:
         type:
           type: string
           enum: [personal, business]
-        name: { type: string, minLength: 1 }
-        businessName: { type: string }
+        name:
+          type: string
+          minLength: 1
+          description: Required only when creating a personal profile.
+        businessName:
+          type: string
+          description: Required only when creating a business profile.
         imageData: { type: ["string", "null"] }
     FinancialProfileUpdate:
       type: object

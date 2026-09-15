@@ -17,7 +17,7 @@ interface FinancialProfileContextValue {
   activeProfile: FinancialProfile | null;
   loading: boolean;
   switchProfile: (profileId: string) => Promise<void>;
-  createProfile: (input: { type: 'business'; name: string; businessName: string; imageData?: string | null }, options?: { activate?: boolean }) => Promise<FinancialProfile>;
+  createProfile: (input: { type: 'business'; businessName: string; imageData?: string | null }, options?: { activate?: boolean }) => Promise<FinancialProfile>;
   updateProfile: (profileId: string, input: { businessName?: string; imageData?: string | null }) => Promise<FinancialProfile>;
   deleteProfile: (profileId: string) => Promise<void>;
 }
@@ -79,7 +79,7 @@ export function FinancialProfileProvider({ children }: React.PropsWithChildren) 
   }, [profiles, session?.userId]);
 
   const createProfile = useCallback(async (
-    input: { type: 'business'; name: string; businessName: string; imageData?: string | null },
+    input: { type: 'business'; businessName: string; imageData?: string | null },
     options: { activate?: boolean } = {},
   ) => {
     const created = await createFinancialProfile(input);

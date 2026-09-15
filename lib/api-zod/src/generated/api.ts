@@ -34,8 +34,8 @@ export const ListFinancialProfilesResponse = zod.array(ListFinancialProfilesResp
 
 export const CreateFinancialProfileBody = zod.object({
   "type": zod.enum(['personal', 'business']),
-  "name": zod.string().min(1),
-  "businessName": zod.string().optional(),
+  "name": zod.string().min(1).optional().describe('Required only when creating a personal profile.'),
+  "businessName": zod.string().optional().describe('Required only when creating a business profile.'),
   "imageData": zod.string().nullish()
 })
 

@@ -9,8 +9,12 @@ import type { FinancialProfileInputType } from './financialProfileInputType';
 
 export interface FinancialProfileInput {
   type: FinancialProfileInputType;
-  /** @minLength 1 */
-  name: string;
+  /**
+     * Required only when creating a personal profile.
+     * @minLength 1
+     */
+  name?: string;
+  /** Required only when creating a business profile. */
   businessName?: string;
   /** @nullable */
   imageData?: string | null;

@@ -147,7 +147,6 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
       } else {
         await createProfile({
           type: 'business',
-          name: 'Empresarial',
           businessName: trimmedName,
           imageData: businessImageData,
         });
