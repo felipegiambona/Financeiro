@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreditCardCard } from '@/components/CreditCardCard';
 import { EmptyState, LoadingState } from '@/components/StateView';
@@ -48,20 +48,30 @@ export default function CardDetailsScreen() {
 
   const handlePay = (invoiceMonth: string, amount: number, label: string) => {
     if (!card) return;
+    const message = `A ${label.toLocaleLowerCase()} de ${card.name}, no valor de ${formatCurrency(amount)}, será marcada como paga.`;
+    const executePayment = () => {
+      setPayingInvoiceMonth(invoiceMonth);
+      void payCardInvoice(card.id, invoiceMonth)
+        .then(() => loadHistory())
+        .catch(() => Alert.alert('Não foi possível pagar', 'Tente novamente.'))
+        .finally(() => setPayingInvoiceMonth(null));
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`Pagar fatura?\n\n${message}`)) {
+        executePayment();
+      }
+      return;
+    }
+
     Alert.alert(
       'Pagar fatura?',
-      `A ${label.toLocaleLowerCase()} de ${card.name}, no valor de ${formatCurrency(amount)}, será marcada como paga.`,
+      message,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Pagar',
-          onPress: () => {
-            setPayingInvoiceMonth(invoiceMonth);
-            void payCardInvoice(card.id, invoiceMonth)
-              .then(() => loadHistory())
-              .catch(() => Alert.alert('Não foi possível pagar', 'Tente novamente.'))
-              .finally(() => setPayingInvoiceMonth(null));
-          },
+          onPress: executePayment,
         },
       ],
     );

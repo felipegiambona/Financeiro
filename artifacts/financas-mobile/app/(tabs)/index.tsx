@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useCallback, useMemo } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -88,16 +88,28 @@ export default function DashboardScreen() {
     { investedAmount: 0, currentValue: 0, returnAmount: 0 },
   ), [investments]);
   const handlePayCard = useCallback((cardId: string, cardName: string) => {
+    const message = `A fatura atual de ${cardName} será marcada como paga e zerada.`;
+    const executePayment = () => {
+      void payCardInvoice(cardId).catch(() => {
+        Alert.alert('Não foi possível pagar', 'Tente novamente.');
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`Pagar fatura?\n\n${message}`)) {
+        executePayment();
+      }
+      return;
+    }
+
     Alert.alert(
       'Pagar fatura?',
-      `A fatura atual de ${cardName} será marcada como paga e zerada.`,
+      message,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Pagar',
-          onPress: () => void payCardInvoice(cardId).catch(() => {
-            Alert.alert('Não foi possível pagar', 'Tente novamente.');
-          }),
+          onPress: executePayment,
         },
       ],
     );

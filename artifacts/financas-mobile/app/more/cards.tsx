@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreditCardCard } from '@/components/CreditCardCard';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
@@ -99,19 +99,29 @@ export default function CardsScreen() {
   };
 
   const handlePay = (card: Card) => {
+    const message = `A fatura atual de ${card.name} será marcada como paga e zerada.`;
+    const executePayment = () => {
+      setPayingCardId(card.id);
+      void payCardInvoice(card.id)
+        .catch(() => Alert.alert('Não foi possível pagar', 'Tente novamente.'))
+        .finally(() => setPayingCardId(null));
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`Pagar fatura?\n\n${message}`)) {
+        executePayment();
+      }
+      return;
+    }
+
     Alert.alert(
       'Pagar fatura?',
-      `A fatura atual de ${card.name} será marcada como paga e zerada.`,
+      message,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Pagar',
-          onPress: () => {
-            setPayingCardId(card.id);
-            void payCardInvoice(card.id)
-              .catch(() => Alert.alert('Não foi possível pagar', 'Tente novamente.'))
-              .finally(() => setPayingCardId(null));
-          },
+          onPress: executePayment,
         },
       ],
     );
