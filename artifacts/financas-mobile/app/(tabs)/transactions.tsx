@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -107,7 +107,7 @@ export default function TransactionsScreen() {
     updateTransactions,
   } = useFinance();
   const { wallets } = useWallets();
-  const { cards } = useCards();
+  const { cards, refresh: refreshCards } = useCards();
   const { categories } = useCategories();
   const routeTypeFilter = Array.isArray(typeFilterParam) ? typeFilterParam[0] : typeFilterParam;
   const routeStatusFilter = Array.isArray(statusFilterParam) ? statusFilterParam[0] : statusFilterParam;
@@ -140,6 +140,11 @@ export default function TransactionsScreen() {
   const [batchDueDatePickerOpen, setBatchDueDatePickerOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<TransactionExportFormat | null>(null);
+
+  useFocusEffect(useCallback(() => {
+    void refreshCards();
+  }, [refreshCards]));
+
   useEffect(() => {
     const validTypeFilter = TYPE_FILTERS.some((option) => option.value === routeTypeFilter)
       ? routeTypeFilter as TypeFilter
