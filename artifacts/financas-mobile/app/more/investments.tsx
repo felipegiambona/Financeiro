@@ -164,7 +164,7 @@ function getInitialForm(investment?: Investment) {
 export default function InvestmentsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { assetType: assetTypeParam } = useLocalSearchParams<{ assetType?: string }>();
+  const { assetType: assetTypeParam, tab: tabParam } = useLocalSearchParams<{ assetType?: string; tab?: string }>();
   const {
     investments,
     favoriteAssets,
@@ -193,10 +193,15 @@ export default function InvestmentsScreen() {
     [assetTypeParam],
   );
   const { assetType: selectedAssetType, invalid: hasInvalidAssetType } = routeFilter;
-  const [activeTab, setActiveTab] = useState<'assets' | 'favorites' | 'dividends'>('assets');
+  const [activeTab, setActiveTab] = useState<'assets' | 'favorites' | 'dividends'>(
+    () => tabParam === 'dividends' ? 'dividends' : 'assets',
+  );
   const favoriteOnly = activeTab === 'favorites';
   const dividendsOnly = activeTab === 'dividends';
   const hasDisplayedData = investments.length > 0 || favoriteAssets.length > 0;
+  useEffect(() => {
+    if (tabParam === 'dividends') setActiveTab('dividends');
+  }, [tabParam]);
   const [assetSearchQuery, setAssetSearchQuery] = useState('');
   const [favoriteSearchQuery, setFavoriteSearchQuery] = useState('');
   const [favoriteSearchResults, setFavoriteSearchResults] = useState<InvestmentSearchResult[]>([]);

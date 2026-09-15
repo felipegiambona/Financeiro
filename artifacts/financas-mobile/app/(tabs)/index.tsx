@@ -20,12 +20,13 @@ import { useWallets } from '@/context/WalletContext';
 import { useDashboardPreferences } from '@/context/DashboardPreferencesContext';
 import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 import { useInvestments } from '@/context/InvestmentContext';
+import { useDividends } from '@/context/DividendContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateMonthlyTotals, calculateWalletTotals } from '@/services/financialRules';
 import { calculateLimitUsage } from '@/services/limitRules';
 import { calculateGoalProgress } from '@/services/goalRules';
 import { getCardInvoiceNotifications, getPendingTransactionOccurrences } from '@/services/pendingNotifications';
-import { getSaoPauloHour } from '@/utils/date';
+import { getSaoPauloHour, getSaoPauloMonthKey, parseStoredDate } from '@/utils/date';
 import { formatCurrency } from '@/utils/currency';
 
 const DASHBOARD_CARD_GAP = 24;
@@ -48,12 +49,19 @@ export default function DashboardScreen() {
     error: investmentsError,
     refresh: refreshInvestments,
   } = useInvestments();
+  const {
+    dividends,
+    loading: dividendsLoading,
+    error: dividendsError,
+    refresh: refreshDividends,
+  } = useDividends();
   const { visibility } = useDashboardPreferences();
   const dashboardCardWidth = Math.max(240, Math.min(420, windowWidth - 72));
   useFocusEffect(useCallback(() => {
     void refreshGoals();
     void refreshCards();
-  }, [refreshCards, refreshGoals]));
+    void refreshDividends();
+  }, [refreshCards, refreshDividends, refreshGoals]));
   const greeting = useMemo(() => {
     const hour = getSaoPauloHour();
     const timeGreeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -89,6 +97,21 @@ export default function DashboardScreen() {
     }),
     { investedAmount: 0, currentValue: 0, returnAmount: 0 },
   ), [investments]);
+  const dividendSummary = useMemo(() => {
+    const selectedMonth = getSaoPauloMonthKey();
+    return dividends.reduce(
+      (summary, dividend) => {
+        if (getSaoPauloMonthKey(parseStoredDate(dividend.paymentDate)) !== selectedMonth) {
+          return summary;
+        }
+        return {
+          received: summary.received + (dividend.status === 'received' ? dividend.amount : 0),
+          expected: summary.expected + (dividend.status === 'expected' ? dividend.amount : 0),
+        };
+      },
+      { received: 0, expected: 0 },
+    );
+  }, [dividends]);
   const handlePayCard = useCallback((cardId: string, cardName: string) => {
     const message = `A fatura atual de ${cardName} será marcada como paga e zerada.`;
     const executePayment = () => {
@@ -525,6 +548,54 @@ export default function DashboardScreen() {
                 </Pressable>
               )}
             </View> : null}
+            {isPersonalProfile && visibility.investments ? <View style={styles.dividendsSection}>
+              <View style={styles.dividendsHeader}>
+                <View>
+                  <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Proventos</Text>
+                  <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Recebimentos da sua carteira neste mês.</Text>
+                </View>
+                <Feather name="dollar-sign" size={17} color={colors.mutedForeground} />
+              </View>
+              {dividendsLoading ? (
+                <View style={[styles.dividendStateCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.dividendState, { color: colors.mutedForeground }]}>Carregando proventos...</Text>
+                </View>
+              ) : dividendsError ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Tentar carregar proventos novamente"
+                  onPress={() => void refreshDividends()}
+                  style={({ pressed }) => [styles.dividendStateCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <Feather name="alert-circle" size={19} color={colors.expense} />
+                  <Text style={[styles.dividendState, { color: colors.mutedForeground }]}>Não foi possível carregar seus proventos. Toque para tentar novamente.</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Abrir resumo de proventos"
+                  onPress={() => router.push({ pathname: '/more/investments', params: { tab: 'dividends' } })}
+                  style={({ pressed }) => [styles.dividendSummaryCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
+                >
+                  <View style={[styles.dividendIcon, { backgroundColor: colors.secondary }]}>
+                    <Feather name="dollar-sign" size={17} color={colors.foreground} />
+                  </View>
+                  <View style={styles.dividendSummaryItem}>
+                    <Text style={[styles.investmentLabel, { color: colors.mutedForeground }]}>Recebidos</Text>
+                    <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.dividendSummaryValue, { color: colors.income }]}>
+                      {formatCurrency(dividendSummary.received)}
+                    </Text>
+                  </View>
+                  <View style={styles.dividendSummaryItem}>
+                    <Text style={[styles.investmentLabel, { color: colors.mutedForeground }]}>Previstos</Text>
+                    <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.dividendSummaryValue, { color: colors.pending }]}>
+                      {formatCurrency(dividendSummary.expected)}
+                    </Text>
+                  </View>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              )}
+            </View> : null}
             <View style={styles.customizeSection}>
               <Pressable
                 accessibilityRole="button"
@@ -602,6 +673,8 @@ const styles = StyleSheet.create({
   cardsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   investmentsSection: { marginTop: 24 },
   investmentsHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  dividendsSection: { marginTop: 24 },
+  dividendsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   investmentStateCard: { minHeight: 72, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
   investmentState: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   investmentSummaryCard: { minHeight: 82, borderWidth: 1, borderRadius: 9, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -610,6 +683,12 @@ const styles = StyleSheet.create({
   investmentSummaryResult: { flex: 0.9, minWidth: 0 },
   investmentLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   investmentValue: { fontSize: 14, fontFamily: 'Inter_700Bold', marginTop: 4 },
+  dividendStateCard: { minHeight: 72, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividendState: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
+  dividendSummaryCard: { minHeight: 82, borderWidth: 1, borderRadius: 9, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividendIcon: { width: 31, height: 31, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  dividendSummaryItem: { flex: 1, minWidth: 0 },
+  dividendSummaryValue: { fontSize: 14, fontFamily: 'Inter_700Bold', marginTop: 4 },
   emptyCard: { minHeight: 72, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
   cardState: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   sectionTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
