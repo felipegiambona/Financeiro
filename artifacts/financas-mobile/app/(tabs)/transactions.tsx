@@ -1470,7 +1470,7 @@ const styles = StyleSheet.create({
   batchEditOptionText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   batchEditDateButton: { minHeight: 36, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   batchEditActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  monthSummary: { paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between' },
+  monthSummary: { paddingTop: 5, flexDirection: 'row', justifyContent: 'space-between' },
   summaryLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   summaryValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },
 });
