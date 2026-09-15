@@ -82,6 +82,10 @@ function isFavoriteDraft(investment: Investment): boolean {
 
 type FavoriteDetail = Investment | InvestmentFavorite;
 
+type FavoriteListItem =
+  | { kind: 'investment'; item: Investment }
+  | { kind: 'catalog'; item: InvestmentFavorite };
+
 function isPortfolioFavorite(value: FavoriteDetail): value is Investment {
   return 'quantity' in value;
 }
@@ -168,17 +172,30 @@ export default function InvestmentsScreen() {
     () => filteredInvestments.filter((investment) => investment.isFavorite),
     [filteredInvestments],
   );
-  const favoriteItems = useMemo(() => {
+  const favoriteItems = useMemo<FavoriteListItem[]>(() => {
     const portfolioKeys = new Set(favoritePortfolioInvestments.map((investment) => (
       `${investment.assetType}:${(investment.ticker ?? '').trim().toLocaleLowerCase() || investment.name.trim().toLocaleLowerCase()}`
     )));
+    const typeOrder = new Map(ASSET_TYPES.map((item, index) => [item.value, index]));
     return [
       ...favoritePortfolioInvestments.map((investment) => ({ kind: 'investment' as const, item: investment })),
       ...favoriteAssets
         .filter((favorite) => !portfolioKeys.has(`${favorite.assetType}:${favorite.ticker.trim().toLocaleLowerCase() || favorite.name.trim().toLocaleLowerCase()}`))
         .map((favorite) => ({ kind: 'catalog' as const, item: favorite })),
-    ];
+    ].sort((first, second) => {
+      const typeDifference = (typeOrder.get(first.item.assetType) ?? ASSET_TYPES.length)
+        - (typeOrder.get(second.item.assetType) ?? ASSET_TYPES.length);
+      if (typeDifference !== 0) return typeDifference;
+      return first.item.name.localeCompare(second.item.name, 'pt-BR');
+    });
   }, [favoriteAssets, favoritePortfolioInvestments]);
+  const favoriteGroupCounts = useMemo(() => {
+    const counts = new Map<InvestmentAssetType, number>();
+    favoriteItems.forEach(({ item }) => {
+      counts.set(item.assetType, (counts.get(item.assetType) ?? 0) + 1);
+    });
+    return counts;
+  }, [favoriteItems]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [favoriteDetails, setFavoriteDetails] = useState<FavoriteDetail | null>(null);
   const [favoriteAssetToRegister, setFavoriteAssetToRegister] = useState<string | null>(null);
@@ -707,7 +724,7 @@ export default function InvestmentsScreen() {
               </View>
             ) : (
               <View style={styles.list}>
-                {(favoriteOnly ? favoriteItems : filteredInvestments).map((entry) => {
+                {(favoriteOnly ? favoriteItems : filteredInvestments).map((entry, index) => {
                   const investment: Investment = (favoriteOnly
                     ? ((entry as typeof favoriteItems[number]).kind === 'investment'
                       ? (entry as typeof favoriteItems[number]).item
@@ -716,98 +733,116 @@ export default function InvestmentsScreen() {
                   const favoriteDetail = favoriteOnly
                     ? (entry as typeof favoriteItems[number]).item
                     : investment;
-                  return favoriteOnly ? (
-                  <Pressable
-                    key={investment.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Ver detalhes de ${investment.name}`}
-                    onPress={() => setFavoriteDetails(favoriteDetail)}
-                    style={({ pressed }) => [styles.investmentCard, styles.favoriteCompactCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
-                  >
-                    <View style={styles.investmentHeader}>
-                      <View style={styles.investmentIdentity}>
-                        <View style={[styles.investmentIcon, styles.favoriteCompactIcon, { backgroundColor: colors.secondary }]}>
-                          <Feather name="star" size={15} color={colors.accent} />
-                        </View>
-                        <View style={styles.investmentCopy}>
-                          <Text numberOfLines={1} style={[styles.investmentName, { color: colors.foreground }]}>{investment.name}</Text>
-                          <Text numberOfLines={1} style={[styles.investmentMeta, { color: colors.mutedForeground }]}>
-                            {investment.ticker ? `${investment.ticker} · ` : ''}{assetTypeLabel(investment.assetType)}
+                  const favoriteGroupStart = favoriteOnly
+                    && (index === 0 || favoriteItems[index - 1]?.item.assetType !== investment.assetType);
+                  return (
+                    <React.Fragment key={`${favoriteOnly ? 'favorite' : 'investment'}-${investment.id}`}>
+                      {favoriteGroupStart ? (
+                        <View style={styles.favoriteGroupHeader}>
+                          <Text style={[styles.favoriteGroupLabel, { color: colors.mutedForeground }]}>
+                            {assetTypeLabel(investment.assetType)}
                           </Text>
+                          <View style={[styles.favoriteGroupCount, { backgroundColor: colors.secondary }]}>
+                            <Text style={[styles.favoriteGroupCountText, { color: colors.mutedForeground }]}>
+                              {favoriteGroupCounts.get(investment.assetType) ?? 0}
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                      <View style={styles.favoriteCompactAction}>
-                        <Feather name="star" size={14} color={colors.accent} />
-                        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-                      </View>
-                    </View>
-                  </Pressable>
-                ) : (
-                  <View key={investment.id} style={[styles.investmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <View style={styles.investmentHeader}>
-                      <View style={styles.investmentIdentity}>
-                        <View style={[styles.investmentIcon, { backgroundColor: colors.secondary }]}>
-                          <Feather name="trending-up" size={17} color={colors.foreground} />
-                        </View>
-                        <View style={styles.investmentCopy}>
-                          <Text numberOfLines={1} style={[styles.investmentName, { color: colors.foreground }]}>{investment.name}</Text>
-                          <Text style={[styles.investmentMeta, { color: colors.mutedForeground }]}>
-                            {investment.ticker ? `${investment.ticker} · ` : ''}{assetTypeLabel(investment.assetType)} · {walletTitleFor(investment)}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.investmentActions}>
+                      ) : null}
+                      {favoriteOnly ? (
                         <Pressable
                           accessibilityRole="button"
-                          accessibilityLabel={investment.isFavorite ? `Remover ${investment.name} dos favoritos` : `Adicionar ${investment.name} aos favoritos`}
-                          onPress={() => void toggleFavorite(investment.id).catch(() => Alert.alert('Não foi possível atualizar o favorito', 'Tente novamente.'))}
-                          style={({ pressed }) => [styles.iconButton, { backgroundColor: investment.isFavorite ? colors.accent : colors.secondary }, pressed && styles.pressed]}
+                          accessibilityLabel={`Ver detalhes de ${investment.name}`}
+                          onPress={() => setFavoriteDetails(favoriteDetail)}
+                          style={({ pressed }) => [styles.investmentCard, styles.favoriteCompactCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
                         >
-                          <Feather name="star" size={14} color={investment.isFavorite ? colors.accentForeground : colors.foreground} />
+                          <View style={styles.investmentHeader}>
+                            <View style={styles.investmentIdentity}>
+                              <View style={[styles.investmentIcon, styles.favoriteCompactIcon, { backgroundColor: colors.secondary }]}>
+                                <Feather name="star" size={15} color={colors.accent} />
+                              </View>
+                              <View style={styles.investmentCopy}>
+                                <Text numberOfLines={1} style={[styles.investmentName, { color: colors.foreground }]}>{investment.name}</Text>
+                                <Text numberOfLines={1} style={[styles.investmentMeta, { color: colors.mutedForeground }]}>
+                                  {investment.ticker ? `${investment.ticker} · ` : ''}{assetTypeLabel(investment.assetType)}
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.favoriteCompactAction}>
+                              <Feather name="star" size={14} color={colors.accent} />
+                              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                            </View>
+                          </View>
                         </Pressable>
-                        <Pressable accessibilityLabel={`Editar ${investment.name}`} onPress={() => openEditor(investment)} style={({ pressed }) => [styles.iconButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
-                          <Feather name="edit-2" size={14} color={colors.foreground} />
-                        </Pressable>
-                        <Pressable accessibilityLabel={`Excluir ${investment.name}`} onPress={() => setInvestmentToDelete(investment)} style={({ pressed }) => [styles.iconButton, { backgroundColor: colors.expenseSoft }, pressed && styles.pressed]}>
-                          <Feather name="trash-2" size={14} color={colors.expense} />
-                        </Pressable>
-                      </View>
-                    </View>
-                    <View style={[styles.investmentDetails, { borderTopColor: colors.border }]}>
-                      <View>
-                        <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Quantidade</Text>
-                        <Text style={[styles.detailValue, { color: colors.foreground }]}>{investment.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 8 })}</Text>
-                      </View>
-                      <View>
-                        <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Preço médio</Text>
-                        <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(investment.averagePrice)}</Text>
-                      </View>
-                      <View style={styles.detailRight}>
-                        <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Valor atual</Text>
-                        <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(investment.currentValue)}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.returnRow}>
-                      <Text style={[styles.returnLabel, { color: colors.mutedForeground }]}>Rentabilidade</Text>
-                      <Text style={[styles.returnValue, { color: investment.returnAmount >= 0 ? colors.income : colors.expense }]}>
-                        {formatCurrency(investment.returnAmount)} · {formatPercentage(investment.returnPercentage)}
-                      </Text>
-                    </View>
-                    <View style={[styles.quoteRow, { borderTopColor: colors.border }]}>
-                      <Feather
-                        name={investment.valuationMode === 'automatic' && investment.quoteStatus === 'updated' ? 'check-circle' : 'info'}
-                        size={12}
-                        color={investment.quoteStatus === 'error' || investment.quoteStatus === 'unavailable' ? colors.expense : colors.mutedForeground}
-                      />
-                      <View style={styles.quoteCopy}>
-                        <Text style={[styles.quoteText, { color: colors.mutedForeground }]}>{quoteStatusText(investment)}</Text>
-                        {investment.quoteError && investment.valuationMode === 'automatic' && (
-                          <Text style={[styles.quoteError, { color: colors.expense }]}>{investment.quoteError}</Text>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                )})}
+                      ) : (
+                        <View style={[styles.investmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                          <View style={styles.investmentHeader}>
+                            <View style={styles.investmentIdentity}>
+                              <View style={[styles.investmentIcon, { backgroundColor: colors.secondary }]}>
+                                <Feather name="trending-up" size={17} color={colors.foreground} />
+                              </View>
+                              <View style={styles.investmentCopy}>
+                                <Text numberOfLines={1} style={[styles.investmentName, { color: colors.foreground }]}>{investment.name}</Text>
+                                <Text style={[styles.investmentMeta, { color: colors.mutedForeground }]}>
+                                  {investment.ticker ? `${investment.ticker} · ` : ''}{assetTypeLabel(investment.assetType)} · {walletTitleFor(investment)}
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.investmentActions}>
+                              <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={investment.isFavorite ? `Remover ${investment.name} dos favoritos` : `Adicionar ${investment.name} aos favoritos`}
+                                onPress={() => void toggleFavorite(investment.id).catch(() => Alert.alert('Não foi possível atualizar o favorito', 'Tente novamente.'))}
+                                style={({ pressed }) => [styles.iconButton, { backgroundColor: investment.isFavorite ? colors.accent : colors.secondary }, pressed && styles.pressed]}
+                              >
+                                <Feather name="star" size={14} color={investment.isFavorite ? colors.accentForeground : colors.foreground} />
+                              </Pressable>
+                              <Pressable accessibilityLabel={`Editar ${investment.name}`} onPress={() => openEditor(investment)} style={({ pressed }) => [styles.iconButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
+                                <Feather name="edit-2" size={14} color={colors.foreground} />
+                              </Pressable>
+                              <Pressable accessibilityLabel={`Excluir ${investment.name}`} onPress={() => setInvestmentToDelete(investment)} style={({ pressed }) => [styles.iconButton, { backgroundColor: colors.expenseSoft }, pressed && styles.pressed]}>
+                                <Feather name="trash-2" size={14} color={colors.expense} />
+                              </Pressable>
+                            </View>
+                          </View>
+                          <View style={[styles.investmentDetails, { borderTopColor: colors.border }]}>
+                            <View>
+                              <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Quantidade</Text>
+                              <Text style={[styles.detailValue, { color: colors.foreground }]}>{investment.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 8 })}</Text>
+                            </View>
+                            <View>
+                              <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Preço médio</Text>
+                              <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(investment.averagePrice)}</Text>
+                            </View>
+                            <View style={styles.detailRight}>
+                              <Text style={[styles.detailLabel, { color: colors.mutedForeground }]}>Valor atual</Text>
+                              <Text style={[styles.detailValue, { color: colors.foreground }]}>{formatCurrency(investment.currentValue)}</Text>
+                            </View>
+                          </View>
+                          <View style={styles.returnRow}>
+                            <Text style={[styles.returnLabel, { color: colors.mutedForeground }]}>Rentabilidade</Text>
+                            <Text style={[styles.returnValue, { color: investment.returnAmount >= 0 ? colors.income : colors.expense }]}>
+                              {formatCurrency(investment.returnAmount)} · {formatPercentage(investment.returnPercentage)}
+                            </Text>
+                          </View>
+                          <View style={[styles.quoteRow, { borderTopColor: colors.border }]}>
+                            <Feather
+                              name={investment.valuationMode === 'automatic' && investment.quoteStatus === 'updated' ? 'check-circle' : 'info'}
+                              size={12}
+                              color={investment.quoteStatus === 'error' || investment.quoteStatus === 'unavailable' ? colors.expense : colors.mutedForeground}
+                            />
+                            <View style={styles.quoteCopy}>
+                              <Text style={[styles.quoteText, { color: colors.mutedForeground }]}>{quoteStatusText(investment)}</Text>
+                              {investment.quoteError && investment.valuationMode === 'automatic' && (
+                                <Text style={[styles.quoteError, { color: colors.expense }]}>{investment.quoteError}</Text>
+                              )}
+                            </View>
+                          </View>
+                        </View>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </View>
             )}
           </>
@@ -1283,6 +1318,10 @@ const styles = StyleSheet.create({
   favoriteCompactCard: { padding: 10 },
   favoriteCompactIcon: { width: 31, height: 31, borderRadius: 7 },
   favoriteCompactAction: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  favoriteGroupHeader: { minHeight: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2, marginTop: 2 },
+  favoriteGroupLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 0.8, textTransform: 'uppercase' },
+  favoriteGroupCount: { minWidth: 23, height: 22, borderRadius: 7, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  favoriteGroupCountText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   investmentHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 9 },
   investmentIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 9 },
   investmentIcon: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
