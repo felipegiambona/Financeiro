@@ -143,7 +143,7 @@ export default function NotificationsScreen() {
             ) : null}
             {closedCardInvoices.length > 0 ? (
               <>
-                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Faturas fechadas em dia</Text>
+                <Text style={[styles.sectionLabel, pendingTransactions.length > 0 && styles.sectionLabelSpaced, { color: colors.mutedForeground }]}>Faturas fechadas em dia</Text>
                 <View style={styles.pendingList}>
                   {closedCardInvoices.map(({ card, invoice }) => {
                     const key = `invoice:${card.id}:${invoice.invoiceMonth}`;
@@ -151,19 +151,19 @@ export default function NotificationsScreen() {
                     return (
                       <View key={key} style={[styles.pendingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <View style={styles.pendingTop}>
-                          <View style={[styles.transactionIcon, { backgroundColor: colors.secondary }]}>
-                            <Feather name="credit-card" size={17} color={colors.foreground} />
+                          <View style={[styles.transactionIcon, { backgroundColor: colors.transferSoft }]}>
+                            <Feather name="credit-card" size={17} color={colors.transfer} />
                           </View>
                           <View style={styles.transactionCopy}>
                             <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{card.name}</Text>
-                            <Text style={[styles.date, { color: colors.primary }]}>
+                            <Text style={[styles.date, { color: colors.transfer }]}>
                               Fatura de {formatMonthYearLabel(new Date(`${invoice.invoiceMonth}-01T12:00:00`))}
                             </Text>
                           </View>
-                          <Text style={[styles.amount, { color: colors.primary }]}>{formatCurrency(invoice.amount)}</Text>
+                          <Text style={[styles.amount, { color: colors.transfer }]}>{formatCurrency(invoice.amount)}</Text>
                         </View>
                         <View style={[styles.pendingBottom, { borderTopColor: colors.border }]}>
-                          <Text style={[styles.status, { color: colors.primary }]}>Fechada em dia</Text>
+                          <Text style={[styles.status, { color: colors.transfer }]}>Fechada em dia</Text>
                           <Pressable
                             accessibilityRole="button"
                             accessibilityLabel={`Pagar fatura fechada do cartão ${card.name}`}
@@ -172,12 +172,12 @@ export default function NotificationsScreen() {
                             onPress={() => void payInvoice(card.id, invoice.invoiceMonth)}
                             style={({ pressed }) => [
                               styles.payButton,
-                              { backgroundColor: colors.primary },
+                              { backgroundColor: colors.transfer },
                               isUpdating && styles.updating,
                               pressed && styles.pressed,
                             ]}
                           >
-                            <Text style={[styles.payButtonText, { color: colors.primaryForeground }]}>
+                            <Text style={[styles.payButtonText, { color: colors.background }]}>
                               {isUpdating ? 'Salvando...' : 'Pagar fatura'}
                             </Text>
                           </Pressable>
@@ -190,7 +190,7 @@ export default function NotificationsScreen() {
             ) : null}
             {overdueCardInvoices.length > 0 ? (
               <>
-                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Faturas atrasadas</Text>
+                <Text style={[styles.sectionLabel, (pendingTransactions.length > 0 || closedCardInvoices.length > 0) && styles.sectionLabelSpaced, { color: colors.mutedForeground }]}>Faturas atrasadas</Text>
                 <View style={styles.pendingList}>
                   {overdueCardInvoices.map(({ card, invoice }) => {
                     const key = `invoice:${card.id}:${invoice.invoiceMonth}`;
@@ -251,6 +251,7 @@ const styles = StyleSheet.create({
   summaryTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   summaryText: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular', marginTop: 3 },
   sectionLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 },
+  sectionLabelSpaced: { marginTop: 20 },
   pendingList: { gap: 8 },
   pendingCard: { borderWidth: 1, borderRadius: 9, padding: 11 },
   pendingTop: { flexDirection: 'row', alignItems: 'center', gap: 9 },
