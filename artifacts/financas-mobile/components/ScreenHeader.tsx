@@ -15,6 +15,7 @@ interface ScreenHeaderProps {
   onNotificationPress?: () => void;
   showBack?: boolean;
   backFallback?: Href;
+  onBack?: () => void;
   rightContent?: React.ReactNode;
 }
 
@@ -28,6 +29,7 @@ export function ScreenHeader({
   onNotificationPress,
   showBack = false,
   backFallback = '/(tabs)',
+  onBack,
   rightContent,
 }: ScreenHeaderProps) {
   const colors = useColors();
@@ -38,7 +40,7 @@ export function ScreenHeader({
           <Pressable
             accessibilityLabel="Voltar"
             hitSlop={12}
-            onPress={() => goBackOrReplace(backFallback)}
+            onPress={onBack ?? (() => goBackOrReplace(backFallback))}
             style={({ pressed }) => [styles.backButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
           >
             <Feather name="arrow-left" size={20} color={colors.foreground} />
