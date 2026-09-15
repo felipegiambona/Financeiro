@@ -258,7 +258,6 @@ export default function TransactionsScreen() {
   const filteredSummary = useMemo(
     () => filteredTransactions.reduce(
       (summary, transaction) => {
-        if (transaction.cardId) return summary;
         if (transaction.type === 'income') {
           summary.income += transaction.amount;
         } else if (transaction.type === 'expense') {
@@ -289,12 +288,9 @@ export default function TransactionsScreen() {
     && !dateRangeEnd
     && (typeFilter === 'all' || typeFilter === 'expense')
     && cardInvoicesForMonth.length > 0;
-  const cardInvoicesTotal = showCardInvoices
-    ? cardInvoicesForMonth.reduce((total, { invoice }) => total + invoice.amount, 0)
-    : 0;
   const monthTotal = typeFilter === 'transfer'
     ? filteredSummary.transferTotal
-    : filteredSummary.income - filteredSummary.expense + filteredSummary.transfer + cardInvoicesTotal;
+    : filteredSummary.income - filteredSummary.expense + filteredSummary.transfer;
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const leaveSelectionMode = () => {
@@ -844,6 +840,16 @@ export default function TransactionsScreen() {
                 ))}
               </View>
             ))}
+            {filteredTransactions.length > 0 ? (
+              <View style={styles.monthSummary}>
+                <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
+                  Total
+                </Text>
+                <Text style={[styles.summaryValue, { color: colors.foreground }]}>
+                  {formatCurrency(monthTotal)}
+                </Text>
+              </View>
+            ) : null}
             {showCardInvoices ? (
               <View style={styles.cardInvoicesSection}>
                 <View style={styles.cardInvoicesHeader}>
@@ -888,16 +894,6 @@ export default function TransactionsScreen() {
                     </Pressable>
                   );
                 })}
-              </View>
-            ) : null}
-            {filteredTransactions.length > 0 || showCardInvoices ? (
-              <View style={styles.monthSummary}>
-                <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
-                  Total
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.foreground }]}>
-                  {formatCurrency(monthTotal)}
-                </Text>
               </View>
             ) : null}
           </>

@@ -13,4 +13,4 @@
 - [Onboarding state recovery](onboarding-state-recovery.md) — wallet load errors and stale local steps must not be treated as a new profile during profile switching.
 - [Card invoice timezone](card-invoice-timezone.md) — invoice status and closing dates must use the America/Sao_Paulo calendar, not the server's UTC date.
 - [Forecast overdue invoices](forecast-overdue-invoices.md) — current-month forecasts must include unpaid overdue card invoices without duplicating them in their original month.
-- [Transaction month totals](transaction-month-total.md) — the transactions screen total includes the card invoice summaries displayed for the selected month.
+- [Transaction month totals](transaction-month-total.md) — the transactions screen total includes only listed launches, not the separate card invoice summary.
