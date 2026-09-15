@@ -165,6 +165,7 @@ export default function InvestmentsScreen() {
   const { assetType: selectedAssetType, invalid: hasInvalidAssetType } = routeFilter;
   const [activeTab, setActiveTab] = useState<'assets' | 'favorites'>('assets');
   const favoriteOnly = activeTab === 'favorites';
+  const [assetSearchQuery, setAssetSearchQuery] = useState('');
   const [favoriteSearchQuery, setFavoriteSearchQuery] = useState('');
   const [favoriteSearchResults, setFavoriteSearchResults] = useState<InvestmentSearchResult[]>([]);
   const [favoriteSearchLoading, setFavoriteSearchLoading] = useState(false);
@@ -174,6 +175,14 @@ export default function InvestmentsScreen() {
     () => filterInvestmentsByAssetType(investments, routeFilter),
     [investments, routeFilter.assetType, routeFilter.invalid],
   );
+  const searchedInvestments = useMemo(() => {
+    const query = assetSearchQuery.trim().toLocaleLowerCase();
+    if (!query) return filteredInvestments;
+    return filteredInvestments.filter((investment) => (
+      investment.name.toLocaleLowerCase().includes(query)
+      || (investment.ticker ?? '').toLocaleLowerCase().includes(query)
+    ));
+  }, [assetSearchQuery, filteredInvestments]);
   const favoritePortfolioInvestments = useMemo(
     () => filteredInvestments.filter((investment) => investment.isFavorite),
     [filteredInvestments],
@@ -750,16 +759,49 @@ export default function InvestmentsScreen() {
                 </Pressable>
               )}
             </View> : null}
-            {(favoriteOnly ? favoriteItems.length : filteredInvestments.length) === 0 ? (
+            {!favoriteOnly ? (
+              <View style={[styles.assetSearch, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.assetSearchHeader}>
+                  <Text style={[styles.assetSearchLabel, { color: colors.foreground }]}>Buscar na carteira</Text>
+                  <Feather name="search" size={14} color={colors.mutedForeground} />
+                </View>
+                <View style={styles.inputWithClear}>
+                  <TextInput
+                    accessibilityLabel="Buscar investimento por nome ou ticker"
+                    testID="investments-search-input"
+                    value={assetSearchQuery}
+                    onChangeText={setAssetSearchQuery}
+                    placeholder="Nome ou ticker"
+                    placeholderTextColor={colors.mutedForeground}
+                    autoCapitalize="none"
+                    style={[styles.input, styles.inputWithClearField, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
+                  />
+                  {assetSearchQuery ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Limpar busca da carteira"
+                      onPress={() => setAssetSearchQuery('')}
+                      hitSlop={8}
+                      style={({ pressed }) => [styles.clearSearchButton, pressed && styles.pressed]}
+                    >
+                      <Feather name="x" size={16} color={colors.mutedForeground} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+            {(favoriteOnly ? favoriteItems.length : searchedInvestments.length) === 0 ? (
               <View style={styles.emptyWrap}>
                 <EmptyState message={
                   favoriteOnly
                     ? 'Você ainda não favoritou nenhum investimento.'
-                    : selectedAssetType
-                      ? `Você ainda não cadastrou investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.`
-                      : 'Você ainda não cadastrou nenhum investimento.'
+                    : assetSearchQuery.trim()
+                      ? 'Nenhum investimento encontrado para essa busca.'
+                      : selectedAssetType
+                        ? `Você ainda não cadastrou investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.`
+                        : 'Você ainda não cadastrou nenhum investimento.'
                 } />
-                {!selectedAssetType && !hasInvalidAssetType && !favoriteOnly ? (
+                {!selectedAssetType && !hasInvalidAssetType && !favoriteOnly && !assetSearchQuery.trim() ? (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Cadastrar primeiro investimento"
@@ -773,7 +815,7 @@ export default function InvestmentsScreen() {
               </View>
             ) : (
               <View style={styles.list}>
-                {(favoriteOnly ? favoriteItems : filteredInvestments).map((entry, index) => {
+                {(favoriteOnly ? favoriteItems : searchedInvestments).map((entry, index) => {
                   const investment: Investment = (favoriteOnly
                     ? ((entry as typeof favoriteItems[number]).kind === 'investment'
                       ? (entry as typeof favoriteItems[number]).item
@@ -1383,6 +1425,9 @@ const styles = StyleSheet.create({
   favoriteSearchActionText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   clearFilterButton: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   summaryCard: { minHeight: 166, borderRadius: 9, padding: 17, justifyContent: 'space-between' },
+  assetSearch: { borderWidth: 1, borderRadius: 9, padding: 12, marginTop: 12 },
+  assetSearchHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  assetSearchLabel: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   summaryLabel: { color: '#D4D4D4', fontSize: 12, fontFamily: 'Inter_500Medium' },
   summaryValue: { color: '#FFFFFF', fontSize: 29, lineHeight: 35, fontFamily: 'Inter_700Bold', marginTop: 13 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 14, marginTop: 16 },
