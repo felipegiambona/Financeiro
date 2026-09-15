@@ -2,15 +2,24 @@ export function getDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export function getSaoPauloMonthKey(date = new Date()): string {
+function getSaoPauloDateParts(date: Date) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
     month: '2-digit',
+    day: '2-digit',
   }).formatToParts(date);
-  const year = parts.find((part) => part.type === 'year')?.value ?? String(date.getFullYear());
-  const month = parts.find((part) => part.type === 'month')?.value ?? String(date.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
+  const value = (type: string, fallback: number) => Number(parts.find((part) => part.type === type)?.value ?? fallback);
+  return {
+    year: value('year', date.getFullYear()),
+    month: value('month', date.getMonth() + 1),
+    day: value('day', date.getDate()),
+  };
+}
+
+export function getSaoPauloMonthKey(date = new Date()): string {
+  const { year, month } = getSaoPauloDateParts(date);
+  return `${year}-${String(month).padStart(2, '0')}`;
 }
 
 export function getDayKey(date: Date): string {
@@ -83,11 +92,18 @@ export function formatTime(dateString: string): string {
   }).format(new Date(dateString));
 }
 
-export function createLocalIsoDate(date = new Date()): string {
+export function createLocalIsoDate(date?: Date): string {
+  const source = date ?? new Date();
+  const calendarDate = date
+    ? source
+    : (() => {
+      const { year, month, day } = getSaoPauloDateParts(source);
+      return new Date(year, month - 1, day, 12);
+    })();
   return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
+    calendarDate.getFullYear(),
+    calendarDate.getMonth(),
+    calendarDate.getDate(),
     12,
   ).toISOString();
 }

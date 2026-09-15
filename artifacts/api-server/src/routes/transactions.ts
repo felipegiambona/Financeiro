@@ -14,7 +14,7 @@ import {
   UpdateTransactionResponse,
 } from "@workspace/api-zod";
 import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
-import { invoiceMonthForPurchase } from "../services/cardInvoices";
+import { dateKey, invoiceMonthForPurchase } from "../services/cardInvoices";
 import { ensureDefaultWallet, getUserWallet } from "./wallets";
 
 const router: IRouter = Router();
@@ -123,6 +123,7 @@ router.post("/transactions", async (req, res): Promise<void> => {
     }
     cardClosingDay = card.closingDay;
   }
+  const effectiveDate = dateOnly(parsed.data.date) ?? dateKey(new Date());
   const [row] = await db.insert(transactionsTable).values({
     ...parsed.data,
     userId,
@@ -131,14 +132,14 @@ router.post("/transactions", async (req, res): Promise<void> => {
     cardId: parsed.data.type === "expense" ? parsed.data.cardId ?? null : null,
     cardEntryType: "purchase",
     cardInvoiceMonth: parsed.data.cardId
-      ? invoiceMonthForPurchase(dateOnly(parsed.data.date) ?? new Date().toISOString().slice(0, 10), cardClosingDay ?? 31)
+      ? invoiceMonthForPurchase(effectiveDate, cardClosingDay ?? 31)
       : null,
     destinationWalletId: parsed.data.type === "transfer" ? destinationWallet?.id : null,
     categoryId: parsed.data.categoryId ?? null,
     goalId: parsed.data.goalId ?? null,
     isInvestment: parsed.data.isInvestment ?? false,
     amount: String(parsed.data.amount),
-    date: dateOnly(parsed.data.date),
+    date: effectiveDate,
     dueDate: dateOnly(parsed.data.dueDate),
     paymentStatusOverrides: {},
   }).returning();
