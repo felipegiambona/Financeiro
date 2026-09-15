@@ -17,6 +17,10 @@ import { calculateTotalsByMonth } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
 import { formatMonthYearLabel, formatShortMonthLabel, getSaoPauloMonthKey, getSaoPauloToday, shiftMonth } from '@/utils/date';
+import {
+  INVESTMENT_ASSET_TYPE_LABELS,
+  investmentCompositionRoute,
+} from '@/services/investmentAssetFilters';
 
 export default function ChartsScreen() {
   const colors = useColors();
@@ -222,7 +226,7 @@ export default function ChartsScreen() {
             loading={investmentsLoading}
             error={investmentsError}
             onRetry={() => void refreshInvestments()}
-              onAssetTypePress={(assetType) => router.push({ pathname: '/more/investments', params: { assetType } })}
+              onAssetTypePress={(assetType) => router.push(investmentCompositionRoute(assetType))}
           />
         ) : null}
       </ScrollView>
@@ -291,16 +295,6 @@ type CategoryTotal = {
   amount: number;
   name: string;
   color: string;
-};
-
-const ASSET_TYPE_LABELS: Record<InvestmentAssetType, string> = {
-  stock: 'Ações',
-  fii: 'FIIs',
-  etf: 'ETFs',
-  fund: 'Fundos',
-  fixed_income: 'Renda fixa',
-  crypto: 'Cripto',
-  other: 'Outros',
 };
 
 function InvestmentCompositionCard({
@@ -400,7 +394,7 @@ function InvestmentCompositionCard({
                   <Pressable
                     key={item.assetType}
                     accessibilityRole="button"
-                    accessibilityLabel={`Ver investimentos de ${ASSET_TYPE_LABELS[item.assetType]}`}
+                    accessibilityLabel={`Ver investimentos de ${INVESTMENT_ASSET_TYPE_LABELS[item.assetType]}`}
                     accessibilityHint="Abre a carteira filtrada por tipo de ativo"
                     testID={`investment-composition-${item.assetType}`}
                     onPress={() => onAssetTypePress(item.assetType)}
@@ -409,7 +403,7 @@ function InvestmentCompositionCard({
                     <View style={styles.categoryRowHeader}>
                       <View style={styles.categoryLabel}>
                         <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-                        <Text style={[styles.categoryName, { color: colors.foreground }]}>{ASSET_TYPE_LABELS[item.assetType]}</Text>
+                        <Text style={[styles.categoryName, { color: colors.foreground }]}>{INVESTMENT_ASSET_TYPE_LABELS[item.assetType]}</Text>
                       </View>
                       <View style={styles.categoryAmountGroup}>
                         <Text style={[styles.categoryAmount, { color: colors.foreground }]}>{formatCurrency(item.amount)}</Text>

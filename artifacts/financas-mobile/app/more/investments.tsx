@@ -13,19 +13,21 @@ import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
 import type { Investment, InvestmentAssetType, InvestmentFavorite, InvestmentInput, InvestmentSearchResult, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
+import {
+  filterInvestmentsByAssetType,
+  INVESTMENT_ASSET_TYPES,
+  INVESTMENT_ASSET_TYPE_LABELS,
+  resolveInvestmentAssetTypeParam,
+  summarizeInvestments,
+} from '@/services/investmentAssetFilters';
 
-const ASSET_TYPES: Array<{ value: InvestmentAssetType; label: string }> = [
-  { value: 'stock', label: 'Ações' },
-  { value: 'fii', label: 'FIIs' },
-  { value: 'etf', label: 'ETFs' },
-  { value: 'fund', label: 'Fundos' },
-  { value: 'fixed_income', label: 'Renda fixa' },
-  { value: 'crypto', label: 'Cripto' },
-  { value: 'other', label: 'Outros' },
-];
+const ASSET_TYPES: Array<{ value: InvestmentAssetType; label: string }> = INVESTMENT_ASSET_TYPES.map((value) => ({
+  value,
+  label: INVESTMENT_ASSET_TYPE_LABELS[value],
+}));
 
 function assetTypeLabel(type: InvestmentAssetType): string {
-  return ASSET_TYPES.find((item) => item.value === type)?.label ?? 'Outros';
+  return INVESTMENT_ASSET_TYPE_LABELS[type] ?? 'Outros';
 }
 
 function normalizeQuoteIdentifier(type: InvestmentAssetType, value: string): string {
@@ -156,8 +158,11 @@ export default function InvestmentsScreen() {
   } = useInvestments();
   const { wallets, refresh: refreshWallets } = useWallets();
   const { refresh: refreshFinance } = useFinance();
-  const routeAssetType = Array.isArray(assetTypeParam) ? assetTypeParam[0] : assetTypeParam;
-  const selectedAssetType = ASSET_TYPES.find((item) => item.value === routeAssetType)?.value ?? null;
+  const routeFilter = useMemo(
+    () => resolveInvestmentAssetTypeParam(assetTypeParam),
+    [assetTypeParam],
+  );
+  const { assetType: selectedAssetType, invalid: hasInvalidAssetType } = routeFilter;
   const [activeTab, setActiveTab] = useState<'assets' | 'favorites'>('assets');
   const favoriteOnly = activeTab === 'favorites';
   const [favoriteSearchQuery, setFavoriteSearchQuery] = useState('');
@@ -166,8 +171,8 @@ export default function InvestmentsScreen() {
   const [favoriteAddingKey, setFavoriteAddingKey] = useState<string | null>(null);
   const favoriteSearchRequestRef = useRef(0);
   const filteredInvestments = useMemo(
-    () => investments.filter((investment) => !selectedAssetType || investment.assetType === selectedAssetType),
-    [investments, selectedAssetType],
+    () => filterInvestmentsByAssetType(investments, routeFilter),
+    [investments, routeFilter.assetType, routeFilter.invalid],
   );
   const favoritePortfolioInvestments = useMemo(
     () => filteredInvestments.filter((investment) => investment.isFavorite),
@@ -181,7 +186,10 @@ export default function InvestmentsScreen() {
     return [
       ...favoritePortfolioInvestments.map((investment) => ({ kind: 'investment' as const, item: investment })),
       ...favoriteAssets
-        .filter((favorite) => !portfolioKeys.has(`${favorite.assetType}:${favorite.ticker.trim().toLocaleLowerCase() || favorite.name.trim().toLocaleLowerCase()}`))
+        .filter((favorite) => (
+          (!selectedAssetType || favorite.assetType === selectedAssetType)
+          && !portfolioKeys.has(`${favorite.assetType}:${favorite.ticker.trim().toLocaleLowerCase() || favorite.name.trim().toLocaleLowerCase()}`)
+        ))
         .map((favorite) => ({ kind: 'catalog' as const, item: favorite })),
     ].sort((first, second) => {
       const typeDifference = (typeOrder.get(first.item.assetType) ?? ASSET_TYPES.length)
@@ -189,7 +197,7 @@ export default function InvestmentsScreen() {
       if (typeDifference !== 0) return typeDifference;
       return first.item.name.localeCompare(second.item.name, 'pt-BR');
     });
-  }, [favoriteAssets, favoritePortfolioInvestments]);
+  }, [favoriteAssets, favoritePortfolioInvestments, selectedAssetType]);
   const favoriteGroupCounts = useMemo(() => {
     const counts = new Map<InvestmentAssetType, number>();
     favoriteItems.forEach(({ item }) => {
@@ -241,11 +249,7 @@ export default function InvestmentsScreen() {
   };
 
   const totalsInvestments = favoriteOnly ? favoritePortfolioInvestments : filteredInvestments;
-  const totals = useMemo(() => totalsInvestments.reduce((summary, investment) => ({
-    invested: summary.invested + investment.investedAmount,
-    current: summary.current + investment.currentValue,
-    result: summary.result + investment.returnAmount,
-  }), { invested: 0, current: 0, result: 0 }), [totalsInvestments]);
+  const totals = useMemo(() => summarizeInvestments(totalsInvestments), [totalsInvestments]);
   const totalPercentage = totals.invested > 0 ? (totals.result / totals.invested) * 100 : 0;
   const matchingRecentAssets = useMemo(() => {
     const query = form.name.trim().toLocaleLowerCase();
@@ -551,7 +555,9 @@ export default function InvestmentsScreen() {
           onAction={() => openEditor(undefined, undefined, favoriteOnly)}
         />
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>
-          {favoriteOnly
+          {hasInvalidAssetType
+            ? 'O tipo de ativo solicitado não é válido. Remova o filtro para ver sua carteira.'
+            : favoriteOnly
             ? 'Acompanhe os ativos que você marcou como favoritos.'
             : selectedAssetType
             ? `Exibindo apenas investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.`
@@ -690,12 +696,12 @@ export default function InvestmentsScreen() {
             ) : null}
           </View>
         ) : null}
-        {selectedAssetType ? (
+        {selectedAssetType || hasInvalidAssetType ? (
           <View style={[styles.activeFilter, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
             <View style={styles.activeFilterCopy}>
               <Feather name="filter" size={13} color={colors.primary} />
               <Text style={[styles.activeFilterText, { color: colors.foreground }]}>
-                Filtro: {assetTypeLabel(selectedAssetType)}
+                {hasInvalidAssetType ? 'Filtro de tipo inválido' : `Filtro: ${assetTypeLabel(selectedAssetType!)}`}
               </Text>
             </View>
             <Pressable
@@ -708,7 +714,11 @@ export default function InvestmentsScreen() {
             </Pressable>
           </View>
         ) : null}
-        {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : (
+        {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : hasInvalidAssetType ? (
+          <View style={styles.emptyWrap}>
+            <EmptyState message="O tipo de investimento solicitado não é válido." />
+          </View>
+        ) : (
           <>
             {!favoriteOnly ? <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
               <Text style={styles.summaryLabel}>Patrimônio investido</Text>
@@ -749,7 +759,7 @@ export default function InvestmentsScreen() {
                       ? `Você ainda não cadastrou investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.`
                       : 'Você ainda não cadastrou nenhum investimento.'
                 } />
-                {!selectedAssetType && !favoriteOnly ? (
+                {!selectedAssetType && !hasInvalidAssetType && !favoriteOnly ? (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Cadastrar primeiro investimento"
