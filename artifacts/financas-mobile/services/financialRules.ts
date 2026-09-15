@@ -51,19 +51,10 @@ function cardInvoiceTotalForMonth(cards: Card[], month: Date): number {
   const key = getDateKey(month).slice(0, 7);
   return cards.reduce(
     (total, card) => total + card.invoices
-      .filter((invoice) => invoice.invoiceMonth === key)
+      .filter((invoice) => invoice.invoiceMonth === key && invoice.status !== 'paid')
       .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
     0,
   );
-}
-
-function cardInvoicePaymentTotalForMonth(transactions: Transaction[], month: Date): number {
-  return getTransactionOccurrencesForMonth(transactions, month)
-    .filter((transaction) =>
-      transaction.type === 'expense'
-      && transaction.cardEntryType === 'invoice_payment'
-      && transaction.paymentStatus !== 'unpaid')
-    .reduce((total, transaction) => total + transaction.amount, 0);
 }
 
 function cardOverdueTotalForCurrentMonth(cards: Card[], month: Date, now: Date): number {
@@ -178,7 +169,6 @@ export function calculateMonthlyTotals(
   now = new Date(),
 ): MonthlyTotals {
   const occurrences = getTransactionOccurrencesForMonth(transactions, month);
-  const paidCardInvoicePayments = cardInvoicePaymentTotalForMonth(transactions, month);
   const overdueCardInvoices = cardOverdueTotalForCurrentMonth(cards, month, now);
   return occurrences.reduce(
     (totals, transaction) => {
@@ -194,7 +184,7 @@ export function calculateMonthlyTotals(
     },
     {
       income: 0,
-      expense: cardInvoiceTotalForMonth(cards, month) + overdueCardInvoices + paidCardInvoicePayments,
+      expense: cardInvoiceTotalForMonth(cards, month) + overdueCardInvoices,
       receivable: 0,
       payable: cardInvoicePayableForMonth(cards, month) + overdueCardInvoices,
     },
@@ -209,7 +199,6 @@ export function calculateForecast(
 ): number {
   const occurrences = getTransactionOccurrencesForMonth(transactions, targetMonth);
   return occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0)
-    - cardInvoicePaymentTotalForMonth(transactions, targetMonth)
     - cardInvoiceTotalForMonth(cards, targetMonth)
     - cardOverdueTotalForCurrentMonth(cards, targetMonth, now);
 }
@@ -224,7 +213,6 @@ export function calculateForecastByMonth(
     const date = new Date(year, monthIndex, 1, 12);
     const occurrences = getTransactionOccurrencesForMonth(transactions, date);
     const forecast = occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0)
-        - cardInvoicePaymentTotalForMonth(transactions, date)
         - cardInvoiceTotalForMonth(cards, date)
         - cardOverdueTotalForCurrentMonth(cards, date, now);
 
