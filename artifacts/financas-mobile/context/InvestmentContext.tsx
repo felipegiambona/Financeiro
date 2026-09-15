@@ -267,12 +267,15 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   const toggleFavorite = useCallback(async (id: string) => {
     const current = investments.find((investment) => investment.id === id);
     if (!current) throw new Error('Investimento não encontrado.');
+    const optimistic = { ...current, isFavorite: !current.isFavorite };
     try {
       setError(null);
+      setInvestments((items) => items.map((investment) => investment.id === id ? optimistic : investment));
       const updated = await updatePersistedInvestment(id, { isFavorite: !current.isFavorite });
       setInvestments((items) => items.map((investment) => investment.id === id ? updated : investment));
       return updated;
     } catch {
+      setInvestments((items) => items.map((investment) => investment.id === id ? current : investment));
       setError('Não foi possível atualizar o favorito.');
       throw new Error('Não foi possível atualizar o favorito.');
     }

@@ -678,8 +678,59 @@ describe("financial profile deletion isolation", () => {
       },
     );
     assertStatus(personalInvestment, 201);
+    assert.equal(personalInvestment.body.isFavorite, false);
     assert.equal(personalInvestment.body.returnAmount, 100);
     assert.equal(personalInvestment.body.returnPercentage, 10);
+
+    const favoritedPersonalInvestment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/investments/${personalInvestment.body.id}`,
+      {
+        method: "PATCH",
+        body: { isFavorite: true },
+      },
+    );
+    assertStatus(favoritedPersonalInvestment, 200);
+    assert.equal(favoritedPersonalInvestment.body.isFavorite, true);
+
+    const reloadedFavoritedInvestments = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/investments",
+    );
+    assertStatus(reloadedFavoritedInvestments, 200);
+    assert.equal(
+      reloadedFavoritedInvestments.body.find(
+        (investment) => investment.id === personalInvestment.body.id,
+      ).isFavorite,
+      true,
+    );
+
+    const unfavoritedPersonalInvestment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/investments/${personalInvestment.body.id}`,
+      {
+        method: "PATCH",
+        body: { isFavorite: false },
+      },
+    );
+    assertStatus(unfavoritedPersonalInvestment, 200);
+    assert.equal(unfavoritedPersonalInvestment.body.isFavorite, false);
+
+    const reloadedUnfavoritedInvestments = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/investments",
+    );
+    assertStatus(reloadedUnfavoritedInvestments, 200);
+    assert.equal(
+      reloadedUnfavoritedInvestments.body.find(
+        (investment) => investment.id === personalInvestment.body.id,
+      ).isFavorite,
+      false,
+    );
 
     const updatedPersonalInvestment = await profileRequest(
       identity.token,
