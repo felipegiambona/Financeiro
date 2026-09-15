@@ -136,6 +136,10 @@ export function InvestmentDividends() {
       || investment.ticker?.toLocaleLowerCase('pt-BR').includes(query)
     ));
   }, [investmentSearch, investments]);
+  const availableCalendarEvents = useMemo(
+    () => calendar?.events.filter((event) => !event.alreadyImported) ?? [],
+    [calendar],
+  );
 
   const openCalendar = async () => {
     setCalendarOpen(true);
@@ -166,7 +170,7 @@ export function InvestmentDividends() {
   };
 
   const importSelected = async () => {
-    const events = calendar?.events.filter((event) => selectedCalendarIds.has(event.sourceEventId)) ?? [];
+    const events = availableCalendarEvents.filter((event) => selectedCalendarIds.has(event.sourceEventId));
     if (events.length === 0) {
       Alert.alert('Nenhum evento selecionado', 'Selecione pelo menos um evento para importar.');
       return;
@@ -457,7 +461,7 @@ export function InvestmentDividends() {
                 </View>
               ) : calendar ? (
                 <>
-                  {calendar.events.length === 0 ? (
+                  {availableCalendarEvents.length === 0 ? (
                     <View style={[styles.empty, { backgroundColor: colors.secondary }]}>
                       <Feather name={calendar.failures.length > 0 ? 'alert-circle' : 'calendar'} size={18} color={colors.mutedForeground} />
                       <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
@@ -483,19 +487,18 @@ export function InvestmentDividends() {
                         </View>
                       ) : null}
                       <View style={styles.calendarList}>
-                        {calendar.events.map((event) => {
+                        {availableCalendarEvents.map((event) => {
                           const selected = selectedCalendarIds.has(event.sourceEventId);
                           return (
                             <Pressable
                               key={event.sourceEventId}
                               accessibilityRole="checkbox"
-                              accessibilityState={{ checked: selected, disabled: event.alreadyImported }}
-                              disabled={event.alreadyImported || importing}
+                              accessibilityState={{ checked: selected, disabled: importing }}
+                              disabled={importing}
                               onPress={() => toggleCalendarEvent(event)}
                               style={({ pressed }) => [
                                 styles.calendarItem,
                                 { borderColor: colors.border, backgroundColor: selected ? colors.secondary : colors.card },
-                                event.alreadyImported && styles.disabled,
                                 pressed && styles.pressed,
                               ]}
                             >
@@ -508,7 +511,7 @@ export function InvestmentDividends() {
                                   <Text style={[styles.itemStatus, { color: colors.pending }]}>{typeLabel(event.type)}</Text>
                                 </View>
                                 <Text style={[styles.itemMeta, { color: colors.mutedForeground }]}>
-                                  Pagamento em {displayDate(event.paymentDate)} · {event.alreadyImported ? 'Já importado' : 'Previsto'}
+                                  Pagamento em {displayDate(event.paymentDate)} · Previsto
                                 </Text>
                               </View>
                               <Text style={[styles.itemAmount, { color: colors.foreground }]}>{formatCurrency(event.amount)}</Text>
@@ -518,7 +521,7 @@ export function InvestmentDividends() {
                       </View>
                     </>
                   )}
-                  {calendar.events.some((event) => !event.alreadyImported) ? (
+                  {availableCalendarEvents.length > 0 ? (
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="Importar eventos selecionados"
