@@ -6,7 +6,13 @@ import { useFinance } from '@/context/FinanceContext';
 import { useInvestments } from '@/context/InvestmentContext';
 import { useWallets } from '@/context/WalletContext';
 import { useColors } from '@/hooks/useColors';
-import type { InvestmentDividend, InvestmentDividendStatus, InvestmentDividendType } from '@workspace/api-client-react';
+import type {
+  InvestmentDividend,
+  InvestmentDividendCalendar,
+  InvestmentDividendCalendarEvent,
+  InvestmentDividendStatus,
+  InvestmentDividendType,
+} from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
 import { KeyboardAwareScrollViewCompat } from './KeyboardAwareScrollViewCompat';
 
@@ -55,7 +61,7 @@ function displayDate(value: string): string {
   return new Date(year, month - 1, day).toLocaleDateString('pt-BR');
 }
 
-function typeLabel(type: InvestmentDividendType): string {
+function typeLabel(type: InvestmentDividendType | InvestmentDividendCalendarEvent['type']): string {
   return type === 'jcp' ? 'JCP' : 'Dividendo';
 }
 
@@ -77,7 +83,17 @@ function initialDraft(investmentId: string): DividendDraft {
 export function InvestmentDividends() {
   const colors = useColors();
   const { investments } = useInvestments();
-  const { dividends, loading, error, refresh, createDividend, updateDividend, deleteDividend } = useDividends();
+  const {
+    dividends,
+    loading,
+    error,
+    refresh,
+    getCalendar,
+    importEvents,
+    createDividend,
+    updateDividend,
+    deleteDividend,
+  } = useDividends();
   const { refresh: refreshFinance } = useFinance();
   const { refresh: refreshWallets } = useWallets();
   const [editorOpen, setEditorOpen] = useState(false);
@@ -86,6 +102,12 @@ export function InvestmentDividends() {
   const [investmentPickerOpen, setInvestmentPickerOpen] = useState(false);
   const [investmentSearch, setInvestmentSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendar, setCalendar] = useState<InvestmentDividendCalendar | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
+  const [selectedCalendarIds, setSelectedCalendarIds] = useState<Set<string>>(new Set());
+  const [importing, setImporting] = useState(false);
 
   const totals = useMemo(() => dividends.reduce((summary, dividend) => ({
     received: summary.received + (dividend.status === 'received' ? dividend.amount : 0),
@@ -114,6 +136,64 @@ export function InvestmentDividends() {
       || investment.ticker?.toLocaleLowerCase('pt-BR').includes(query)
     ));
   }, [investmentSearch, investments]);
+
+  const openCalendar = async () => {
+    setCalendarOpen(true);
+    setCalendarLoading(true);
+    setCalendarError(null);
+    try {
+      const result = await getCalendar();
+      setCalendar(result);
+      setSelectedCalendarIds(new Set(
+        result.events.filter((event) => !event.alreadyImported).map((event) => event.sourceEventId),
+      ));
+    } catch {
+      setCalendar(null);
+      setCalendarError('Não foi possível consultar o calendário agora.');
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
+  const toggleCalendarEvent = (event: InvestmentDividendCalendarEvent) => {
+    if (event.alreadyImported) return;
+    setSelectedCalendarIds((current) => {
+      const next = new Set(current);
+      if (next.has(event.sourceEventId)) next.delete(event.sourceEventId);
+      else next.add(event.sourceEventId);
+      return next;
+    });
+  };
+
+  const importSelected = async () => {
+    const events = calendar?.events.filter((event) => selectedCalendarIds.has(event.sourceEventId)) ?? [];
+    if (events.length === 0) {
+      Alert.alert('Nenhum evento selecionado', 'Selecione pelo menos um evento para importar.');
+      return;
+    }
+    try {
+      setImporting(true);
+      const result = await importEvents(events.map((event) => ({
+        sourceEventId: event.sourceEventId,
+        investmentId: event.investmentId,
+        type: event.type,
+        amount: event.amount,
+        paymentDate: event.paymentDate,
+      })));
+      setCalendarOpen(false);
+      setCalendar(null);
+      if (result.skipped > 0) {
+        Alert.alert(
+          'Importação concluída',
+          `${result.created.length} evento(s) salvo(s). ${result.skipped} já existia(m) e foi(ram) ignorado(s).`,
+        );
+      }
+    } catch {
+      Alert.alert('Não foi possível importar', 'Os proventos manuais continuam disponíveis. Tente novamente.');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const openNew = () => {
     setEditing(null);
@@ -228,16 +308,28 @@ export function InvestmentDividends() {
             <Text style={[styles.title, { color: colors.foreground }]}>Proventos</Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Dividendos e JCP registrados na sua carteira</Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Adicionar provento"
-            testID="add-investment-dividend"
-            onPress={openNew}
-            style={({ pressed }) => [styles.addButton, { backgroundColor: colors.primary }, pressed && styles.pressed]}
-          >
-            <Feather name="plus" size={15} color={colors.primaryForeground} />
-            <Text style={[styles.addButtonText, { color: colors.primaryForeground }]}>Adicionar</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Importar calendário de proventos"
+              onPress={() => void openCalendar()}
+              disabled={calendarLoading}
+              style={({ pressed }) => [styles.importButton, { backgroundColor: colors.secondary, borderColor: colors.border }, calendarLoading && styles.disabled, pressed && styles.pressed]}
+            >
+              <Feather name="download" size={14} color={colors.foreground} />
+              <Text style={[styles.addButtonText, { color: colors.foreground }]}>Importar</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar provento"
+              testID="add-investment-dividend"
+              onPress={openNew}
+              style={({ pressed }) => [styles.addButton, { backgroundColor: colors.primary }, pressed && styles.pressed]}
+            >
+              <Feather name="plus" size={15} color={colors.primaryForeground} />
+              <Text style={[styles.addButtonText, { color: colors.primaryForeground }]}>Adicionar</Text>
+            </Pressable>
+          </View>
         </View>
         <View style={styles.summaryRow}>
           <View style={[styles.summaryItem, { backgroundColor: colors.secondary }]}>
@@ -315,6 +407,126 @@ export function InvestmentDividends() {
           </View>
         ))}
       </View>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={calendarOpen}
+        onRequestClose={() => {
+          if (!importing) setCalendarOpen(false);
+        }}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            disabled={importing}
+            onPress={() => setCalendarOpen(false)}
+          />
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <KeyboardAwareScrollViewCompat
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.modalHeader}>
+                <View style={styles.headerCopy}>
+                  <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>Fonte BRAPI</Text>
+                  <Text style={[styles.modalTitle, { color: colors.foreground }]}>Importar calendário</Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Fechar importação de proventos"
+                  disabled={importing}
+                  onPress={() => setCalendarOpen(false)}
+                  style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
+                >
+                  <Feather name="x" size={18} color={colors.foreground} />
+                </Pressable>
+              </View>
+              <Text style={[styles.helper, { color: colors.mutedForeground }]}>
+                Ações e FIIs com ticker B3. O valor considera a quantidade na carteira. Revise antes de salvar.
+              </Text>
+              {calendarLoading ? (
+                <Text style={[styles.calendarState, { color: colors.mutedForeground }]}>Consultando eventos previstos...</Text>
+              ) : calendarError ? (
+                <View style={styles.calendarState}>
+                  <Text style={[styles.helper, { color: colors.expense }]}>{calendarError}</Text>
+                  <Pressable onPress={() => void openCalendar()}>
+                    <Text style={[styles.retry, { color: colors.primary }]}>Tentar novamente</Text>
+                  </Pressable>
+                </View>
+              ) : calendar ? (
+                <>
+                  {calendar.failures.length > 0 ? (
+                    <View style={[styles.calendarWarning, { backgroundColor: colors.secondary }]}>
+                      <Text style={[styles.calendarWarningTitle, { color: colors.foreground }]}>Alguns ativos não responderam</Text>
+                      {calendar.failures.map((failure) => (
+                        <Text key={failure.investmentId} style={[styles.helper, { color: colors.mutedForeground }]}>
+                          {failure.investmentTicker ?? failure.investmentName}: {failure.message}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null}
+                  {calendar.events.length === 0 ? (
+                    <View style={[styles.empty, { backgroundColor: colors.secondary }]}>
+                      <Feather name="calendar" size={18} color={colors.mutedForeground} />
+                      <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nenhum evento novo encontrado</Text>
+                      <Text style={[styles.helper, { color: colors.mutedForeground }]}>Os eventos previstos da sua carteira aparecerão aqui para revisão.</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.calendarList}>
+                      {calendar.events.map((event) => {
+                        const selected = selectedCalendarIds.has(event.sourceEventId);
+                        return (
+                          <Pressable
+                            key={event.sourceEventId}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: selected, disabled: event.alreadyImported }}
+                            disabled={event.alreadyImported || importing}
+                            onPress={() => toggleCalendarEvent(event)}
+                            style={({ pressed }) => [
+                              styles.calendarItem,
+                              { borderColor: colors.border, backgroundColor: selected ? colors.secondary : colors.card },
+                              event.alreadyImported && styles.disabled,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <View style={[styles.checkbox, { borderColor: selected ? colors.primary : colors.input, backgroundColor: selected ? colors.primary : colors.card }]}>
+                              {selected ? <Feather name="check" size={12} color={colors.primaryForeground} /> : null}
+                            </View>
+                            <View style={styles.itemMain}>
+                              <View style={styles.itemTitleRow}>
+                                <Text style={[styles.itemTitle, { color: colors.foreground }]}>{event.investmentTicker ?? event.investmentName}</Text>
+                                <Text style={[styles.itemStatus, { color: colors.pending }]}>{typeLabel(event.type)}</Text>
+                              </View>
+                              <Text style={[styles.itemMeta, { color: colors.mutedForeground }]}>
+                                Pagamento em {displayDate(event.paymentDate)} · {event.alreadyImported ? 'Já importado' : 'Previsto'}
+                              </Text>
+                            </View>
+                            <Text style={[styles.itemAmount, { color: colors.foreground }]}>{formatCurrency(event.amount)}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
+                  {calendar.events.some((event) => !event.alreadyImported) ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Salvar eventos selecionados"
+                      disabled={importing}
+                      onPress={() => void importSelected()}
+                      style={({ pressed }) => [styles.saveButton, { backgroundColor: colors.primary }, importing && styles.disabled, pressed && styles.pressed]}
+                    >
+                      <Text style={[styles.saveText, { color: colors.primaryForeground }]}>
+                        {importing ? 'Salvando...' : `Salvar selecionados (${selectedCalendarIds.size})`}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </>
+              ) : null}
+            </KeyboardAwareScrollViewCompat>
+          </View>
+        </View>
+      </Modal>
 
       <Modal animationType="fade" transparent visible={editorOpen} onRequestClose={closeEditor}>
         <View style={styles.modalRoot}>
@@ -505,10 +717,12 @@ export function InvestmentDividends() {
 const styles = StyleSheet.create({
   section: { borderWidth: 1, borderRadius: 10, padding: 13, marginTop: 14 },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerCopy: { flex: 1, minWidth: 0 },
   title: { fontSize: 15, fontFamily: 'Inter_700Bold' },
   subtitle: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', marginTop: 3 },
   addButton: { minHeight: 34, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  importButton: { minHeight: 34, borderRadius: 7, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 5 },
   addButtonText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   summaryRow: { flexDirection: 'row', gap: 8, marginTop: 13 },
   summaryItem: { flex: 1, borderRadius: 8, padding: 10 },
@@ -517,6 +731,12 @@ const styles = StyleSheet.create({
   helper: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular' },
   errorRow: { marginTop: 14, gap: 4 },
   retry: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  calendarState: { marginTop: 16, gap: 5 },
+  calendarWarning: { borderRadius: 8, padding: 10, marginTop: 14, gap: 4 },
+  calendarWarningTitle: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  calendarList: { marginTop: 14, gap: 7 },
+  calendarItem: { minHeight: 62, borderWidth: 1, borderRadius: 8, padding: 9, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  checkbox: { width: 22, height: 22, borderWidth: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', borderRadius: 8, padding: 16, marginTop: 12, gap: 5 },
   emptyTitle: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   group: { marginTop: 14 },

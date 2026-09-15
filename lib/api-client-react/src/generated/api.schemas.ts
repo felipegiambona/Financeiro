@@ -556,6 +556,89 @@ export interface InvestmentDividendUpdate {
   note?: string | null;
 }
 
+export type InvestmentDividendCalendarEventType = typeof InvestmentDividendCalendarEventType[keyof typeof InvestmentDividendCalendarEventType];
+
+
+export const InvestmentDividendCalendarEventType = {
+  dividend: 'dividend',
+  jcp: 'jcp',
+} as const;
+
+export type InvestmentDividendCalendarEventSource = typeof InvestmentDividendCalendarEventSource[keyof typeof InvestmentDividendCalendarEventSource];
+
+
+export const InvestmentDividendCalendarEventSource = {
+  BRAPI: 'BRAPI',
+} as const;
+
+export interface InvestmentDividendCalendarEvent {
+  /** @minLength 1 */
+  sourceEventId: string;
+  investmentId: string;
+  investmentName: string;
+  /** @nullable */
+  investmentTicker: string | null;
+  type: InvestmentDividendCalendarEventType;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  paymentDate: string;
+  source: InvestmentDividendCalendarEventSource;
+  alreadyImported: boolean;
+}
+
+export interface InvestmentDividendCalendarFailure {
+  investmentId: string;
+  investmentName: string;
+  /** @nullable */
+  investmentTicker: string | null;
+  message: string;
+}
+
+export type InvestmentDividendCalendarSource = typeof InvestmentDividendCalendarSource[keyof typeof InvestmentDividendCalendarSource];
+
+
+export const InvestmentDividendCalendarSource = {
+  BRAPI: 'BRAPI',
+} as const;
+
+export interface InvestmentDividendCalendar {
+  source: InvestmentDividendCalendarSource;
+  events: InvestmentDividendCalendarEvent[];
+  failures: InvestmentDividendCalendarFailure[];
+}
+
+export type InvestmentDividendImportEventType = typeof InvestmentDividendImportEventType[keyof typeof InvestmentDividendImportEventType];
+
+
+export const InvestmentDividendImportEventType = {
+  dividend: 'dividend',
+  jcp: 'jcp',
+} as const;
+
+export interface InvestmentDividendImportEvent {
+  /** @minLength 1 */
+  sourceEventId: string;
+  investmentId: string;
+  type: InvestmentDividendImportEventType;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  paymentDate: string;
+}
+
+export interface InvestmentDividendImportInput {
+  /**
+     * @minItems 1
+     * @maxItems 100
+     */
+  events: InvestmentDividendImportEvent[];
+}
+
+export interface InvestmentDividendImportResponse {
+  created: InvestmentDividend[];
+  /** @minimum 0 */
+  skipped: number;
+}
+
 export interface HealthStatus {
   status: string;
 }

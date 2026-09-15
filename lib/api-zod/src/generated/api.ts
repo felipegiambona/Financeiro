@@ -435,6 +435,81 @@ export const CreateInvestmentDividendResponse = zod.object({
 })
 
 
+/**
+ * @summary Preview upcoming investment dividends from BRAPI
+ */
+
+export const getInvestmentDividendCalendarResponseEventsItemAmountExclusiveMin = 0;
+
+
+
+export const GetInvestmentDividendCalendarResponse = zod.object({
+  "source": zod.enum(['BRAPI']),
+  "events": zod.array(zod.object({
+  "sourceEventId": zod.string().min(1),
+  "investmentId": zod.string().uuid(),
+  "investmentName": zod.string(),
+  "investmentTicker": zod.string().nullable(),
+  "type": zod.enum(['dividend', 'jcp']),
+  "amount": zod.number().gt(getInvestmentDividendCalendarResponseEventsItemAmountExclusiveMin),
+  "paymentDate": zod.coerce.date(),
+  "source": zod.enum(['BRAPI']),
+  "alreadyImported": zod.boolean()
+})),
+  "failures": zod.array(zod.object({
+  "investmentId": zod.string().uuid(),
+  "investmentName": zod.string(),
+  "investmentTicker": zod.string().nullable(),
+  "message": zod.string()
+}))
+})
+
+
+/**
+ * @summary Import reviewed investment dividend events
+ */
+
+export const importInvestmentDividendsBodyEventsItemAmountExclusiveMin = 0;
+
+export const importInvestmentDividendsBodyEventsMax = 100;
+
+
+
+export const ImportInvestmentDividendsBody = zod.object({
+  "events": zod.array(zod.object({
+  "sourceEventId": zod.string().min(1),
+  "investmentId": zod.string().uuid(),
+  "type": zod.enum(['dividend', 'jcp']),
+  "amount": zod.number().gt(importInvestmentDividendsBodyEventsItemAmountExclusiveMin),
+  "paymentDate": zod.coerce.date()
+})).min(1).max(importInvestmentDividendsBodyEventsMax)
+})
+
+export const importInvestmentDividendsResponseCreatedItemAmountExclusiveMin = 0;
+
+export const importInvestmentDividendsResponseSkippedMin = 0;
+
+
+
+export const ImportInvestmentDividendsResponse = zod.object({
+  "created": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "investmentId": zod.string().uuid(),
+  "investmentName": zod.string(),
+  "investmentTicker": zod.string().nullable(),
+  "type": zod.enum(['dividend', 'jcp']),
+  "amount": zod.number().gt(importInvestmentDividendsResponseCreatedItemAmountExclusiveMin),
+  "paymentDate": zod.coerce.date(),
+  "status": zod.enum(['expected', 'received']),
+  "note": zod.string().nullable(),
+  "transactionId": zod.string().uuid().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "skipped": zod.number().int().min(importInvestmentDividendsResponseSkippedMin)
+})
+
+
 export const UpdateInvestmentDividendParams = zod.object({
   "id": zod.coerce.string().uuid()
 })

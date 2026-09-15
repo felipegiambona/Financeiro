@@ -353,6 +353,44 @@ paths:
           description: Investments are only available for personal profiles
         "404":
           description: Investment not found
+  /investments/dividends/calendar:
+    get:
+      operationId: getInvestmentDividendCalendar
+      tags: [investments]
+      summary: Preview upcoming investment dividends from BRAPI
+      responses:
+        "200":
+          description: Preview of upcoming dividend and JCP events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentDividendCalendar"
+        "403":
+          description: Investments are only available for personal profiles
+  /investments/dividends/import:
+    post:
+      operationId: importInvestmentDividends
+      tags: [investments]
+      summary: Import reviewed investment dividend events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentDividendImportInput"
+      responses:
+        "200":
+          description: Imported events and events skipped as duplicates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentDividendImportResponse"
+        "400":
+          description: Invalid investment dividend import
+        "403":
+          description: Investments are only available for personal profiles
+        "404":
+          description: Investment not found
   /investments/dividends/{id}:
     patch:
       operationId: updateInvestmentDividend
@@ -1425,6 +1463,68 @@ components:
         paymentDate: { type: string, format: date }
         status: { type: string, enum: [expected, received] }
         note: { type: ["string", "null"], maxLength: 500 }
+    InvestmentDividendCalendarEvent:
+      type: object
+      required: [sourceEventId, investmentId, investmentName, investmentTicker, type, amount, paymentDate, source, alreadyImported]
+      properties:
+        sourceEventId: { type: string, minLength: 1 }
+        investmentId: { type: string, format: uuid }
+        investmentName: { type: string }
+        investmentTicker: { type: ["string", "null"] }
+        type: { type: string, enum: [dividend, jcp] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        paymentDate: { type: string, format: date }
+        source: { type: string, enum: [BRAPI] }
+        alreadyImported: { type: boolean }
+    InvestmentDividendCalendarFailure:
+      type: object
+      required: [investmentId, investmentName, investmentTicker, message]
+      properties:
+        investmentId: { type: string, format: uuid }
+        investmentName: { type: string }
+        investmentTicker: { type: ["string", "null"] }
+        message: { type: string }
+    InvestmentDividendCalendar:
+      type: object
+      required: [source, events, failures]
+      properties:
+        source: { type: string, enum: [BRAPI] }
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvestmentDividendCalendarEvent"
+        failures:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvestmentDividendCalendarFailure"
+    InvestmentDividendImportEvent:
+      type: object
+      required: [sourceEventId, investmentId, type, amount, paymentDate]
+      properties:
+        sourceEventId: { type: string, minLength: 1 }
+        investmentId: { type: string, format: uuid }
+        type: { type: string, enum: [dividend, jcp] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        paymentDate: { type: string, format: date }
+    InvestmentDividendImportInput:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/InvestmentDividendImportEvent"
+    InvestmentDividendImportResponse:
+      type: object
+      required: [created, skipped]
+      properties:
+        created:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvestmentDividend"
+        skipped: { type: integer, minimum: 0 }
     HealthStatus:
       type: object
       properties:

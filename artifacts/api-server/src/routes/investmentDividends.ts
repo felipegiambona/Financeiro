@@ -1,9 +1,12 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   CreateInvestmentDividendBody,
   CreateInvestmentDividendResponse,
   DeleteInvestmentDividendParams,
+  GetInvestmentDividendCalendarResponse,
+  ImportInvestmentDividendsBody,
+  ImportInvestmentDividendsResponse,
   ListInvestmentDividendsResponse,
   UpdateInvestmentDividendBody,
   UpdateInvestmentDividendParams,
@@ -26,6 +29,11 @@ import {
 } from "../middlewares/requireAuth";
 import { dateKey } from "../services/cardInvoices";
 import { getUserWallet } from "./wallets";
+import {
+  fetchBrapiDividendEvents,
+  INVESTMENT_DIVIDEND_CALENDAR_SOURCE,
+  type CalendarDividendEvent,
+} from "../lib/investmentDividendCalendar";
 
 const router: IRouter = Router();
 router.use("/investments/dividends", requireAuth, resolveFinancialProfile);
@@ -118,6 +126,18 @@ async function findDividend(
     : null;
 }
 
+function dividendIdentity(
+  event: Pick<StoredInvestmentDividend, "investmentId" | "type" | "amount" | "paymentDate">
+    | Pick<CalendarDividendEvent, "investmentId" | "type" | "amount" | "paymentDate">,
+): string {
+  return [
+    event.investmentId,
+    event.type,
+    Number(event.amount).toFixed(2),
+    event.paymentDate,
+  ].join(":");
+}
+
 async function ensureReceiptTransaction(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   dividend: StoredInvestmentDividend,
@@ -183,6 +203,140 @@ router.get("/investments/dividends", async (req, res): Promise<void> => {
     ...row,
     paymentDate: dateKey(row.paymentDate),
   })));
+});
+
+router.get("/investments/dividends/calendar", async (req, res): Promise<void> => {
+  if (!assertPersonalProfile(req, res)) return;
+  const userId = scopedUserIdFrom(req);
+  const profileId = profileIdFrom(req);
+  const investments = await db.select({
+    id: investmentsTable.id,
+    name: investmentsTable.name,
+    ticker: investmentsTable.ticker,
+    quantity: investmentsTable.quantity,
+  }).from(investmentsTable).where(and(
+    eq(investmentsTable.userId, userId),
+    eq(investmentsTable.profileId, profileId),
+    inArray(investmentsTable.assetType, ["stock", "fii"]),
+  ));
+  const eligibleInvestments = investments.filter((investment) => investment.ticker && Number(investment.quantity) > 0);
+  const existingRows = await db.select({
+    investmentId: investmentDividendsTable.investmentId,
+    type: investmentDividendsTable.type,
+    amount: investmentDividendsTable.amount,
+    paymentDate: investmentDividendsTable.paymentDate,
+  }).from(investmentDividendsTable).where(and(
+    eq(investmentDividendsTable.userId, userId),
+    eq(investmentDividendsTable.profileId, profileId),
+  ));
+  const existing = new Set(existingRows.map(dividendIdentity));
+  const results = await Promise.allSettled(eligibleInvestments.map((investment) => (
+    fetchBrapiDividendEvents(investment)
+  )));
+  const events: Array<CalendarDividendEvent & { alreadyImported: boolean }> = [];
+  const failures: Array<{
+    investmentId: string;
+    investmentName: string;
+    investmentTicker: string | null;
+    message: string;
+  }> = [];
+  results.forEach((result, index) => {
+    const investment = eligibleInvestments[index];
+    if (result.status === "fulfilled") {
+      result.value.forEach((event) => events.push({
+        ...event,
+        alreadyImported: existing.has(dividendIdentity(event)),
+      }));
+    } else {
+      failures.push({
+        investmentId: investment.id,
+        investmentName: investment.name,
+        investmentTicker: investment.ticker,
+        message: "Não foi possível consultar a BRAPI para este ativo agora.",
+      });
+    }
+  });
+  res.json(GetInvestmentDividendCalendarResponse.parse({
+    source: INVESTMENT_DIVIDEND_CALENDAR_SOURCE,
+    events,
+    failures,
+  }));
+});
+
+router.post("/investments/dividends/import", async (req, res): Promise<void> => {
+  if (!assertPersonalProfile(req, res)) return;
+  const parsed = ImportInvestmentDividendsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const normalizedEvents: Array<Omit<typeof parsed.data.events[number], "paymentDate"> & { paymentDate: string }> = [];
+  for (const [index, event] of parsed.data.events.entries()) {
+    const paymentDate = dateOnlyInput(req.body?.events?.[index]?.paymentDate, event.paymentDate);
+    if (!paymentDate) {
+      res.status(400).json({ error: "Invalid payment date" });
+      return;
+    }
+    normalizedEvents.push({ ...event, paymentDate });
+  }
+  const userId = scopedUserIdFrom(req);
+  const profileId = profileIdFrom(req);
+  const investmentIds = [...new Set(normalizedEvents.map((event) => event.investmentId))];
+  const investments = await db.select().from(investmentsTable).where(and(
+    eq(investmentsTable.userId, userId),
+    eq(investmentsTable.profileId, profileId),
+    inArray(investmentsTable.id, investmentIds),
+  ));
+  if (investments.length !== investmentIds.length) {
+    res.status(404).json({ error: "Investment not found" });
+    return;
+  }
+  const investmentById = new Map(investments.map((investment) => [investment.id, investment]));
+
+  const result = await db.transaction(async (tx) => {
+    const existingRows = await tx.select({
+      investmentId: investmentDividendsTable.investmentId,
+      type: investmentDividendsTable.type,
+      amount: investmentDividendsTable.amount,
+      paymentDate: investmentDividendsTable.paymentDate,
+    }).from(investmentDividendsTable).where(and(
+      eq(investmentDividendsTable.userId, userId),
+      eq(investmentDividendsTable.profileId, profileId),
+    ));
+    const existing = new Set(existingRows.map(dividendIdentity));
+    const seen = new Set<string>();
+    const created: StoredInvestmentDividend[] = [];
+    let skipped = 0;
+    for (const event of normalizedEvents) {
+      const identity = dividendIdentity(event);
+      if (existing.has(identity) || seen.has(identity)) {
+        skipped += 1;
+        continue;
+      }
+      const [row] = await tx.insert(investmentDividendsTable).values({
+        userId,
+        profileId,
+        investmentId: event.investmentId,
+        type: event.type,
+        amount: String(event.amount),
+        paymentDate: event.paymentDate,
+        status: "expected",
+        note: "Importado automaticamente da BRAPI",
+      }).returning();
+      created.push(row);
+      seen.add(identity);
+    }
+    return { created, skipped };
+  });
+  const createdResponses = result.created.map((row) => {
+    const investment = investmentById.get(row.investmentId);
+    if (!investment) throw new Error("Investment not found");
+    return serializeResponse(row, investment, CreateInvestmentDividendResponse);
+  });
+  res.json(ImportInvestmentDividendsResponse.parse({
+    created: createdResponses,
+    skipped: result.skipped,
+  }));
 });
 
 router.post("/investments/dividends", async (req, res): Promise<void> => {

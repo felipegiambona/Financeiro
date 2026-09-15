@@ -41,6 +41,9 @@ import type {
   HealthStatus,
   Investment,
   InvestmentDividend,
+  InvestmentDividendCalendar,
+  InvestmentDividendImportInput,
+  InvestmentDividendImportResponse,
   InvestmentDividendInput,
   InvestmentDividendUpdate,
   InvestmentFavorite,
@@ -1275,6 +1278,154 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateInvestmentDividendMutationOptions(options));
+    }
+
+export const getGetInvestmentDividendCalendarUrl = () => {
+
+
+
+
+  return `/api/investments/dividends/calendar`
+}
+
+/**
+ * @summary Preview upcoming investment dividends from BRAPI
+ */
+export const getInvestmentDividendCalendar = async ( options?: Parameters<typeof customFetch>[1]): Promise<InvestmentDividendCalendar> => {
+
+  return customFetch<InvestmentDividendCalendar>(getGetInvestmentDividendCalendarUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInvestmentDividendCalendarQueryKey = () => {
+    return [
+    `/api/investments/dividends/calendar`
+    ] as const;
+    }
+
+
+export const getGetInvestmentDividendCalendarQueryOptions = <TData = Awaited<ReturnType<typeof getInvestmentDividendCalendar>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvestmentDividendCalendar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInvestmentDividendCalendarQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInvestmentDividendCalendar>>> = ({ signal }) => getInvestmentDividendCalendar({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInvestmentDividendCalendar>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInvestmentDividendCalendarQueryResult = NonNullable<Awaited<ReturnType<typeof getInvestmentDividendCalendar>>>
+export type GetInvestmentDividendCalendarQueryError = ErrorType<void>
+
+
+/**
+ * @summary Preview upcoming investment dividends from BRAPI
+ */
+
+export function useGetInvestmentDividendCalendar<TData = Awaited<ReturnType<typeof getInvestmentDividendCalendar>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvestmentDividendCalendar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInvestmentDividendCalendarQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getImportInvestmentDividendsUrl = () => {
+
+
+
+
+  return `/api/investments/dividends/import`
+}
+
+/**
+ * @summary Import reviewed investment dividend events
+ */
+export const importInvestmentDividends = async (investmentDividendImportInput: InvestmentDividendImportInput, options?: Parameters<typeof customFetch>[1]): Promise<InvestmentDividendImportResponse> => {
+
+  return customFetch<InvestmentDividendImportResponse>(getImportInvestmentDividendsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(investmentDividendImportInput)
+  }
+);}
+
+
+
+
+
+export const getImportInvestmentDividendsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importInvestmentDividends>>, TError,{data: BodyType<InvestmentDividendImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importInvestmentDividends>>, TError,{data: BodyType<InvestmentDividendImportInput>}, TContext> => {
+
+const mutationKey = ['importInvestmentDividends'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importInvestmentDividends>>, {data: BodyType<InvestmentDividendImportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importInvestmentDividends(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportInvestmentDividendsMutationResult = NonNullable<Awaited<ReturnType<typeof importInvestmentDividends>>>
+    export type ImportInvestmentDividendsMutationBody = BodyType<InvestmentDividendImportInput>
+    export type ImportInvestmentDividendsMutationError = ErrorType<void>
+
+    /**
+ * @summary Import reviewed investment dividend events
+ */
+export const useImportInvestmentDividends = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importInvestmentDividends>>, TError,{data: BodyType<InvestmentDividendImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importInvestmentDividends>>,
+        TError,
+        {data: BodyType<InvestmentDividendImportInput>},
+        TContext
+      > => {
+      return useMutation(getImportInvestmentDividendsMutationOptions(options));
     }
 
 export const getUpdateInvestmentDividendUrl = (id: string,) => {

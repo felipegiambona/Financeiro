@@ -2,8 +2,13 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import {
   createInvestmentDividend as persistInvestmentDividend,
   deleteInvestmentDividend as removeInvestmentDividend,
+  getInvestmentDividendCalendar,
+  importInvestmentDividends,
   listInvestmentDividends,
   updateInvestmentDividend as updatePersistedInvestmentDividend,
+  type InvestmentDividendCalendar,
+  type InvestmentDividendImportEvent,
+  type InvestmentDividendImportResponse,
   type InvestmentDividend,
   type InvestmentDividendInput,
   type InvestmentDividendUpdate,
@@ -23,6 +28,8 @@ interface DividendContextValue {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  getCalendar: () => Promise<InvestmentDividendCalendar>;
+  importEvents: (events: InvestmentDividendImportEvent[]) => Promise<InvestmentDividendImportResponse>;
   createDividend: (input: InvestmentDividendFormInput) => Promise<InvestmentDividend>;
   updateDividend: (id: string, updates: InvestmentDividendUpdateInput) => Promise<InvestmentDividend>;
   deleteDividend: (id: string) => Promise<void>;
@@ -53,6 +60,28 @@ export function DividendProvider({ children }: React.PropsWithChildren) {
       setLoading(false);
     }
   }, [activeProfile?.type]);
+
+  const getCalendar = useCallback(async () => {
+    if (activeProfile?.type !== 'personal') {
+      return { source: 'BRAPI' as const, events: [], failures: [] };
+    }
+    return getInvestmentDividendCalendar();
+  }, [activeProfile?.type]);
+
+  const importEvents = useCallback(async (events: InvestmentDividendImportEvent[]) => {
+    try {
+      const result = await importInvestmentDividends({ events });
+      if (result.created.length > 0) {
+        setDividends((current) => [
+          ...result.created,
+          ...current.filter((currentDividend) => !result.created.some((created) => created.id === currentDividend.id)),
+        ]);
+      }
+      return result;
+    } catch {
+      throw new Error('Não foi possível importar os proventos.');
+    }
+  }, []);
 
   useEffect(() => {
     void refresh();
@@ -95,8 +124,8 @@ export function DividendProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   const value = useMemo(
-    () => ({ dividends, loading, error, refresh, createDividend, updateDividend, deleteDividend }),
-    [createDividend, deleteDividend, dividends, error, loading, refresh, updateDividend],
+    () => ({ dividends, loading, error, refresh, getCalendar, importEvents, createDividend, updateDividend, deleteDividend }),
+    [createDividend, deleteDividend, dividends, error, getCalendar, importEvents, loading, refresh, updateDividend],
   );
 
   return <DividendContext.Provider value={value}>{children}</DividendContext.Provider>;
