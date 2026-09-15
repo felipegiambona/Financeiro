@@ -10,3 +10,5 @@ The forecast for the current month includes unpaid overdue card invoices from pr
 **How to apply:** When changing forecast calculations, add prior-month invoices with `overdue` status only to the current-month forecast; exclude paid invoices and avoid adding them to non-current months.
 
 The transactions screen must refresh card summaries when it regains focus, because transaction mutations can change invoice totals while the card context remains mounted.
+
+Dashboard monthly expenses and payable totals also include prior-month overdue invoices that remain unpaid, while paid invoices stay excluded from payable totals.

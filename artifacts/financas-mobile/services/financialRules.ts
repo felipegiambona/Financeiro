@@ -171,8 +171,10 @@ export function calculateMonthlyTotals(
   transactions: Transaction[],
   month: Date,
   cards: Card[] = [],
+  now = new Date(),
 ): MonthlyTotals {
   const occurrences = getTransactionOccurrencesForMonth(transactions, month);
+  const overdueCardInvoices = cardOverdueTotalForCurrentMonth(cards, month, now);
   return occurrences.reduce(
     (totals, transaction) => {
       if (transaction.cardId) return totals;
@@ -187,9 +189,9 @@ export function calculateMonthlyTotals(
     },
     {
       income: 0,
-      expense: cardInvoiceTotalForMonth(cards, month),
+      expense: cardInvoiceTotalForMonth(cards, month) + overdueCardInvoices,
       receivable: 0,
-      payable: cardInvoicePayableForMonth(cards, month),
+      payable: cardInvoicePayableForMonth(cards, month) + overdueCardInvoices,
     },
   );
 }
@@ -231,7 +233,7 @@ export function calculateTotalsByMonth(
 ): Array<{ key: string; date: Date; income: number; expense: number }> {
   return Array.from({ length: months }, (_, index) => {
     const date = new Date(now.getFullYear(), now.getMonth() - (months - 1 - index), 1, 12);
-    const totals = calculateMonthlyTotals(transactions, date, cards);
+    const totals = calculateMonthlyTotals(transactions, date, cards, now);
     return { key: getDateKey(date), date, ...totals };
   });
 }
