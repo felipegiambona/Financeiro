@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -28,6 +28,20 @@ const ASSET_TYPES: Array<{ value: InvestmentAssetType; label: string }> = INVEST
 
 function assetTypeLabel(type: InvestmentAssetType): string {
   return INVESTMENT_ASSET_TYPE_LABELS[type] ?? 'Outros';
+}
+
+const ASSET_TYPE_ICONS: Record<InvestmentAssetType, React.ComponentProps<typeof Feather>['name']> = {
+  stock: 'trending-up',
+  fii: 'home',
+  etf: 'layers',
+  fund: 'pie-chart',
+  fixed_income: 'shield',
+  crypto: 'dollar-sign',
+  other: 'circle',
+};
+
+function assetTypeIcon(type: InvestmentAssetType): React.ComponentProps<typeof Feather>['name'] {
+  return ASSET_TYPE_ICONS[type] ?? 'circle';
 }
 
 function normalizeQuoteIdentifier(type: InvestmentAssetType, value: string): string {
@@ -231,6 +245,7 @@ export default function InvestmentsScreen() {
   }, [favoriteItems, favoriteOnly]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [favoriteDetails, setFavoriteDetails] = useState<FavoriteDetail | null>(null);
+  const [favoriteToRemove, setFavoriteToRemove] = useState<FavoriteDetail | null>(null);
   const [favoriteAssetToRegister, setFavoriteAssetToRegister] = useState<string | null>(null);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [form, setForm] = useState(() => getInitialForm());
@@ -469,15 +484,20 @@ export default function InvestmentsScreen() {
     );
   };
 
-  const removeFavoriteFromDetails = async () => {
-    if (!favoriteDetails) return;
+  const requestFavoriteRemoval = (favorite: FavoriteDetail) => {
+    setFavoriteToRemove(favorite);
+  };
+
+  const removeFavorite = async () => {
+    if (!favoriteToRemove) return;
     try {
-      if (isPortfolioFavorite(favoriteDetails)) {
-        await toggleFavorite(favoriteDetails.id);
+      if (isPortfolioFavorite(favoriteToRemove)) {
+        await toggleFavorite(favoriteToRemove.id);
       } else {
-        await deleteFavoriteAsset(favoriteDetails.id);
+        await deleteFavoriteAsset(favoriteToRemove.id);
       }
-      setFavoriteDetails(null);
+      setFavoriteDetails((current) => current?.id === favoriteToRemove.id ? null : current);
+      setFavoriteToRemove(null);
     } catch {
       Alert.alert('Não foi possível remover favorito', 'Tente novamente.');
     }
@@ -883,16 +903,16 @@ export default function InvestmentsScreen() {
                     <React.Fragment key={`${favoriteOnly ? 'favorite' : 'investment'}-${investment.id}`}>
                       {favoriteGroupHeader}
                       {favoriteOnly ? (
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`Ver detalhes de ${investment.name}`}
-                          onPress={() => setFavoriteDetails(favoriteDetail)}
-                          style={({ pressed }) => [styles.investmentCard, styles.favoriteCompactCard, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
-                        >
+                        <View style={[styles.investmentCard, styles.favoriteCompactCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                           <View style={styles.investmentHeader}>
-                            <View style={styles.investmentIdentity}>
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel={`Ver detalhes de ${investment.name}`}
+                              onPress={() => setFavoriteDetails(favoriteDetail)}
+                              style={({ pressed }) => [styles.favoriteCompactDetails, pressed && styles.pressed]}
+                            >
                               <View style={[styles.investmentIcon, styles.favoriteCompactIcon, { backgroundColor: colors.secondary }]}>
-                                <Feather name="star" size={15} color={colors.accent} />
+                                <Feather name={assetTypeIcon(investment.assetType)} size={15} color={colors.foreground} />
                               </View>
                               <View style={styles.investmentCopy}>
                                 <Text numberOfLines={1} style={[styles.investmentName, { color: colors.foreground }]}>{investment.name}</Text>
@@ -900,13 +920,30 @@ export default function InvestmentsScreen() {
                                   {investment.ticker ? `${investment.ticker} · ` : ''}{assetTypeLabel(investment.assetType)}
                                 </Text>
                               </View>
-                            </View>
+                            </Pressable>
                             <View style={styles.favoriteCompactAction}>
-                              <Feather name="star" size={14} color={colors.accent} />
-                              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                              <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={`Remover ${investment.name} dos favoritos`}
+                                testID={`remove-favorite-${investment.id}`}
+                                onPress={() => requestFavoriteRemoval(favoriteDetail)}
+                                hitSlop={6}
+                                style={({ pressed }) => [styles.favoriteStarButton, { backgroundColor: colors.accent }, pressed && styles.pressed]}
+                              >
+                                <MaterialIcons name="star" size={17} color={colors.accentForeground} />
+                              </Pressable>
+                              <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={`Ver detalhes de ${investment.name}`}
+                                onPress={() => setFavoriteDetails(favoriteDetail)}
+                                hitSlop={6}
+                                style={({ pressed }) => [styles.favoriteChevronButton, pressed && styles.pressed]}
+                              >
+                                <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                              </Pressable>
                             </View>
                           </View>
-                        </Pressable>
+                        </View>
                       ) : (
                         <View style={[styles.investmentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                           <View style={styles.investmentHeader}>
@@ -1399,7 +1436,7 @@ export default function InvestmentsScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Remover ${favoriteDetails.name} dos favoritos`}
-                  onPress={() => void removeFavoriteFromDetails()}
+                  onPress={() => requestFavoriteRemoval(favoriteDetails)}
                   style={({ pressed }) => [styles.favoriteDetailSecondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}
                 >
                   <Feather name="star" size={14} color={colors.foreground} />
@@ -1410,6 +1447,17 @@ export default function InvestmentsScreen() {
           </View>
         </View>
       </Modal>
+
+      <ConfirmationModal
+        visible={favoriteToRemove !== null}
+        title="Remover dos favoritos?"
+        message={favoriteToRemove ? `O ativo ${favoriteToRemove.name} será removido da sua lista de favoritos.` : ''}
+        confirmLabel="Remover favorito"
+        onConfirm={removeFavorite}
+        onClose={() => setFavoriteToRemove(null)}
+        errorTitle="Não foi possível remover favorito"
+        errorMessage="O ativo continua nos favoritos. Tente novamente."
+      />
 
       <ConfirmationModal
         visible={investmentToDelete !== null}
@@ -1468,7 +1516,10 @@ const styles = StyleSheet.create({
   investmentCard: { borderWidth: 1, borderRadius: 9, padding: 13 },
   favoriteCompactCard: { padding: 10 },
   favoriteCompactIcon: { width: 31, height: 31, borderRadius: 7 },
-  favoriteCompactAction: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  favoriteCompactDetails: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  favoriteCompactAction: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  favoriteStarButton: { width: 31, height: 31, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  favoriteChevronButton: { width: 22, height: 31, alignItems: 'center', justifyContent: 'center' },
   favoriteGroupHeader: { minHeight: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2, marginTop: 2 },
   favoriteGroupHeaderCopy: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   favoriteGroupLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 0.8, textTransform: 'uppercase' },
