@@ -8,7 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { useCards } from '@/context/CardContext';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
-import { getPendingCardInvoices, getPendingTransactionOccurrences, formatPendingTransactionDate } from '@/services/pendingNotifications';
+import { getCardInvoiceNotifications, getPendingTransactionOccurrences, formatPendingTransactionDate } from '@/services/pendingNotifications';
 import { formatCurrency } from '@/utils/currency';
 import { formatMonthYearLabel } from '@/utils/date';
 import { TransactionOccurrence } from '@/types/transaction';
@@ -20,8 +20,16 @@ export default function NotificationsScreen() {
   const { cards, loading: cardsLoading, error: cardsError, refresh: refreshCards, payCardInvoice } = useCards();
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const pendingTransactions = useMemo(() => getPendingTransactionOccurrences(transactions), [transactions]);
-  const pendingCardInvoices = useMemo(() => getPendingCardInvoices(cards), [cards]);
-  const totalPending = pendingTransactions.length + pendingCardInvoices.length;
+  const cardInvoiceNotifications = useMemo(() => getCardInvoiceNotifications(cards), [cards]);
+  const closedCardInvoices = useMemo(
+    () => cardInvoiceNotifications.filter(({ invoice }) => invoice.status === 'closed'),
+    [cardInvoiceNotifications],
+  );
+  const overdueCardInvoices = useMemo(
+    () => cardInvoiceNotifications.filter(({ invoice }) => invoice.status === 'overdue'),
+    [cardInvoiceNotifications],
+  );
+  const totalPending = pendingTransactions.length + cardInvoiceNotifications.length;
 
   useFocusEffect(useCallback(() => {
     void refreshCards();
@@ -42,7 +50,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const payOverdueInvoice = async (cardId: string, invoiceMonth: string) => {
+  const payInvoice = async (cardId: string, invoiceMonth: string) => {
     const key = `invoice:${cardId}:${invoiceMonth}`;
     try {
       setUpdatingKey(key);
@@ -133,11 +141,58 @@ export default function NotificationsScreen() {
                 </View>
               </>
             ) : null}
-            {pendingCardInvoices.length > 0 ? (
+            {closedCardInvoices.length > 0 ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Faturas fechadas em dia</Text>
+                <View style={styles.pendingList}>
+                  {closedCardInvoices.map(({ card, invoice }) => {
+                    const key = `invoice:${card.id}:${invoice.invoiceMonth}`;
+                    const isUpdating = updatingKey === key;
+                    return (
+                      <View key={key} style={[styles.pendingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={styles.pendingTop}>
+                          <View style={[styles.transactionIcon, { backgroundColor: colors.secondary }]}>
+                            <Feather name="credit-card" size={17} color={colors.foreground} />
+                          </View>
+                          <View style={styles.transactionCopy}>
+                            <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{card.name}</Text>
+                            <Text style={[styles.date, { color: colors.primary }]}>
+                              Fatura de {formatMonthYearLabel(new Date(`${invoice.invoiceMonth}-01T12:00:00`))}
+                            </Text>
+                          </View>
+                          <Text style={[styles.amount, { color: colors.primary }]}>{formatCurrency(invoice.amount)}</Text>
+                        </View>
+                        <View style={[styles.pendingBottom, { borderTopColor: colors.border }]}>
+                          <Text style={[styles.status, { color: colors.primary }]}>Fechada em dia</Text>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Pagar fatura fechada do cartão ${card.name}`}
+                            testID={`notification-pay-closed-invoice-${card.id}-${invoice.invoiceMonth}`}
+                            disabled={isUpdating}
+                            onPress={() => void payInvoice(card.id, invoice.invoiceMonth)}
+                            style={({ pressed }) => [
+                              styles.payButton,
+                              { backgroundColor: colors.primary },
+                              isUpdating && styles.updating,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Text style={[styles.payButtonText, { color: colors.primaryForeground }]}>
+                              {isUpdating ? 'Salvando...' : 'Pagar fatura'}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
+            {overdueCardInvoices.length > 0 ? (
               <>
                 <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Faturas atrasadas</Text>
                 <View style={styles.pendingList}>
-                  {pendingCardInvoices.map(({ card, invoice }) => {
+                  {overdueCardInvoices.map(({ card, invoice }) => {
                     const key = `invoice:${card.id}:${invoice.invoiceMonth}`;
                     const isUpdating = updatingKey === key;
                     return (
@@ -161,7 +216,7 @@ export default function NotificationsScreen() {
                             accessibilityLabel={`Pagar fatura atrasada do cartão ${card.name}`}
                             testID={`notification-pay-invoice-${card.id}-${invoice.invoiceMonth}`}
                             disabled={isUpdating}
-                            onPress={() => void payOverdueInvoice(card.id, invoice.invoiceMonth)}
+                            onPress={() => void payInvoice(card.id, invoice.invoiceMonth)}
                             style={({ pressed }) => [
                               styles.payButton,
                               { backgroundColor: colors.expense },
