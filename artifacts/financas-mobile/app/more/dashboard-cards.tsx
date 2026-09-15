@@ -1,5 +1,4 @@
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
