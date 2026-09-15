@@ -64,7 +64,7 @@ test('inclui faturas vencidas e não pagas nas despesas e no total a pagar do m�
   assert.equal(totals.payable, 500);
 });
 
-test('não inclui fatura paga nas despesas do mês nem no total a pagar', () => {
+test('inclui a fatura paga uma vez sem duplicar o pagamento', () => {
   const cards = [card([
     { invoiceMonth: '2026-09', amount: 300, status: 'paid' },
   ])];
@@ -85,11 +85,11 @@ test('não inclui fatura paga nas despesas do mês nem no total a pagar', () => 
     new Date('2026-09-15T12:00:00'),
   );
 
-  assert.equal(totals.expense, 0);
+  assert.equal(totals.expense, 300);
   assert.equal(totals.payable, 0);
 });
 
-test('não inclui o pagamento de uma fatura paga na previsão do mês', () => {
+test('inclui a fatura paga uma vez na previsão sem duplicar o pagamento', () => {
   const cards = [card([
     { invoiceMonth: '2026-09', amount: 300, status: 'paid' },
   ])];
@@ -105,12 +105,12 @@ test('não inclui o pagamento de uma fatura paga na previsão do mês', () => {
 
   assert.equal(
     calculateForecast(transactions, month('2026-09'), cards, new Date('2026-09-15T12:00:00')),
-    0,
+    -300,
   );
   assert.equal(
     calculateForecastByMonth(transactions, 2026, cards, new Date('2026-09-15T12:00:00'))
       .find((item) => item.key === '2026-09').forecast,
-    0,
+    -300,
   );
 });
 

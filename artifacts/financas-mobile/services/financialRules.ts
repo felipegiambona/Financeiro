@@ -51,7 +51,7 @@ function cardInvoiceTotalForMonth(cards: Card[], month: Date): number {
   const key = getDateKey(month).slice(0, 7);
   return cards.reduce(
     (total, card) => total + card.invoices
-      .filter((invoice) => invoice.invoiceMonth === key && invoice.status !== 'paid')
+      .filter((invoice) => invoice.invoiceMonth === key)
       .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
     0,
   );
