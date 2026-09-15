@@ -456,57 +456,66 @@ export function InvestmentDividends() {
                 </View>
               ) : calendar ? (
                 <>
-                  {calendar.failures.length > 0 ? (
-                    <View style={[styles.calendarWarning, { backgroundColor: colors.secondary }]}>
-                      <Text style={[styles.calendarWarningTitle, { color: colors.foreground }]}>Alguns ativos não responderam</Text>
-                      {calendar.failures.map((failure) => (
-                        <Text key={failure.investmentId} style={[styles.helper, { color: colors.mutedForeground }]}>
-                          {failure.investmentTicker ?? failure.investmentName}: {failure.message}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : null}
                   {calendar.events.length === 0 ? (
                     <View style={[styles.empty, { backgroundColor: colors.secondary }]}>
-                      <Feather name="calendar" size={18} color={colors.mutedForeground} />
-                      <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Nenhum evento novo encontrado</Text>
-                      <Text style={[styles.helper, { color: colors.mutedForeground }]}>Os eventos previstos da sua carteira aparecerão aqui para revisão.</Text>
+                      <Feather name={calendar.failures.length > 0 ? 'alert-circle' : 'calendar'} size={18} color={colors.mutedForeground} />
+                      <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+                        {calendar.failures.length > 0 ? 'Calendário temporariamente indisponível' : 'Nenhum evento novo encontrado'}
+                      </Text>
+                      <Text style={[styles.helper, { color: colors.mutedForeground }]}>
+                        {calendar.failures.length > 0
+                          ? 'Não foi possível consultar os proventos agora. Tente novamente ou cadastre o evento manualmente.'
+                          : 'Os eventos previstos da sua carteira aparecerão aqui para revisão.'}
+                      </Text>
+                      {calendar.failures.length > 0 ? (
+                        <Pressable onPress={() => void openCalendar()}>
+                          <Text style={[styles.retry, { color: colors.primary }]}>Tentar novamente</Text>
+                        </Pressable>
+                      ) : null}
                     </View>
                   ) : (
-                    <View style={styles.calendarList}>
-                      {calendar.events.map((event) => {
-                        const selected = selectedCalendarIds.has(event.sourceEventId);
-                        return (
-                          <Pressable
-                            key={event.sourceEventId}
-                            accessibilityRole="checkbox"
-                            accessibilityState={{ checked: selected, disabled: event.alreadyImported }}
-                            disabled={event.alreadyImported || importing}
-                            onPress={() => toggleCalendarEvent(event)}
-                            style={({ pressed }) => [
-                              styles.calendarItem,
-                              { borderColor: colors.border, backgroundColor: selected ? colors.secondary : colors.card },
-                              event.alreadyImported && styles.disabled,
-                              pressed && styles.pressed,
-                            ]}
-                          >
-                            <View style={[styles.checkbox, { borderColor: selected ? colors.primary : colors.input, backgroundColor: selected ? colors.primary : colors.card }]}>
-                              {selected ? <Feather name="check" size={12} color={colors.primaryForeground} /> : null}
-                            </View>
-                            <View style={styles.itemMain}>
-                              <View style={styles.itemTitleRow}>
-                                <Text style={[styles.itemTitle, { color: colors.foreground }]}>{event.investmentTicker ?? event.investmentName}</Text>
-                                <Text style={[styles.itemStatus, { color: colors.pending }]}>{typeLabel(event.type)}</Text>
+                    <>
+                      {calendar.failures.length > 0 ? (
+                        <View style={[styles.calendarWarning, { backgroundColor: colors.secondary }]}>
+                          <Text style={[styles.calendarWarningTitle, { color: colors.foreground }]}>Alguns eventos não puderam ser consultados</Text>
+                          <Text style={[styles.helper, { color: colors.mutedForeground }]}>Os eventos disponíveis continuam abaixo. Você pode tentar novamente mais tarde ou cadastrar os demais manualmente.</Text>
+                        </View>
+                      ) : null}
+                      <View style={styles.calendarList}>
+                        {calendar.events.map((event) => {
+                          const selected = selectedCalendarIds.has(event.sourceEventId);
+                          return (
+                            <Pressable
+                              key={event.sourceEventId}
+                              accessibilityRole="checkbox"
+                              accessibilityState={{ checked: selected, disabled: event.alreadyImported }}
+                              disabled={event.alreadyImported || importing}
+                              onPress={() => toggleCalendarEvent(event)}
+                              style={({ pressed }) => [
+                                styles.calendarItem,
+                                { borderColor: colors.border, backgroundColor: selected ? colors.secondary : colors.card },
+                                event.alreadyImported && styles.disabled,
+                                pressed && styles.pressed,
+                              ]}
+                            >
+                              <View style={[styles.checkbox, { borderColor: selected ? colors.primary : colors.input, backgroundColor: selected ? colors.primary : colors.card }]}>
+                                {selected ? <Feather name="check" size={12} color={colors.primaryForeground} /> : null}
                               </View>
-                              <Text style={[styles.itemMeta, { color: colors.mutedForeground }]}>
-                                Pagamento em {displayDate(event.paymentDate)} · {event.alreadyImported ? 'Já importado' : 'Previsto'}
-                              </Text>
-                            </View>
-                            <Text style={[styles.itemAmount, { color: colors.foreground }]}>{formatCurrency(event.amount)}</Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
+                              <View style={styles.itemMain}>
+                                <View style={styles.itemTitleRow}>
+                                  <Text style={[styles.itemTitle, { color: colors.foreground }]}>{event.investmentTicker ?? event.investmentName}</Text>
+                                  <Text style={[styles.itemStatus, { color: colors.pending }]}>{typeLabel(event.type)}</Text>
+                                </View>
+                                <Text style={[styles.itemMeta, { color: colors.mutedForeground }]}>
+                                  Pagamento em {displayDate(event.paymentDate)} · {event.alreadyImported ? 'Já importado' : 'Previsto'}
+                                </Text>
+                              </View>
+                              <Text style={[styles.itemAmount, { color: colors.foreground }]}>{formatCurrency(event.amount)}</Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </>
                   )}
                   {calendar.events.some((event) => !event.alreadyImported) ? (
                     <Pressable
