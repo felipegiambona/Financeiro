@@ -46,10 +46,10 @@ test('não duplica a fatura vencida no mês original', () => {
   );
 });
 
-test('inclui faturas vencidas e não pagas nas despesas e no total a pagar do mês atual', () => {
+test('inclui faturas atrasadas pagas e a pagar nas despesas do mês atual', () => {
   const cards = [card([
     { invoiceMonth: '2026-08', amount: 300, status: 'overdue' },
-    { invoiceMonth: '2026-07', amount: 400, status: 'paid' },
+    { invoiceMonth: '2026-08', amount: 400, status: 'paid' },
     { invoiceMonth: '2026-09', amount: 200, status: 'closed' },
   ])];
 
@@ -60,7 +60,7 @@ test('inclui faturas vencidas e não pagas nas despesas e no total a pagar do m�
     new Date('2026-09-15T12:00:00'),
   );
 
-  assert.equal(totals.expense, 500);
+  assert.equal(totals.expense, 900);
   assert.equal(totals.payable, 500);
 });
 
@@ -114,7 +114,7 @@ test('inclui a fatura paga uma vez na previsão sem duplicar o pagamento', () =>
   );
 });
 
-test('a previsão soma lançamentos e apenas faturas atrasadas a pagar no mês atual', () => {
+test('a previsão soma lançamentos e faturas atrasadas pagas e a pagar no mês atual', () => {
   const cards = [card([
     { invoiceMonth: '2026-08', amount: 300, status: 'paid' },
     { invoiceMonth: '2026-08', amount: 200, status: 'overdue' },
@@ -140,7 +140,7 @@ test('a previsão soma lançamentos e apenas faturas atrasadas a pagar no mês a
     },
   ];
 
-  const expectedForecast = 700;
+  const expectedForecast = 400;
   assert.equal(
     calculateForecast(transactions, month('2026-09'), cards, new Date('2026-09-15T12:00:00')),
     expectedForecast,

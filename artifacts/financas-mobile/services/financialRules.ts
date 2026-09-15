@@ -64,7 +64,9 @@ function cardOverdueTotalForCurrentMonth(cards: Card[], month: Date, now: Date):
 
   return cards.reduce(
     (total, card) => total + card.invoices
-      .filter((invoice) => invoice.status === 'overdue' && invoice.invoiceMonth < currentMonthKey)
+      .filter((invoice) =>
+        (invoice.status === 'overdue' || invoice.status === 'paid')
+        && invoice.invoiceMonth < currentMonthKey)
       .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
     0,
   );
