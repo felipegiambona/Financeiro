@@ -169,6 +169,7 @@ export default function InvestmentsScreen() {
   const [favoriteSearchQuery, setFavoriteSearchQuery] = useState('');
   const [favoriteSearchResults, setFavoriteSearchResults] = useState<InvestmentSearchResult[]>([]);
   const [favoriteSearchLoading, setFavoriteSearchLoading] = useState(false);
+  const [favoriteCatalogUnavailable, setFavoriteCatalogUnavailable] = useState(false);
   const [favoriteAddingKey, setFavoriteAddingKey] = useState<string | null>(null);
   const favoriteSearchRequestRef = useRef(0);
   const filteredInvestments = useMemo(
@@ -236,6 +237,7 @@ export default function InvestmentsScreen() {
   const [nameFocused, setNameFocused] = useState(false);
   const [assetSuggestions, setAssetSuggestions] = useState<InvestmentSearchResult[]>([]);
   const [searchingAssets, setSearchingAssets] = useState(false);
+  const [assetCatalogUnavailable, setAssetCatalogUnavailable] = useState(false);
   const searchRequestRef = useRef(0);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -309,17 +311,25 @@ export default function InvestmentsScreen() {
       searchRequestRef.current += 1;
       setAssetSuggestions([]);
       setSearchingAssets(false);
+      setAssetCatalogUnavailable(false);
       return;
     }
 
     const requestId = ++searchRequestRef.current;
     const timeout = setTimeout(async () => {
       setSearchingAssets(true);
+      setAssetCatalogUnavailable(false);
       try {
-        const results = await searchInvestmentAssets(query);
-        if (requestId === searchRequestRef.current) setAssetSuggestions(results);
+        const response = await searchInvestmentAssets(query);
+        if (requestId === searchRequestRef.current) {
+          setAssetSuggestions(response.results);
+          setAssetCatalogUnavailable(response.status === 'unavailable');
+        }
       } catch {
-        if (requestId === searchRequestRef.current) setAssetSuggestions([]);
+        if (requestId === searchRequestRef.current) {
+          setAssetSuggestions([]);
+          setAssetCatalogUnavailable(true);
+        }
       } finally {
         if (requestId === searchRequestRef.current) setSearchingAssets(false);
       }
@@ -334,17 +344,25 @@ export default function InvestmentsScreen() {
       favoriteSearchRequestRef.current += 1;
       setFavoriteSearchResults([]);
       setFavoriteSearchLoading(false);
+      setFavoriteCatalogUnavailable(false);
       return;
     }
 
     const requestId = ++favoriteSearchRequestRef.current;
     const timeout = setTimeout(async () => {
       setFavoriteSearchLoading(true);
+      setFavoriteCatalogUnavailable(false);
       try {
-        const results = await searchInvestmentAssets(query);
-        if (requestId === favoriteSearchRequestRef.current) setFavoriteSearchResults(results);
+        const response = await searchInvestmentAssets(query);
+        if (requestId === favoriteSearchRequestRef.current) {
+          setFavoriteSearchResults(response.results);
+          setFavoriteCatalogUnavailable(response.status === 'unavailable');
+        }
       } catch {
-        if (requestId === favoriteSearchRequestRef.current) setFavoriteSearchResults([]);
+        if (requestId === favoriteSearchRequestRef.current) {
+          setFavoriteSearchResults([]);
+          setFavoriteCatalogUnavailable(true);
+        }
       } finally {
         if (requestId === favoriteSearchRequestRef.current) setFavoriteSearchLoading(false);
       }
@@ -642,6 +660,8 @@ export default function InvestmentsScreen() {
               <View style={[styles.favoriteSearchResults, { borderColor: colors.border }]}>
                 {favoriteSearchLoading ? (
                   <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Buscando ativos...</Text>
+                ) : favoriteCatalogUnavailable ? (
+                  <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Catálogo indisponível no momento. Tente novamente mais tarde.</Text>
                 ) : favoriteExistingMatches.length === 0 && favoriteCatalogSuggestions.length === 0 ? (
                   <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Nenhum ativo encontrado.</Text>
                 ) : (
@@ -1083,6 +1103,8 @@ export default function InvestmentsScreen() {
                       {matchingRecentAssets.length > 0 && <View style={[styles.suggestionDivider, { backgroundColor: colors.border }]} />}
                       {searchingAssets ? (
                         <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Buscando no catálogo...</Text>
+                      ) : assetCatalogUnavailable ? (
+                        <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Catálogo indisponível no momento. Você pode cadastrar manualmente.</Text>
                       ) : catalogSuggestions.length > 0 ? catalogSuggestions.map((suggestion) => (
                         <Pressable
                           key={`catalog-${suggestion.assetType}-${suggestion.ticker}`}

@@ -30,6 +30,11 @@ import {
 
 export { MAX_RECENT_INVESTMENT_ASSETS, type RecentInvestmentAsset } from '@/context/recentInvestmentAssets';
 
+export type InvestmentCatalogSearch = {
+  results: InvestmentSearchResult[];
+  status: 'available' | 'unavailable';
+};
+
 function isLegacyFavoriteDraft(investment: Investment): boolean {
   return investment.isFavorite
     && investment.quantity === 0
@@ -46,7 +51,7 @@ interface InvestmentContextValue {
   error: string | null;
   refresh: () => Promise<void>;
   refreshQuotes: () => Promise<void>;
-  searchInvestmentAssets: (query: string) => Promise<InvestmentSearchResult[]>;
+  searchInvestmentAssets: (query: string) => Promise<InvestmentCatalogSearch>;
   rememberRecentAsset: (asset: RecentInvestmentAsset) => Promise<void>;
   removeRecentAsset: (asset: RecentInvestmentAsset) => Promise<void>;
   clearRecentAssets: () => Promise<void>;
@@ -188,8 +193,15 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   const searchInvestmentAssets = useCallback(async (query: string) => {
-    if (activeProfile?.type !== 'personal') return [];
-    return searchRemoteInvestments({ q: query });
+    if (activeProfile?.type !== 'personal') return { results: [], status: 'available' as const };
+    try {
+      return {
+        results: await searchRemoteInvestments({ q: query }),
+        status: 'available' as const,
+      };
+    } catch {
+      return { results: [], status: 'unavailable' as const };
+    }
   }, [activeProfile?.type]);
 
   const createInvestment = useCallback(async (input: InvestmentInput) => {
