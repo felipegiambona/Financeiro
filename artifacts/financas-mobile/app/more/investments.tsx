@@ -1,6 +1,6 @@
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
@@ -313,6 +313,23 @@ export default function InvestmentsScreen() {
     [favoriteAssets, favoriteExistingKeys, favoriteSearchResults, investmentKeys],
   );
 
+  const searchAssetCatalog = useCallback(async (query: string, requestId: number) => {
+    try {
+      const response = await searchInvestmentAssets(query);
+      if (requestId === searchRequestRef.current) {
+        setAssetSuggestions(response.results);
+        setAssetCatalogUnavailable(response.status === 'unavailable');
+      }
+    } catch {
+      if (requestId === searchRequestRef.current) {
+        setAssetSuggestions([]);
+        setAssetCatalogUnavailable(true);
+      }
+    } finally {
+      if (requestId === searchRequestRef.current) setSearchingAssets(false);
+    }
+  }, [searchInvestmentAssets]);
+
   useEffect(() => {
     const query = form.name.trim();
     if (!nameFocused || query.length < 2) {
@@ -327,24 +344,11 @@ export default function InvestmentsScreen() {
     const timeout = setTimeout(async () => {
       setSearchingAssets(true);
       setAssetCatalogUnavailable(false);
-      try {
-        const response = await searchInvestmentAssets(query);
-        if (requestId === searchRequestRef.current) {
-          setAssetSuggestions(response.results);
-          setAssetCatalogUnavailable(response.status === 'unavailable');
-        }
-      } catch {
-        if (requestId === searchRequestRef.current) {
-          setAssetSuggestions([]);
-          setAssetCatalogUnavailable(true);
-        }
-      } finally {
-        if (requestId === searchRequestRef.current) setSearchingAssets(false);
-      }
+      void searchAssetCatalog(query, requestId);
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [form.name, nameFocused, searchInvestmentAssets]);
+  }, [form.name, nameFocused, searchAssetCatalog]);
 
   useEffect(() => {
     const query = favoriteSearchQuery.trim();
@@ -500,6 +504,15 @@ export default function InvestmentsScreen() {
     setAssetSuggestions([]);
     setSearchingAssets(false);
     setNameFocused(false);
+  };
+
+  const retryAssetCatalogSearch = () => {
+    const query = form.name.trim();
+    if (!nameFocused || query.length < 2) return;
+    const requestId = ++searchRequestRef.current;
+    setSearchingAssets(true);
+    setAssetCatalogUnavailable(false);
+    void searchAssetCatalog(query, requestId);
   };
 
   const confirmClearRecentAssets = () => {
@@ -1226,7 +1239,21 @@ export default function InvestmentsScreen() {
                       {searchingAssets ? (
                         <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Buscando no catálogo...</Text>
                       ) : assetCatalogUnavailable ? (
-                        <Text style={[styles.suggestionState, { color: colors.mutedForeground }]}>Catálogo indisponível no momento. Você pode cadastrar manualmente.</Text>
+                        <View style={styles.catalogUnavailableState}>
+                          <Text style={[styles.suggestionState, styles.catalogUnavailableMessage, { color: colors.mutedForeground }]}>
+                            Catálogo indisponível no momento. Você pode cadastrar manualmente.
+                          </Text>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel="Tentar novamente a busca no catálogo"
+                            testID="investment-catalog-retry"
+                            onPress={retryAssetCatalogSearch}
+                            style={({ pressed }) => [styles.catalogRetryButton, { borderColor: colors.border }, pressed && styles.pressed]}
+                          >
+                            <Feather name="refresh-cw" size={13} color={colors.primary} />
+                            <Text style={[styles.catalogRetryText, { color: colors.primary }]}>Tentar novamente</Text>
+                          </Pressable>
+                        </View>
                       ) : catalogSuggestions.length > 0 ? catalogSuggestions.map((suggestion) => (
                         <Pressable
                           key={`catalog-${suggestion.assetType}-${suggestion.ticker}`}
@@ -1698,6 +1725,10 @@ const styles = StyleSheet.create({
   clearRecentButton: { minHeight: 32, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 4 },
   clearRecentButtonText: { fontSize: 9, fontFamily: 'Inter_700Bold' },
   suggestionState: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingHorizontal: 11, paddingVertical: 11 },
+  catalogUnavailableState: { alignItems: 'stretch' },
+  catalogUnavailableMessage: { paddingBottom: 4 },
+  catalogRetryButton: { minHeight: 34, borderWidth: 1, borderRadius: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 11, marginBottom: 10 },
+  catalogRetryText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   suggestionDivider: { height: 1, marginHorizontal: 11 },
   suggestionRow: { flexDirection: 'row', alignItems: 'center' },
   suggestionItem: { minHeight: 47, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 11, paddingVertical: 7 },
