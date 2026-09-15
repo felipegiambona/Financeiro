@@ -23,6 +23,8 @@ router.use("/transactions", requireAuth, resolveFinancialProfile);
 function toResponse(row: typeof transactionsTable.$inferSelect) {
   return {
     ...row,
+    date: calendarDateValue(row.date),
+    dueDate: row.dueDate == null ? null : calendarDateValue(row.dueDate),
     amount: Number(row.amount),
     recurrence: row.recurrence,
     paymentStatusOverrides: row.paymentStatusOverrides,
@@ -30,11 +32,25 @@ function toResponse(row: typeof transactionsTable.$inferSelect) {
   };
 }
 
+function calendarDateValue(value: Date | string): string {
+  const key = typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? value
+    : dateKey(value);
+  return `${key}T12:00:00-03:00`;
+}
+
 function dateOnly(value: Date | string): string;
 function dateOnly(value: Date | string | null | undefined): string | null;
 function dateOnly(value: Date | string | null | undefined): string | null {
   if (value == null) return null;
   return dateKey(value);
+}
+
+function dateOnlyInput(rawValue: unknown, parsedValue: Date | string | null | undefined): string | null {
+  if (typeof rawValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    return rawValue;
+  }
+  return dateOnly(parsedValue);
 }
 
 function serializeTransaction(
@@ -123,7 +139,7 @@ router.post("/transactions", async (req, res): Promise<void> => {
     }
     cardClosingDay = card.closingDay;
   }
-  const effectiveDate = dateOnly(parsed.data.date) ?? dateKey(new Date());
+  const effectiveDate = dateOnlyInput(req.body?.date, parsed.data.date) ?? dateKey(new Date());
   const [row] = await db.insert(transactionsTable).values({
     ...parsed.data,
     userId,
@@ -140,7 +156,7 @@ router.post("/transactions", async (req, res): Promise<void> => {
     isInvestment: parsed.data.isInvestment ?? false,
     amount: String(parsed.data.amount),
     date: effectiveDate,
-    dueDate: dateOnly(parsed.data.dueDate),
+    dueDate: dateOnlyInput(req.body?.dueDate, parsed.data.dueDate),
     paymentStatusOverrides: {},
   }).returning();
   res.status(201).json(serializeTransaction(row, CreateTransactionResponse));
@@ -178,6 +194,12 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     return;
   }
   const effectiveType = type ?? current.type;
+  const effectiveDate = date === undefined
+    ? current.date
+    : dateOnlyInput(req.body?.date, date) ?? current.date;
+  const effectiveDueDate = dueDate === undefined
+    ? undefined
+    : dateOnlyInput(req.body?.dueDate, dueDate);
   const effectiveWalletId = walletId ?? current.walletId ?? defaultWallet.id;
   const effectiveDestinationWalletId = destinationWalletId ?? current.destinationWalletId;
   const wallet = await getUserWallet(userId, effectiveWalletId);
@@ -224,8 +246,8 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
   const updates = {
     ...otherUpdates,
     ...(amount === undefined ? {} : { amount: String(amount) }),
-    ...(date === undefined ? {} : { date: dateOnly(date) }),
-    ...(dueDate === undefined ? {} : { dueDate: dateOnly(dueDate) }),
+    ...(date === undefined ? {} : { date: effectiveDate }),
+    ...(dueDate === undefined ? {} : { dueDate: effectiveDueDate }),
     ...(walletId === undefined ? {} : { walletId: wallet.id }),
     ...((cardId !== undefined || type !== undefined || date !== undefined) ? {
       cardId: effectiveCardId,
@@ -235,7 +257,7 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
       cardInvoiceMonth: current.cardEntryType === "invoice_payment"
         ? current.cardInvoiceMonth
         : effectiveCardId
-          ? invoiceMonthForPurchase(dateOnly(date) ?? current.date, effectiveCardClosingDay ?? 31)
+          ? invoiceMonthForPurchase(effectiveDate ?? current.date, effectiveCardClosingDay ?? 31)
           : null,
     } : {}),
     ...(type === undefined ? {} : { type }),
@@ -338,7 +360,7 @@ router.post("/transactions/batch-update", async (req, res): Promise<void> => {
     .set({
       ...(walletId === undefined ? {} : { walletId }),
       ...(categoryId === undefined ? {} : { categoryId }),
-      ...(dueDate === undefined ? {} : { dueDate: dateOnly(dueDate) }),
+      ...(dueDate === undefined ? {} : { dueDate: dateOnlyInput(req.body?.dueDate, dueDate) }),
       ...(paymentStatus === undefined ? {} : { paymentStatus }),
     })
     .where(and(eq(transactionsTable.userId, userId), inArray(transactionsTable.id, ids)));

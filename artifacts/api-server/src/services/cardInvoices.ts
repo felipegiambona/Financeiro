@@ -118,7 +118,9 @@ export function getCardInvoiceSummaries(
       const isPast = invoiceMonth < currentMonth;
       let status: CardInvoiceStatus = "open";
 
-      if (isPaid) {
+       if (amount <= 0) {
+         status = "open";
+       } else if (isPaid) {
         status = "paid";
       } else if (isPast) {
         status = "overdue";

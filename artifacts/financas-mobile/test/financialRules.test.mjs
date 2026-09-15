@@ -195,13 +195,39 @@ test('desconta compras do cartão somente quando a fatura é paga', () => {
       paymentStatus: 'paid',
     },
   ];
+  const openCard = card([{ invoiceMonth: '2026-09', amount: 300, status: 'closed' }]);
+  const paidCard = card([{ invoiceMonth: '2026-09', amount: 300, status: 'paid' }]);
+
+  const balanceBeforePayment = calculateWalletTotals(
+    [wallet],
+    transactions.slice(0, 1),
+    new Date('2026-09-15T12:00:00'),
+    [openCard],
+  )[0].total;
+  const monthlyTotalsBeforePayment = calculateMonthlyTotals(
+    transactions.slice(0, 1),
+    month('2026-09'),
+    [openCard],
+    new Date('2026-09-15T12:00:00'),
+  );
+  const monthlyTotalsAfterPayment = calculateMonthlyTotals(
+    transactions,
+    month('2026-09'),
+    [paidCard],
+    new Date('2026-09-15T12:00:00'),
+  );
 
   const [walletTotal] = calculateWalletTotals(
     [wallet],
     transactions,
     new Date('2026-09-15T12:00:00'),
-    [card([{ amount: 450 }])],
+    [paidCard],
   );
 
+  assert.equal(balanceBeforePayment, 1000);
   assert.equal(walletTotal.total, 700);
+  assert.equal(monthlyTotalsBeforePayment.expense, 300);
+  assert.equal(monthlyTotalsAfterPayment.expense, 300);
+  assert.equal(monthlyTotalsBeforePayment.payable, 300);
+  assert.equal(monthlyTotalsAfterPayment.payable, 0);
 });

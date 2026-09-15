@@ -1066,3 +1066,220 @@ describe("account deletion cleanup", () => {
     );
   });
 });
+
+describe("credit card purchase and invoice payment flow", () => {
+  let identity;
+
+  before(async () => {
+    await requireTestConfiguration();
+    identity = await createTemporaryIdentity("card-balance");
+  });
+
+  after(async () => {
+    if (!identity?.token) {
+      return;
+    }
+
+    const cleanupErrors = [];
+    if (!identity.deletedViaApi) {
+      try {
+        const result = await apiRequest(identity.token, "/account", {
+          method: "DELETE",
+        });
+        assertStatus(result, 204);
+        identity.deletedViaApi = true;
+      } catch (error) {
+        cleanupErrors.push(error);
+      }
+    }
+
+    if (!identity.deletedViaApi) {
+      if (identity.sessionId) {
+        try {
+          await clerkRequest(`/sessions/${identity.sessionId}/revoke`, {
+            method: "POST",
+          });
+        } catch (error) {
+          cleanupErrors.push(error);
+        }
+      }
+
+      try {
+        await clerkRequest(`/users/${identity.userId}`, { method: "DELETE" });
+      } catch (error) {
+        cleanupErrors.push(error);
+      }
+    }
+
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError(cleanupErrors, "Temporary card test cleanup failed");
+    }
+  });
+
+  it("keeps card purchases out of transactions and pays an overdue invoice once", async () => {
+    const profiles = await apiRequest(identity.token, "/financial-profiles");
+    assertStatus(profiles, 200);
+    const personalProfile = profiles.body.find((profile) => profile.type === "personal");
+    assert.ok(personalProfile);
+
+    const wallet = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/wallets",
+      {
+        method: "POST",
+        body: {
+          title: "Carteira do cartão",
+          initialBalance: 1000,
+          icon: "wallet-outline",
+        },
+      },
+    );
+    assertStatus(wallet, 201);
+
+    const card = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/cards",
+      {
+        method: "POST",
+        body: {
+          name: "Cartão de teste",
+          dueDay: 10,
+          closingDay: 5,
+          availableLimit: 2000,
+        },
+      },
+    );
+    assertStatus(card, 201);
+
+    const purchase = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/transactions",
+      {
+        method: "POST",
+        body: {
+          walletId: wallet.body.id,
+          cardId: card.body.id,
+          type: "expense",
+          amount: 300,
+          description: "Compra de teste no cartão",
+          date: "2026-08-03",
+          dueDate: "2026-08-03",
+          recurrence: { kind: "none" },
+          paymentStatus: "paid",
+        },
+      },
+    );
+    assertStatus(purchase, 201);
+    assert.equal(purchase.body.cardEntryType, "purchase");
+
+    const transactionsBeforePayment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/transactions",
+    );
+    assertStatus(transactionsBeforePayment, 200);
+    assert.deepEqual(transactionsBeforePayment.body, []);
+
+    const cardHistoryBeforePayment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/cards/${card.body.id}/history`,
+    );
+    assertStatus(cardHistoryBeforePayment, 200);
+    assert.ok(cardHistoryBeforePayment.body.some((item) =>
+      item.kind === "transaction"
+      && item.id === purchase.body.id
+      && item.amount === 300
+      && item.date === "2026-08-03",
+    ));
+    assert.ok(cardHistoryBeforePayment.body.some((item) =>
+      item.kind === "closure"
+      && item.date === "2026-08-05",
+    ));
+
+    const cardBeforePayment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/cards/${card.body.id}`,
+    );
+    assertStatus(cardBeforePayment, 200);
+    const overdueInvoice = cardBeforePayment.body.invoices.find((invoice) =>
+      invoice.invoiceMonth === "2026-08",
+    );
+    assert.deepEqual(
+      {
+        amount: overdueInvoice?.amount,
+        status: overdueInvoice?.status,
+        overdue: cardBeforePayment.body.overdueInvoices.some((invoice) =>
+          invoice.invoiceMonth === "2026-08",
+        ),
+      },
+      { amount: 300, status: "overdue", overdue: true },
+    );
+
+    const payment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/cards/${card.body.id}/pay-invoice`,
+      {
+        method: "POST",
+        body: { invoiceMonth: "2026-08" },
+      },
+    );
+    assertStatus(payment, 200);
+    assert.equal(
+      payment.body.invoices.find((invoice) => invoice.invoiceMonth === "2026-08")?.status,
+      "paid",
+    );
+    assert.deepEqual(payment.body.overdueInvoices, []);
+
+    const transactionsAfterPayment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/transactions",
+    );
+    assertStatus(transactionsAfterPayment, 200);
+    assert.equal(transactionsAfterPayment.body.length, 1);
+    assert.deepEqual(
+      {
+        cardId: transactionsAfterPayment.body[0].cardId,
+        cardEntryType: transactionsAfterPayment.body[0].cardEntryType,
+        amount: transactionsAfterPayment.body[0].amount,
+        paymentStatus: transactionsAfterPayment.body[0].paymentStatus,
+        date: transactionsAfterPayment.body[0].date,
+      },
+      {
+        cardId: card.body.id,
+        cardEntryType: "invoice_payment",
+        amount: 300,
+        paymentStatus: "paid",
+        date: new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Sao_Paulo",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date()),
+      },
+    );
+
+    const cardHistoryAfterPayment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/cards/${card.body.id}/history`,
+    );
+    assertStatus(cardHistoryAfterPayment, 200);
+    assert.ok(cardHistoryAfterPayment.body.some((item) =>
+      item.kind === "transaction"
+      && item.id === transactionsAfterPayment.body[0].id
+      && item.amount === 300
+      && item.paymentStatus === "paid",
+    ));
+    assert.ok(cardHistoryAfterPayment.body.some((item) =>
+      item.kind === "transaction"
+      && item.id === purchase.body.id,
+    ));
+  });
+});
