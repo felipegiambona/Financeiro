@@ -333,7 +333,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           })}
         </View>
 
-        <Text style={[styles.label, { color: colors.foreground }]}>Quanto você gastou?</Text>
         <View style={styles.inputShell}>
           <Text style={[styles.currencyPrefix, { color: colors.mutedForeground }]}>R$</Text>
           <TextInput
