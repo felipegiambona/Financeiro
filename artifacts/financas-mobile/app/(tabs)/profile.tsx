@@ -56,6 +56,12 @@ const MENU_ITEMS = [
     description: 'Aparência e preferências do app',
     icon: 'sliders',
   },
+  {
+    key: 'privacy',
+    title: 'Privacidade e suporte',
+    description: 'Documentos, direitos do titular e atendimento',
+    icon: 'shield',
+  },
 ] as const;
 
 export default function MoreScreen() {
@@ -97,7 +103,9 @@ export default function MoreScreen() {
                             ? '/more/cards'
                           : item.key === 'investments'
                             ? '/more/investments'
-                          : '/more/settings',
+                           : item.key === 'privacy'
+                             ? '/more/privacy'
+                           : '/more/settings',
                 )}
                 style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}
               >

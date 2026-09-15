@@ -42,6 +42,7 @@ export * from "./financialProfiles";
 export * from "./investments";
 export * from "./investmentFavorites";
 export * from "./financialEntities";
+export * from "./privacy";
 
 /**
  * All profile-scoped financial tables exported by this schema barrel.

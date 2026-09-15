@@ -52,11 +52,13 @@ function RootLayoutNav() {
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
       </Stack.Protected>
+      <Stack.Screen name="legal/[document]" options={{ headerShown: false, presentation: 'card' }} />
       <Stack.Protected guard={Boolean(session)}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="transaction/new" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/profile" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/settings" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="more/privacy" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/categories" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/limits" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="more/goals" options={{ headerShown: false, presentation: 'card' }} />

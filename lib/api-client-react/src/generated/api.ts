@@ -27,6 +27,7 @@ import type {
   Category,
   CategoryInput,
   CategoryUpdate,
+  ExportPrivacyData200,
   FinancialProfile,
   FinancialProfileInput,
   FinancialProfileUpdate,
@@ -43,13 +44,21 @@ import type {
   InvestmentInput,
   InvestmentSearchResult,
   InvestmentUpdate,
+  LegalDocument,
   Limit,
   LimitInput,
   LimitUpdate,
   PaymentStatusUpdate,
+  PrivacyConsent,
+  PrivacyConsentInput,
+  PrivacyConsentList,
+  PrivacyRequest,
+  PrivacyRequestInput,
   ProfileImageUpdate,
   ProfileUpdate,
   SearchInvestmentsParams,
+  SupportRequest,
+  SupportRequestInput,
   Transaction,
   TransactionBatchDelete,
   TransactionBatchUpdate,
@@ -3469,5 +3478,680 @@ export const useUpdateAccountProfileImage = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateAccountProfileImageMutationOptions(options));
+    }
+
+export const getListLegalDocumentsUrl = () => {
+
+
+
+
+  return `/api/legal-documents`
+}
+
+/**
+ * @summary List public legal documents
+ */
+export const listLegalDocuments = async ( options?: Parameters<typeof customFetch>[1]): Promise<LegalDocument[]> => {
+
+  return customFetch<LegalDocument[]>(getListLegalDocumentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLegalDocumentsQueryKey = () => {
+    return [
+    `/api/legal-documents`
+    ] as const;
+    }
+
+
+export const getListLegalDocumentsQueryOptions = <TData = Awaited<ReturnType<typeof listLegalDocuments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLegalDocuments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLegalDocumentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLegalDocuments>>> = ({ signal }) => listLegalDocuments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLegalDocuments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLegalDocumentsQueryResult = NonNullable<Awaited<ReturnType<typeof listLegalDocuments>>>
+export type ListLegalDocumentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List public legal documents
+ */
+
+export function useListLegalDocuments<TData = Awaited<ReturnType<typeof listLegalDocuments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLegalDocuments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLegalDocumentsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetLegalDocumentUrl = (documentKey: 'privacy' | 'terms' | 'contact',) => {
+
+
+
+
+  return `/api/legal-documents/${documentKey}`
+}
+
+/**
+ * @summary Get one public legal document
+ */
+export const getLegalDocument = async (documentKey: 'privacy' | 'terms' | 'contact', options?: Parameters<typeof customFetch>[1]): Promise<LegalDocument> => {
+
+  return customFetch<LegalDocument>(getGetLegalDocumentUrl(documentKey),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLegalDocumentQueryKey = (documentKey: 'privacy' | 'terms' | 'contact',) => {
+    return [
+    `/api/legal-documents/${documentKey}`
+    ] as const;
+    }
+
+
+export const getGetLegalDocumentQueryOptions = <TData = Awaited<ReturnType<typeof getLegalDocument>>, TError = ErrorType<void>>(documentKey: 'privacy' | 'terms' | 'contact', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLegalDocument>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLegalDocumentQueryKey(documentKey);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLegalDocument>>> = ({ signal }) => getLegalDocument(documentKey, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: documentKey !== null && documentKey !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLegalDocument>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLegalDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof getLegalDocument>>>
+export type GetLegalDocumentQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get one public legal document
+ */
+
+export function useGetLegalDocument<TData = Awaited<ReturnType<typeof getLegalDocument>>, TError = ErrorType<void>>(
+ documentKey: 'privacy' | 'terms' | 'contact', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLegalDocument>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLegalDocumentQueryOptions(documentKey,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPrivacyConsentsUrl = () => {
+
+
+
+
+  return `/api/privacy/consents`
+}
+
+/**
+ * @summary List the authenticated user's document consents
+ */
+export const listPrivacyConsents = async ( options?: Parameters<typeof customFetch>[1]): Promise<PrivacyConsentList> => {
+
+  return customFetch<PrivacyConsentList>(getListPrivacyConsentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPrivacyConsentsQueryKey = () => {
+    return [
+    `/api/privacy/consents`
+    ] as const;
+    }
+
+
+export const getListPrivacyConsentsQueryOptions = <TData = Awaited<ReturnType<typeof listPrivacyConsents>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPrivacyConsents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPrivacyConsentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPrivacyConsents>>> = ({ signal }) => listPrivacyConsents({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPrivacyConsents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPrivacyConsentsQueryResult = NonNullable<Awaited<ReturnType<typeof listPrivacyConsents>>>
+export type ListPrivacyConsentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the authenticated user's document consents
+ */
+
+export function useListPrivacyConsents<TData = Awaited<ReturnType<typeof listPrivacyConsents>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPrivacyConsents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPrivacyConsentsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRecordPrivacyConsentUrl = () => {
+
+
+
+
+  return `/api/privacy/consents`
+}
+
+/**
+ * @summary Accept or revoke a legal document consent
+ */
+export const recordPrivacyConsent = async (privacyConsentInput: PrivacyConsentInput, options?: Parameters<typeof customFetch>[1]): Promise<PrivacyConsent | void> => {
+
+  return customFetch<PrivacyConsent | void>(getRecordPrivacyConsentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(privacyConsentInput)
+  }
+);}
+
+
+
+
+
+export const getRecordPrivacyConsentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordPrivacyConsent>>, TError,{data: BodyType<PrivacyConsentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordPrivacyConsent>>, TError,{data: BodyType<PrivacyConsentInput>}, TContext> => {
+
+const mutationKey = ['recordPrivacyConsent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordPrivacyConsent>>, {data: BodyType<PrivacyConsentInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  recordPrivacyConsent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordPrivacyConsentMutationResult = NonNullable<Awaited<ReturnType<typeof recordPrivacyConsent>>>
+    export type RecordPrivacyConsentMutationBody = BodyType<PrivacyConsentInput>
+    export type RecordPrivacyConsentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Accept or revoke a legal document consent
+ */
+export const useRecordPrivacyConsent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordPrivacyConsent>>, TError,{data: BodyType<PrivacyConsentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordPrivacyConsent>>,
+        TError,
+        {data: BodyType<PrivacyConsentInput>},
+        TContext
+      > => {
+      return useMutation(getRecordPrivacyConsentMutationOptions(options));
+    }
+
+export const getListPrivacyRequestsUrl = () => {
+
+
+
+
+  return `/api/privacy/requests`
+}
+
+/**
+ * @summary List the authenticated user's privacy requests
+ */
+export const listPrivacyRequests = async ( options?: Parameters<typeof customFetch>[1]): Promise<PrivacyRequest[]> => {
+
+  return customFetch<PrivacyRequest[]>(getListPrivacyRequestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPrivacyRequestsQueryKey = () => {
+    return [
+    `/api/privacy/requests`
+    ] as const;
+    }
+
+
+export const getListPrivacyRequestsQueryOptions = <TData = Awaited<ReturnType<typeof listPrivacyRequests>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPrivacyRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPrivacyRequestsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPrivacyRequests>>> = ({ signal }) => listPrivacyRequests({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPrivacyRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPrivacyRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof listPrivacyRequests>>>
+export type ListPrivacyRequestsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the authenticated user's privacy requests
+ */
+
+export function useListPrivacyRequests<TData = Awaited<ReturnType<typeof listPrivacyRequests>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPrivacyRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPrivacyRequestsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePrivacyRequestUrl = () => {
+
+
+
+
+  return `/api/privacy/requests`
+}
+
+/**
+ * @summary Create a data subject rights request
+ */
+export const createPrivacyRequest = async (privacyRequestInput: PrivacyRequestInput, options?: Parameters<typeof customFetch>[1]): Promise<PrivacyRequest> => {
+
+  return customFetch<PrivacyRequest>(getCreatePrivacyRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(privacyRequestInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePrivacyRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequest>>, TError,{data: BodyType<PrivacyRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequest>>, TError,{data: BodyType<PrivacyRequestInput>}, TContext> => {
+
+const mutationKey = ['createPrivacyRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPrivacyRequest>>, {data: BodyType<PrivacyRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPrivacyRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePrivacyRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createPrivacyRequest>>>
+    export type CreatePrivacyRequestMutationBody = BodyType<PrivacyRequestInput>
+    export type CreatePrivacyRequestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a data subject rights request
+ */
+export const useCreatePrivacyRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequest>>, TError,{data: BodyType<PrivacyRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPrivacyRequest>>,
+        TError,
+        {data: BodyType<PrivacyRequestInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePrivacyRequestMutationOptions(options));
+    }
+
+export const getExportPrivacyDataUrl = () => {
+
+
+
+
+  return `/api/privacy/export`
+}
+
+/**
+ * @summary Export the authenticated user's account and financial data
+ */
+export const exportPrivacyData = async ( options?: Parameters<typeof customFetch>[1]): Promise<ExportPrivacyData200> => {
+
+  return customFetch<ExportPrivacyData200>(getExportPrivacyDataUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportPrivacyDataQueryKey = () => {
+    return [
+    `/api/privacy/export`
+    ] as const;
+    }
+
+
+export const getExportPrivacyDataQueryOptions = <TData = Awaited<ReturnType<typeof exportPrivacyData>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportPrivacyData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportPrivacyDataQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportPrivacyData>>> = ({ signal }) => exportPrivacyData({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportPrivacyData>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportPrivacyDataQueryResult = NonNullable<Awaited<ReturnType<typeof exportPrivacyData>>>
+export type ExportPrivacyDataQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Export the authenticated user's account and financial data
+ */
+
+export function useExportPrivacyData<TData = Awaited<ReturnType<typeof exportPrivacyData>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportPrivacyData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportPrivacyDataQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSupportRequestsUrl = () => {
+
+
+
+
+  return `/api/support/requests`
+}
+
+/**
+ * @summary List the authenticated user's support requests
+ */
+export const listSupportRequests = async ( options?: Parameters<typeof customFetch>[1]): Promise<SupportRequest[]> => {
+
+  return customFetch<SupportRequest[]>(getListSupportRequestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSupportRequestsQueryKey = () => {
+    return [
+    `/api/support/requests`
+    ] as const;
+    }
+
+
+export const getListSupportRequestsQueryOptions = <TData = Awaited<ReturnType<typeof listSupportRequests>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupportRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSupportRequestsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSupportRequests>>> = ({ signal }) => listSupportRequests({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSupportRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSupportRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof listSupportRequests>>>
+export type ListSupportRequestsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the authenticated user's support requests
+ */
+
+export function useListSupportRequests<TData = Awaited<ReturnType<typeof listSupportRequests>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupportRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSupportRequestsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSupportRequestUrl = () => {
+
+
+
+
+  return `/api/support/requests`
+}
+
+/**
+ * @summary Create an in-app support request
+ */
+export const createSupportRequest = async (supportRequestInput: SupportRequestInput, options?: Parameters<typeof customFetch>[1]): Promise<SupportRequest> => {
+
+  return customFetch<SupportRequest>(getCreateSupportRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(supportRequestInput)
+  }
+);}
+
+
+
+
+
+export const getCreateSupportRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSupportRequest>>, TError,{data: BodyType<SupportRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSupportRequest>>, TError,{data: BodyType<SupportRequestInput>}, TContext> => {
+
+const mutationKey = ['createSupportRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSupportRequest>>, {data: BodyType<SupportRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSupportRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSupportRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createSupportRequest>>>
+    export type CreateSupportRequestMutationBody = BodyType<SupportRequestInput>
+    export type CreateSupportRequestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create an in-app support request
+ */
+export const useCreateSupportRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSupportRequest>>, TError,{data: BodyType<SupportRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSupportRequest>>,
+        TError,
+        {data: BodyType<SupportRequestInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSupportRequestMutationOptions(options));
     }
 

@@ -407,7 +407,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         <View style={[styles.deleteCard, { backgroundColor: colors.card, borderColor: colors.expense }]}>
           <Text style={[styles.deleteTitle, { color: colors.foreground }]}>Excluir conta</Text>
           <Text style={[styles.deleteDescription, { color: colors.mutedForeground }]}>
-            Remove permanentemente seu perfil, carteiras e lançamentos. Essa ação não pode ser desfeita.
+            Remove o perfil, carteiras e lançamentos do ambiente ativo. Registros mínimos de segurança e backups podem permanecer pelos prazos informados na Política de Privacidade. Essa ação não pode ser desfeita.
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -432,7 +432,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
       <ConfirmationModal
         visible={deleteAccountModalOpen}
         title="Excluir conta permanentemente?"
-        message="Todos os seus dados financeiros serão removidos e você não poderá recuperar esta conta."
+         message="Seus dados financeiros serão removidos do ambiente ativo. Registros mínimos de segurança e backups podem permanecer pelo prazo necessário, conforme a Política de Privacidade. Você não poderá recuperar esta conta."
         confirmLabel="Excluir conta"
         onConfirm={handleDeleteAccount}
         onClose={() => setDeleteAccountModalOpen(false)}

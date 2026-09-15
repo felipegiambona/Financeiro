@@ -957,14 +957,6 @@ export const listCardsResponseCurrentInvoiceAmountMin = 0;
 
 export const listCardsResponseAvailableLimitMin = 0;
 
-export const CardInvoiceSummary = zod.object({
-  "invoiceMonth": zod.string().regex(/^\d{4}-\d{2}$/),
-  "amount": zod.number().min(0),
-  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
-  "dueDate": zod.string(),
-  "closingDate": zod.string()
-});
-
 
 
 export const ListCardsResponseItem = zod.object({
@@ -974,9 +966,7 @@ export const ListCardsResponseItem = zod.object({
   "closingDay": zod.number().int().min(1).max(listCardsResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(listCardsResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(listCardsResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
-  "invoices": zod.array(CardInvoiceSummary),
-  "overdueInvoices": zod.array(CardInvoiceSummary),
+  "invoiceStatus": zod.enum(['open', 'closed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1016,9 +1006,7 @@ export const CreateCardResponse = zod.object({
   "closingDay": zod.number().int().min(1).max(createCardResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(createCardResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(createCardResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
-  "invoices": zod.array(CardInvoiceSummary),
-  "overdueInvoices": zod.array(CardInvoiceSummary),
+  "invoiceStatus": zod.enum(['open', 'closed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1045,9 +1033,7 @@ export const GetCardResponse = zod.object({
   "closingDay": zod.number().int().min(1).max(getCardResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(getCardResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(getCardResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
-  "invoices": zod.array(CardInvoiceSummary),
-  "overdueInvoices": zod.array(CardInvoiceSummary),
+  "invoiceStatus": zod.enum(['open', 'closed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1090,9 +1076,7 @@ export const UpdateCardResponse = zod.object({
   "closingDay": zod.number().int().min(1).max(updateCardResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(updateCardResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(updateCardResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
-  "invoices": zod.array(CardInvoiceSummary),
-  "overdueInvoices": zod.array(CardInvoiceSummary),
+  "invoiceStatus": zod.enum(['open', 'closed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1126,9 +1110,7 @@ export const PayCardInvoiceResponse = zod.object({
   "closingDay": zod.number().int().min(1).max(payCardInvoiceResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(payCardInvoiceResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(payCardInvoiceResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
-  "invoices": zod.array(CardInvoiceSummary),
-  "overdueInvoices": zod.array(CardInvoiceSummary),
+  "invoiceStatus": zod.enum(['open', 'closed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1217,3 +1199,163 @@ export const UpdateAccountProfileImageBody = zod.object({
 })
 
 export const UpdateAccountProfileImageResponse = zod.void()
+
+
+/**
+ * @summary List public legal documents
+ */
+export const ListLegalDocumentsResponseItem = zod.object({
+  "key": zod.enum(['privacy', 'terms', 'contact']),
+  "title": zod.string(),
+  "version": zod.string(),
+  "isDraft": zod.boolean(),
+  "lastUpdated": zod.coerce.date(),
+  "requiresAcceptance": zod.boolean(),
+  "body": zod.array(zod.string())
+})
+export const ListLegalDocumentsResponse = zod.array(ListLegalDocumentsResponseItem)
+
+
+/**
+ * @summary Get one public legal document
+ */
+export const GetLegalDocumentParams = zod.object({
+  "documentKey": zod.enum(['privacy', 'terms', 'contact'])
+})
+
+export const GetLegalDocumentResponse = zod.object({
+  "key": zod.enum(['privacy', 'terms', 'contact']),
+  "title": zod.string(),
+  "version": zod.string(),
+  "isDraft": zod.boolean(),
+  "lastUpdated": zod.coerce.date(),
+  "requiresAcceptance": zod.boolean(),
+  "body": zod.array(zod.string())
+})
+
+
+/**
+ * @summary List the authenticated user's document consents
+ */
+export const ListPrivacyConsentsResponse = zod.object({
+  "currentDocumentVersion": zod.string(),
+  "consents": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "documentKey": zod.enum(['privacy', 'terms', 'communications']),
+  "documentVersion": zod.string(),
+  "acceptedAt": zod.coerce.date(),
+  "revokedAt": zod.coerce.date().nullable(),
+  "active": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Accept or revoke a legal document consent
+ */
+export const recordPrivacyConsentBodyAcceptedDefault = true;
+
+export const RecordPrivacyConsentBody = zod.object({
+  "documentKey": zod.enum(['privacy', 'terms', 'communications']),
+  "documentVersion": zod.string().optional(),
+  "accepted": zod.boolean().default(recordPrivacyConsentBodyAcceptedDefault)
+})
+
+export const RecordPrivacyConsentResponse = zod.object({
+  "id": zod.string().uuid(),
+  "documentKey": zod.enum(['privacy', 'terms', 'communications']),
+  "documentVersion": zod.string(),
+  "acceptedAt": zod.coerce.date(),
+  "revokedAt": zod.coerce.date().nullable(),
+  "active": zod.boolean()
+})
+
+
+/**
+ * @summary List the authenticated user's privacy requests
+ */
+export const ListPrivacyRequestsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "profileId": zod.string().uuid().nullable(),
+  "requestType": zod.enum(['access', 'correction', 'export', 'deletion', 'withdraw_consent']),
+  "status": zod.enum(['pending', 'in_progress', 'completed', 'rejected']),
+  "details": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable()
+})
+export const ListPrivacyRequestsResponse = zod.array(ListPrivacyRequestsResponseItem)
+
+
+/**
+ * @summary Create a data subject rights request
+ */
+export const createPrivacyRequestBodyDetailsMax = 2000;
+
+
+
+export const CreatePrivacyRequestBody = zod.object({
+  "profileId": zod.string().uuid().optional(),
+  "requestType": zod.enum(['access', 'correction', 'export', 'deletion', 'withdraw_consent']),
+  "details": zod.string().max(createPrivacyRequestBodyDetailsMax).optional()
+})
+
+export const CreatePrivacyRequestResponse = zod.object({
+  "id": zod.string().uuid(),
+  "profileId": zod.string().uuid().nullable(),
+  "requestType": zod.enum(['access', 'correction', 'export', 'deletion', 'withdraw_consent']),
+  "status": zod.enum(['pending', 'in_progress', 'completed', 'rejected']),
+  "details": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "completedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Export the authenticated user's account and financial data
+ */
+export const ExportPrivacyDataResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary List the authenticated user's support requests
+ */
+export const ListSupportRequestsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "category": zod.enum(['account', 'privacy', 'billing', 'technical', 'other']),
+  "subject": zod.string(),
+  "message": zod.string(),
+  "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListSupportRequestsResponse = zod.array(ListSupportRequestsResponseItem)
+
+
+/**
+ * @summary Create an in-app support request
+ */
+export const createSupportRequestBodySubjectMax = 120;
+
+export const createSupportRequestBodyMessageMax = 4000;
+
+
+
+export const CreateSupportRequestBody = zod.object({
+  "category": zod.enum(['account', 'privacy', 'billing', 'technical', 'other']),
+  "subject": zod.string().min(1).max(createSupportRequestBodySubjectMax),
+  "message": zod.string().min(1).max(createSupportRequestBodyMessageMax)
+})
+
+export const CreateSupportRequestResponse = zod.object({
+  "id": zod.string().uuid(),
+  "category": zod.enum(['account', 'privacy', 'billing', 'technical', 'other']),
+  "subject": zod.string(),
+  "message": zod.string(),
+  "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+

@@ -28,6 +28,12 @@ tags:
     description: Financial profile management operations
   - name: investments
     description: Personal investment portfolio operations
+  - name: legal
+    description: Public legal documents and contact information
+  - name: privacy
+    description: Authenticated data subject rights and consent operations
+  - name: support
+    description: Authenticated support requests
 paths:
   /healthz:
     get:
@@ -827,6 +833,147 @@ paths:
           description: Invalid image
         "401":
           description: Unauthorized
+  /legal-documents:
+    get:
+      operationId: listLegalDocuments
+      tags: [legal]
+      summary: List public legal documents
+      responses:
+        "200":
+          description: Public legal documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LegalDocument"
+  /legal-documents/{documentKey}:
+    get:
+      operationId: getLegalDocument
+      tags: [legal]
+      summary: Get one public legal document
+      parameters:
+        - name: documentKey
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [privacy, terms, contact]
+      responses:
+        "200":
+          description: Public legal document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegalDocument"
+        "404":
+          description: Document not found
+  /privacy/consents:
+    get:
+      operationId: listPrivacyConsents
+      tags: [privacy]
+      summary: List the authenticated user's document consents
+      responses:
+        "200":
+          description: Consent history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivacyConsentList"
+    post:
+      operationId: recordPrivacyConsent
+      tags: [privacy]
+      summary: Accept or revoke a legal document consent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrivacyConsentInput"
+      responses:
+        "201":
+          description: Consent recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivacyConsent"
+        "204":
+          description: Consent revoked
+  /privacy/requests:
+    get:
+      operationId: listPrivacyRequests
+      tags: [privacy]
+      summary: List the authenticated user's privacy requests
+      responses:
+        "200":
+          description: Privacy requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PrivacyRequest"
+    post:
+      operationId: createPrivacyRequest
+      tags: [privacy]
+      summary: Create a data subject rights request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrivacyRequestInput"
+      responses:
+        "201":
+          description: Privacy request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivacyRequest"
+  /privacy/export:
+    get:
+      operationId: exportPrivacyData
+      tags: [privacy]
+      summary: Export the authenticated user's account and financial data
+      responses:
+        "200":
+          description: JSON data export
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /support/requests:
+    get:
+      operationId: listSupportRequests
+      tags: [support]
+      summary: List the authenticated user's support requests
+      responses:
+        "200":
+          description: Support requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SupportRequest"
+    post:
+      operationId: createSupportRequest
+      tags: [support]
+      summary: Create an in-app support request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportRequestInput"
+      responses:
+        "201":
+          description: Support request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportRequest"
 components:
   parameters:
     TransactionId:
@@ -886,6 +1033,85 @@ components:
         type: string
         format: uuid
   schemas:
+    LegalDocument:
+      type: object
+      required: [key, title, version, isDraft, lastUpdated, requiresAcceptance, body]
+      properties:
+        key: { type: string, enum: [privacy, terms, contact] }
+        title: { type: string }
+        version: { type: string }
+        isDraft: { type: boolean }
+        lastUpdated: { type: string, format: date }
+        requiresAcceptance: { type: boolean }
+        body:
+          type: array
+          items: { type: string }
+    PrivacyConsent:
+      type: object
+      required: [id, documentKey, documentVersion, acceptedAt, revokedAt, active]
+      properties:
+        id: { type: string, format: uuid }
+        documentKey: { type: string, enum: [privacy, terms, communications] }
+        documentVersion: { type: string }
+        acceptedAt: { type: string, format: date-time }
+        revokedAt: { type: ["string", "null"], format: date-time }
+        active: { type: boolean }
+    PrivacyConsentList:
+      type: object
+      required: [currentDocumentVersion, consents]
+      properties:
+        currentDocumentVersion: { type: string }
+        consents:
+          type: array
+          items: { $ref: "#/components/schemas/PrivacyConsent" }
+    PrivacyConsentInput:
+      type: object
+      required: [documentKey]
+      properties:
+        documentKey: { type: string, enum: [privacy, terms, communications] }
+        documentVersion: { type: string }
+        accepted: { type: boolean, default: true }
+    PrivacyRequest:
+      type: object
+      required: [id, profileId, requestType, status, details, createdAt, updatedAt, completedAt]
+      properties:
+        id: { type: string, format: uuid }
+        profileId: { type: ["string", "null"], format: uuid }
+        requestType:
+          type: string
+          enum: [access, correction, export, deletion, withdraw_consent]
+        status: { type: string, enum: [pending, in_progress, completed, rejected] }
+        details: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+    PrivacyRequestInput:
+      type: object
+      required: [requestType]
+      properties:
+        profileId: { type: string, format: uuid }
+        requestType:
+          type: string
+          enum: [access, correction, export, deletion, withdraw_consent]
+        details: { type: string, maxLength: 2000 }
+    SupportRequest:
+      type: object
+      required: [id, category, subject, message, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        category: { type: string, enum: [account, privacy, billing, technical, other] }
+        subject: { type: string }
+        message: { type: string }
+        status: { type: string, enum: [open, in_progress, resolved, closed] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    SupportRequestInput:
+      type: object
+      required: [category, subject, message]
+      properties:
+        category: { type: string, enum: [account, privacy, billing, technical, other] }
+        subject: { type: string, minLength: 1, maxLength: 120 }
+        message: { type: string, minLength: 1, maxLength: 4000 }
     FinancialProfile:
       type: object
       required: [id, type, name, businessName, imageData, createdAt, updatedAt]

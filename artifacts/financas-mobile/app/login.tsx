@@ -1,5 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useSignIn, useSignUp } from '@clerk/expo';
+import { recordPrivacyConsent } from '@workspace/api-client-react';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +29,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState('');
   const [mfaStrategy, setMfaStrategy] = useState<MfaStrategy>('totp');
+  const [legalAccepted, setLegalAccepted] = useState(false);
   const [error, setError] = useState('');
   const submitting = signInStatus === 'fetching' || signUpStatus === 'fetching';
 
@@ -66,6 +69,9 @@ export default function LoginScreen() {
           throw new Error('Não foi possível concluir o login.');
         }
       } else if (mode === 'signUp') {
+        if (!legalAccepted) {
+          throw new Error('Leia e aceite a Política de Privacidade e os Termos de Uso para criar sua conta.');
+        }
         const result = await signUp.password({ emailAddress: email.trim().toLowerCase(), password });
         if (result.error) throw result.error;
         await signUp.verifications.sendEmailCode();
@@ -75,6 +81,13 @@ export default function LoginScreen() {
         if (result.error) throw result.error;
         if (signUp.status !== 'complete') throw new Error('O código ainda não concluiu a verificação.');
         await signUp.finalize({ navigate: () => undefined });
+        // The auth provider becomes available on the next render after finalize.
+        // The privacy center remains available to complete the audit trail if
+        // the first best-effort write races with that transition.
+        setTimeout(() => {
+          void recordPrivacyConsent({ documentKey: 'privacy', accepted: true }).catch(() => undefined);
+          void recordPrivacyConsent({ documentKey: 'terms', accepted: true }).catch(() => undefined);
+        }, 100);
       } else if (mode === 'verifyMfa') {
         const result = mfaStrategy === 'totp'
           ? await signIn.mfa.verifyTOTP({ code })
@@ -206,7 +219,7 @@ export default function LoginScreen() {
               <Pressable testID="forgot-password-link" onPress={() => { setError(''); setMode('forgot'); }}>
                 <Text style={[styles.link, { color: colors.foreground }]}>Esqueci minha senha</Text>
               </Pressable>
-              <Pressable testID="create-account-link" onPress={() => { setError(''); setMode('signUp'); }}>
+              <Pressable testID="create-account-link" onPress={() => { setError(''); setLegalAccepted(false); setMode('signUp'); }}>
                 <Text style={[styles.link, { color: colors.foreground }]}>Criar uma conta</Text>
               </Pressable>
             </>
@@ -224,6 +237,27 @@ export default function LoginScreen() {
             </Pressable>
           )}
         </View>
+        {mode === 'signUp' ? (
+          <View style={styles.legalArea}>
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: legalAccepted }}
+              testID="legal-acceptance-checkbox"
+              onPress={() => setLegalAccepted((accepted) => !accepted)}
+              style={styles.legalCheckRow}
+            >
+              <View style={[styles.checkbox, { borderColor: legalAccepted ? colors.primary : colors.border, backgroundColor: legalAccepted ? colors.primary : colors.card }]}>
+                {legalAccepted ? <Feather name="check" size={13} color={colors.primaryForeground} /> : null}
+              </View>
+              <Text style={[styles.legalText, { color: colors.mutedForeground }]}>
+                Li e aceito a{' '}
+                <Text style={[styles.inlineLink, { color: colors.foreground }]} onPress={() => router.push('/legal/privacy')}>Política de Privacidade</Text>
+                {' '}e os{' '}
+                <Text style={[styles.inlineLink, { color: colors.foreground }]} onPress={() => router.push('/legal/terms')}>Termos de Uso</Text>.
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
         <View nativeID="clerk-captcha" />
       </KeyboardAwareScrollViewCompat>
     </View>
@@ -248,6 +282,11 @@ const styles = StyleSheet.create({
   buttonText: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   links: { marginTop: 20, gap: 14, alignItems: 'center' },
   link: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  legalArea: { marginTop: 14 },
+  legalCheckRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
+  checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  legalText: { flex: 1, fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular' },
+  inlineLink: { fontFamily: 'Inter_700Bold', textDecorationLine: 'underline' },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.72 },
 });

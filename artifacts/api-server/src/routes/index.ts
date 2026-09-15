@@ -9,10 +9,13 @@ import goalsRouter from "./goals";
 import cardsRouter from "./cards";
 import financialProfilesRouter from "./financialProfiles";
 import investmentsRouter from "./investments";
+import legalRouter from "./legal";
+import privacyRouter from "./privacy";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(legalRouter);
 router.use(financialProfilesRouter);
 router.use(investmentsRouter);
 router.use(transactionsRouter);
@@ -22,5 +25,6 @@ router.use(categoriesRouter);
 router.use(limitsRouter);
 router.use(goalsRouter);
 router.use(cardsRouter);
+router.use(privacyRouter);
 
 export default router;

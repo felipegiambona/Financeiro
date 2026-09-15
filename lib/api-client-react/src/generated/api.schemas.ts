@@ -5,6 +5,173 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type LegalDocumentKey = typeof LegalDocumentKey[keyof typeof LegalDocumentKey];
+
+
+export const LegalDocumentKey = {
+  privacy: 'privacy',
+  terms: 'terms',
+  contact: 'contact',
+} as const;
+
+export interface LegalDocument {
+  key: LegalDocumentKey;
+  title: string;
+  version: string;
+  isDraft: boolean;
+  lastUpdated: string;
+  requiresAcceptance: boolean;
+  body: string[];
+}
+
+export type PrivacyConsentDocumentKey = typeof PrivacyConsentDocumentKey[keyof typeof PrivacyConsentDocumentKey];
+
+
+export const PrivacyConsentDocumentKey = {
+  privacy: 'privacy',
+  terms: 'terms',
+  communications: 'communications',
+} as const;
+
+export interface PrivacyConsent {
+  id: string;
+  documentKey: PrivacyConsentDocumentKey;
+  documentVersion: string;
+  acceptedAt: string;
+  /** @nullable */
+  revokedAt: string | null;
+  active: boolean;
+}
+
+export interface PrivacyConsentList {
+  currentDocumentVersion: string;
+  consents: PrivacyConsent[];
+}
+
+export type PrivacyConsentInputDocumentKey = typeof PrivacyConsentInputDocumentKey[keyof typeof PrivacyConsentInputDocumentKey];
+
+
+export const PrivacyConsentInputDocumentKey = {
+  privacy: 'privacy',
+  terms: 'terms',
+  communications: 'communications',
+} as const;
+
+export interface PrivacyConsentInput {
+  documentKey: PrivacyConsentInputDocumentKey;
+  documentVersion?: string;
+  accepted?: boolean;
+}
+
+export type PrivacyRequestRequestType = typeof PrivacyRequestRequestType[keyof typeof PrivacyRequestRequestType];
+
+
+export const PrivacyRequestRequestType = {
+  access: 'access',
+  correction: 'correction',
+  export: 'export',
+  deletion: 'deletion',
+  withdraw_consent: 'withdraw_consent',
+} as const;
+
+export type PrivacyRequestStatus = typeof PrivacyRequestStatus[keyof typeof PrivacyRequestStatus];
+
+
+export const PrivacyRequestStatus = {
+  pending: 'pending',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  rejected: 'rejected',
+} as const;
+
+export interface PrivacyRequest {
+  id: string;
+  /** @nullable */
+  profileId: string | null;
+  requestType: PrivacyRequestRequestType;
+  status: PrivacyRequestStatus;
+  /** @nullable */
+  details: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  completedAt: string | null;
+}
+
+export type PrivacyRequestInputRequestType = typeof PrivacyRequestInputRequestType[keyof typeof PrivacyRequestInputRequestType];
+
+
+export const PrivacyRequestInputRequestType = {
+  access: 'access',
+  correction: 'correction',
+  export: 'export',
+  deletion: 'deletion',
+  withdraw_consent: 'withdraw_consent',
+} as const;
+
+export interface PrivacyRequestInput {
+  profileId?: string;
+  requestType: PrivacyRequestInputRequestType;
+  /** @maxLength 2000 */
+  details?: string;
+}
+
+export type SupportRequestCategory = typeof SupportRequestCategory[keyof typeof SupportRequestCategory];
+
+
+export const SupportRequestCategory = {
+  account: 'account',
+  privacy: 'privacy',
+  billing: 'billing',
+  technical: 'technical',
+  other: 'other',
+} as const;
+
+export type SupportRequestStatus = typeof SupportRequestStatus[keyof typeof SupportRequestStatus];
+
+
+export const SupportRequestStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  resolved: 'resolved',
+  closed: 'closed',
+} as const;
+
+export interface SupportRequest {
+  id: string;
+  category: SupportRequestCategory;
+  subject: string;
+  message: string;
+  status: SupportRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SupportRequestInputCategory = typeof SupportRequestInputCategory[keyof typeof SupportRequestInputCategory];
+
+
+export const SupportRequestInputCategory = {
+  account: 'account',
+  privacy: 'privacy',
+  billing: 'billing',
+  technical: 'technical',
+  other: 'other',
+} as const;
+
+export interface SupportRequestInput {
+  category: SupportRequestInputCategory;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  subject: string;
+  /**
+     * @minLength 1
+     * @maxLength 4000
+     */
+  message: string;
+}
+
 export type FinancialProfileType = typeof FinancialProfileType[keyof typeof FinancialProfileType];
 
 
@@ -758,19 +925,7 @@ export type InvoiceStatus = typeof InvoiceStatus[keyof typeof InvoiceStatus];
 export const InvoiceStatus = {
   open: 'open',
   closed: 'closed',
-  paid: 'paid',
-  overdue: 'overdue',
 } as const;
-
-export type CardInvoiceStatus = 'open' | 'closed' | 'paid' | 'overdue';
-
-export interface CardInvoiceSummary {
-  invoiceMonth: string;
-  amount: number;
-  status: CardInvoiceStatus;
-  dueDate: string;
-  closingDate: string;
-}
 
 export interface Card {
   id: string;
@@ -790,8 +945,6 @@ export interface Card {
   /** @minimum 0 */
   availableLimit: number | null;
   invoiceStatus: InvoiceStatus;
-  invoices: CardInvoiceSummary[];
-  overdueInvoices: CardInvoiceSummary[];
   createdAt: string;
   updatedAt: string;
 }
@@ -864,3 +1017,6 @@ export type SearchInvestmentsParams = {
  */
 q: string;
 };
+
+export type ExportPrivacyData200 = { [key: string]: unknown };
+
