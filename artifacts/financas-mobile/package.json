@@ -9,6 +9,7 @@
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:financial-rules": "../api-server/node_modules/.bin/esbuild test/financialRules.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-financialRules.test.mjs && node --test /tmp/financas-mobile-financialRules.test.mjs",
+    "test:pending-notifications": "../api-server/node_modules/.bin/esbuild test/pendingNotifications.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-pendingNotifications.test.mjs && node --test /tmp/financas-mobile-pendingNotifications.test.mjs",
     "test:investment-composition": "../api-server/node_modules/.bin/esbuild test/investmentComposition.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-investmentComposition.test.mjs && node --test /tmp/financas-mobile-investmentComposition.test.mjs",
     "test:onboarding": "../api-server/node_modules/.bin/esbuild test/onboardingState.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-onboardingState.test.mjs && node --test /tmp/financas-mobile-onboardingState.test.mjs",
     "test:recent-assets": "../api-server/node_modules/.bin/esbuild test/recentInvestmentAssets.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-recent-assets.test.mjs && node --test /tmp/financas-mobile-recent-assets.test.mjs",
