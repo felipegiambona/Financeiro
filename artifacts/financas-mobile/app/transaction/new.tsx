@@ -1194,7 +1194,7 @@ const styles = StyleSheet.create({
   scheduleFieldWide: { flex: 1, minWidth: 0, gap: 5 },
   scheduleFieldNarrow: { width: 104, gap: 5 },
   compactLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
-  sourceOptions: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  sourceOptions: { flexDirection: 'row', gap: 8 },
   sourceOption: { flex: 1, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   sourceOptionText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
   amountModeOptions: { flexDirection: 'row', gap: 8 },
