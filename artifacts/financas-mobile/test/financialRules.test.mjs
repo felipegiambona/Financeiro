@@ -114,6 +114,44 @@ test('inclui o pagamento de uma fatura na previsão do mês em que foi pago', ()
   );
 });
 
+test('a previsão soma lançamentos e faturas atrasadas pagas e a pagar no mês atual', () => {
+  const cards = [card([
+    { invoiceMonth: '2026-08', amount: 300, status: 'paid' },
+    { invoiceMonth: '2026-08', amount: 200, status: 'overdue' },
+    { invoiceMonth: '2026-09', amount: 100, status: 'closed' },
+  ])];
+  const transactions = [
+    {
+      type: 'income',
+      amount: 1000,
+      date: '2026-09-05',
+      cardId: null,
+      recurrence: { kind: 'none' },
+      paymentStatus: 'paid',
+    },
+    {
+      type: 'expense',
+      amount: 300,
+      date: '2026-09-15',
+      cardId: 'card-1',
+      cardEntryType: 'invoice_payment',
+      recurrence: { kind: 'none' },
+      paymentStatus: 'paid',
+    },
+  ];
+
+  const expectedForecast = 400;
+  assert.equal(
+    calculateForecast(transactions, month('2026-09'), cards, new Date('2026-09-15T12:00:00')),
+    expectedForecast,
+  );
+  assert.equal(
+    calculateForecastByMonth(transactions, 2026, cards, new Date('2026-09-15T12:00:00'))
+      .find((item) => item.key === '2026-09').forecast,
+    expectedForecast,
+  );
+});
+
 test('desconta compras do cartão somente quando a fatura é paga', () => {
   const wallet = {
     id: 'wallet-1',
