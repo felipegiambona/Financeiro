@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CardInvoice } from './cardInvoice';
 import type { InvoiceStatus } from './invoiceStatus';
 
 export interface Card {
@@ -25,6 +26,8 @@ export interface Card {
   /** @minimum 0 */
   availableLimit: number | null;
   invoiceStatus: InvoiceStatus;
+  invoices: CardInvoice[];
+  overdueInvoices: CardInvoice[];
   createdAt: Date;
   updatedAt: Date;
 }

@@ -929,7 +929,19 @@ export type InvoiceStatus = typeof InvoiceStatus[keyof typeof InvoiceStatus];
 export const InvoiceStatus = {
   open: 'open',
   closed: 'closed',
+  paid: 'paid',
+  overdue: 'overdue',
 } as const;
+
+export interface CardInvoice {
+  /** @pattern ^\d{4}-\d{2}$ */
+  invoiceMonth: string;
+  /** @minimum 0 */
+  amount: number;
+  status: InvoiceStatus;
+  dueDate: string;
+  closingDate: string;
+}
 
 export interface Card {
   id: string;
@@ -949,6 +961,8 @@ export interface Card {
   /** @minimum 0 */
   availableLimit: number | null;
   invoiceStatus: InvoiceStatus;
+  invoices: CardInvoice[];
+  overdueInvoices: CardInvoice[];
   createdAt: string;
   updatedAt: string;
 }

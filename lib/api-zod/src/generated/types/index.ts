@@ -11,6 +11,7 @@ export * from './cardHistoryItem';
 export * from './cardHistoryItemKind';
 export * from './cardHistoryItemPaymentStatus';
 export * from './cardInput';
+export * from './cardInvoice';
 export * from './cardUpdate';
 export * from './category';
 export * from './categoryInput';

@@ -12,4 +12,6 @@ export type InvoiceStatus = typeof InvoiceStatus[keyof typeof InvoiceStatus];
 export const InvoiceStatus = {
   open: 'open',
   closed: 'closed',
+  paid: 'paid',
+  overdue: 'overdue',
 } as const;

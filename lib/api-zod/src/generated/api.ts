@@ -957,6 +957,12 @@ export const listCardsResponseCurrentInvoiceAmountMin = 0;
 
 export const listCardsResponseAvailableLimitMin = 0;
 
+export const listCardsResponseInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const listCardsResponseInvoicesItemAmountMin = 0;
+
+export const listCardsResponseOverdueInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const listCardsResponseOverdueInvoicesItemAmountMin = 0;
+
 
 
 export const ListCardsResponseItem = zod.object({
@@ -966,7 +972,21 @@ export const ListCardsResponseItem = zod.object({
   "closingDay": zod.number().int().min(1).max(listCardsResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(listCardsResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(listCardsResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed']),
+  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "invoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(listCardsResponseInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(listCardsResponseInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
+  "overdueInvoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(listCardsResponseOverdueInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(listCardsResponseOverdueInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -997,6 +1017,12 @@ export const createCardResponseCurrentInvoiceAmountMin = 0;
 
 export const createCardResponseAvailableLimitMin = 0;
 
+export const createCardResponseInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const createCardResponseInvoicesItemAmountMin = 0;
+
+export const createCardResponseOverdueInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const createCardResponseOverdueInvoicesItemAmountMin = 0;
+
 
 
 export const CreateCardResponse = zod.object({
@@ -1006,7 +1032,21 @@ export const CreateCardResponse = zod.object({
   "closingDay": zod.number().int().min(1).max(createCardResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(createCardResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(createCardResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed']),
+  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "invoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(createCardResponseInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(createCardResponseInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
+  "overdueInvoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(createCardResponseOverdueInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(createCardResponseOverdueInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1024,6 +1064,12 @@ export const getCardResponseCurrentInvoiceAmountMin = 0;
 
 export const getCardResponseAvailableLimitMin = 0;
 
+export const getCardResponseInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const getCardResponseInvoicesItemAmountMin = 0;
+
+export const getCardResponseOverdueInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const getCardResponseOverdueInvoicesItemAmountMin = 0;
+
 
 
 export const GetCardResponse = zod.object({
@@ -1033,7 +1079,21 @@ export const GetCardResponse = zod.object({
   "closingDay": zod.number().int().min(1).max(getCardResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(getCardResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(getCardResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed']),
+  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "invoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(getCardResponseInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(getCardResponseInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
+  "overdueInvoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(getCardResponseOverdueInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(getCardResponseOverdueInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1067,6 +1127,12 @@ export const updateCardResponseCurrentInvoiceAmountMin = 0;
 
 export const updateCardResponseAvailableLimitMin = 0;
 
+export const updateCardResponseInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const updateCardResponseInvoicesItemAmountMin = 0;
+
+export const updateCardResponseOverdueInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const updateCardResponseOverdueInvoicesItemAmountMin = 0;
+
 
 
 export const UpdateCardResponse = zod.object({
@@ -1076,7 +1142,21 @@ export const UpdateCardResponse = zod.object({
   "closingDay": zod.number().int().min(1).max(updateCardResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(updateCardResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(updateCardResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed']),
+  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "invoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(updateCardResponseInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(updateCardResponseInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
+  "overdueInvoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(updateCardResponseOverdueInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(updateCardResponseOverdueInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1101,6 +1181,12 @@ export const payCardInvoiceResponseCurrentInvoiceAmountMin = 0;
 
 export const payCardInvoiceResponseAvailableLimitMin = 0;
 
+export const payCardInvoiceResponseInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const payCardInvoiceResponseInvoicesItemAmountMin = 0;
+
+export const payCardInvoiceResponseOverdueInvoicesItemInvoiceMonthRegExp = new RegExp('^\\d{4}-\\d{2}$');
+export const payCardInvoiceResponseOverdueInvoicesItemAmountMin = 0;
+
 
 
 export const PayCardInvoiceResponse = zod.object({
@@ -1110,7 +1196,21 @@ export const PayCardInvoiceResponse = zod.object({
   "closingDay": zod.number().int().min(1).max(payCardInvoiceResponseClosingDayMax),
   "currentInvoiceAmount": zod.number().min(payCardInvoiceResponseCurrentInvoiceAmountMin),
   "availableLimit": zod.number().min(payCardInvoiceResponseAvailableLimitMin).nullable(),
-  "invoiceStatus": zod.enum(['open', 'closed']),
+  "invoiceStatus": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "invoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(payCardInvoiceResponseInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(payCardInvoiceResponseInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
+  "overdueInvoices": zod.array(zod.object({
+  "invoiceMonth": zod.string().regex(payCardInvoiceResponseOverdueInvoicesItemInvoiceMonthRegExp),
+  "amount": zod.number().min(payCardInvoiceResponseOverdueInvoicesItemAmountMin),
+  "status": zod.enum(['open', 'closed', 'paid', 'overdue']),
+  "dueDate": zod.coerce.date(),
+  "closingDate": zod.coerce.date()
+})),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

@@ -1591,10 +1591,20 @@ components:
         date: { type: string, format: date }
     InvoiceStatus:
       type: string
-      enum: [open, closed]
+      enum: [open, closed, paid, overdue]
+    CardInvoice:
+      type: object
+      required: [invoiceMonth, amount, status, dueDate, closingDate]
+      properties:
+        invoiceMonth: { type: string, pattern: '^\d{4}-\d{2}$' }
+        amount: { type: number, minimum: 0 }
+        status:
+          $ref: "#/components/schemas/InvoiceStatus"
+        dueDate: { type: string, format: date }
+        closingDate: { type: string, format: date }
     Card:
       type: object
-      required: [id, name, dueDay, closingDay, currentInvoiceAmount, availableLimit, invoiceStatus, createdAt, updatedAt]
+      required: [id, name, dueDay, closingDay, currentInvoiceAmount, availableLimit, invoiceStatus, invoices, overdueInvoices, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -1604,6 +1614,14 @@ components:
         availableLimit: { type: number, minimum: 0, nullable: true }
         invoiceStatus:
           $ref: "#/components/schemas/InvoiceStatus"
+        invoices:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardInvoice"
+        overdueInvoices:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardInvoice"
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
     CardInput:
