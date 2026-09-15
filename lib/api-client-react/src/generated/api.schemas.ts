@@ -330,6 +330,22 @@ export interface InvestmentSearchResult {
   assetType: InvestmentSearchResultAssetType;
 }
 
+export type InvestmentQuoteSourceProperty = typeof InvestmentQuoteSourceProperty[keyof typeof InvestmentQuoteSourceProperty];
+
+
+export const InvestmentQuoteSourceProperty = {
+  BRAPI: 'BRAPI',
+  CVM: 'CVM',
+  BCB_SGS: 'BCB_SGS',
+  COINGECKO: 'COINGECKO',
+} as const;
+
+export interface InvestmentQuote {
+  /** @minimum 0 */
+  price: number;
+  source: InvestmentQuoteSourceProperty;
+}
+
 export type InvestmentFavoriteAssetType = typeof InvestmentFavoriteAssetType[keyof typeof InvestmentFavoriteAssetType];
 
 
@@ -1035,6 +1051,28 @@ export type SearchInvestmentsParams = {
  */
 q: string;
 };
+
+export type GetInvestmentQuoteParams = {
+assetType: GetInvestmentQuoteAssetType;
+/**
+ * @minLength 1
+ * @maxLength 40
+ */
+ticker: string;
+};
+
+export type GetInvestmentQuoteAssetType = typeof GetInvestmentQuoteAssetType[keyof typeof GetInvestmentQuoteAssetType];
+
+
+export const GetInvestmentQuoteAssetType = {
+  stock: 'stock',
+  fii: 'fii',
+  etf: 'etf',
+  fund: 'fund',
+  fixed_income: 'fixed_income',
+  crypto: 'crypto',
+  other: 'other',
+} as const;
 
 export type ExportPrivacyData200 = { [key: string]: unknown };
 

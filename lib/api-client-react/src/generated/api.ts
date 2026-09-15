@@ -31,6 +31,7 @@ import type {
   FinancialProfile,
   FinancialProfileInput,
   FinancialProfileUpdate,
+  GetInvestmentQuoteParams,
   Goal,
   GoalDetail,
   GoalInput,
@@ -42,6 +43,7 @@ import type {
   InvestmentFavorite,
   InvestmentFavoriteInput,
   InvestmentInput,
+  InvestmentQuote,
   InvestmentSearchResult,
   InvestmentUpdate,
   LegalDocument,
@@ -643,6 +645,84 @@ export function useSearchInvestments<TData = Awaited<ReturnType<typeof searchInv
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getSearchInvestmentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetInvestmentQuoteUrl = (params: GetInvestmentQuoteParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/investments/quote?${stringifiedParams}` : `/api/investments/quote`
+}
+
+export const getInvestmentQuote = async (params: GetInvestmentQuoteParams, options?: Parameters<typeof customFetch>[1]): Promise<InvestmentQuote> => {
+
+  return customFetch<InvestmentQuote>(getGetInvestmentQuoteUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInvestmentQuoteQueryKey = (params?: GetInvestmentQuoteParams,) => {
+    return [
+    `/api/investments/quote`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetInvestmentQuoteQueryOptions = <TData = Awaited<ReturnType<typeof getInvestmentQuote>>, TError = ErrorType<void>>(params: GetInvestmentQuoteParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvestmentQuote>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInvestmentQuoteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInvestmentQuote>>> = ({ signal }) => getInvestmentQuote(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInvestmentQuote>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInvestmentQuoteQueryResult = NonNullable<Awaited<ReturnType<typeof getInvestmentQuote>>>
+export type GetInvestmentQuoteQueryError = ErrorType<void>
+
+
+
+export function useGetInvestmentQuote<TData = Awaited<ReturnType<typeof getInvestmentQuote>>, TError = ErrorType<void>>(
+ params: GetInvestmentQuoteParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvestmentQuote>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInvestmentQuoteQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

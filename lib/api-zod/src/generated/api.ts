@@ -203,6 +203,25 @@ export const SearchInvestmentsResponseItem = zod.object({
 export const SearchInvestmentsResponse = zod.array(SearchInvestmentsResponseItem)
 
 
+export const getInvestmentQuoteQueryTickerMax = 40;
+
+
+
+export const GetInvestmentQuoteQueryParams = zod.object({
+  "assetType": zod.enum(['stock', 'fii', 'etf', 'fund', 'fixed_income', 'crypto', 'other']),
+  "ticker": zod.coerce.string().min(1).max(getInvestmentQuoteQueryTickerMax)
+})
+
+export const getInvestmentQuoteResponsePriceMin = 0;
+
+
+
+export const GetInvestmentQuoteResponse = zod.object({
+  "price": zod.number().min(getInvestmentQuoteResponsePriceMin),
+  "source": zod.enum(['BRAPI', 'CVM', 'BCB_SGS', 'COINGECKO'])
+})
+
+
 export const ListInvestmentFavoritesResponseItem = zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),

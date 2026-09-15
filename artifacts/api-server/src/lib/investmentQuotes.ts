@@ -126,6 +126,24 @@ export type QuoteProvider = (
   assetType?: StoredInvestment["assetType"],
 ) => Promise<number>;
 
+export async function fetchInvestmentQuote(
+  assetType: StoredInvestment["assetType"],
+  identifier: string,
+): Promise<{ price: number; source: QuoteSource }> {
+  const identifierError = quoteIdentifierError(assetType, identifier);
+  if (identifierError) throw new Error(identifierError);
+
+  const quoteProvider = quoteProviderForAssetType(assetType);
+  const source = quoteSourceForAssetType(assetType);
+  if (!quoteProvider || !source) {
+    throw new Error("Esta classe de ativo não possui uma fonte de cotação automática.");
+  }
+
+  const price = await quoteProvider(normalizeQuoteIdentifier(assetType, identifier), assetType);
+  if (!isValidQuote(price)) throw new Error("Quote provider returned an invalid price");
+  return { price, source };
+}
+
 export interface InvestmentQuoteStore {
   markUnavailable(
     row: StoredInvestment,

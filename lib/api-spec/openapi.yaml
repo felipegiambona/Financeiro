@@ -184,6 +184,37 @@ paths:
           description: Investments are only available for personal profiles
         "502":
           description: Investment catalog provider unavailable
+  /investments/quote:
+    get:
+      operationId: getInvestmentQuote
+      tags: [investments]
+      parameters:
+        - name: assetType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+        - name: ticker
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 40
+      responses:
+        "200":
+          description: Current market quote for the investment asset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentQuote"
+        "400":
+          description: Invalid investment quote identifier
+        "403":
+          description: Investments are only available for personal profiles
+        "502":
+          description: Investment quote provider unavailable
   /investments/favorites:
     get:
       operationId: listInvestmentFavorites
@@ -1205,6 +1236,14 @@ components:
         assetType:
           type: string
           enum: [stock, fii, etf, fund, fixed_income, crypto, other]
+    InvestmentQuote:
+      type: object
+      required: [price, source]
+      properties:
+        price: { type: number, minimum: 0 }
+        source:
+          type: string
+          enum: [BRAPI, CVM, BCB_SGS, COINGECKO]
     InvestmentFavorite:
       type: object
       required: [id, name, ticker, assetType, createdAt, updatedAt]

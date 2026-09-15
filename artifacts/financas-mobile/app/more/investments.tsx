@@ -65,6 +65,15 @@ function parseQuantityInput(value: string): number {
   return Number(value.replace(/\./g, '').replace(',', '.'));
 }
 
+function calculateInvestedAmount(quantity: string, averagePrice: string): string {
+  const parsedQuantity = parseQuantityInput(quantity);
+  const parsedAveragePrice = parseAmountInput(averagePrice);
+  if (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0 || !Number.isFinite(parsedAveragePrice) || parsedAveragePrice <= 0) {
+    return '';
+  }
+  return formatAmountValue(parsedQuantity * parsedAveragePrice);
+}
+
 function formatPercentage(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2).replace('.', ',')}%`;
 }
@@ -162,6 +171,7 @@ export default function InvestmentsScreen() {
     error,
     refresh,
     refreshQuotes,
+    getInvestmentQuote,
     searchInvestmentAssets,
     rememberRecentAsset,
     removeRecentAsset,
@@ -233,6 +243,9 @@ export default function InvestmentsScreen() {
   const [searchingAssets, setSearchingAssets] = useState(false);
   const [assetCatalogUnavailable, setAssetCatalogUnavailable] = useState(false);
   const searchRequestRef = useRef(0);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const quoteRequestRef = useRef(0);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [investmentToDelete, setInvestmentToDelete] = useState<Investment | null>(null);
@@ -365,9 +378,50 @@ export default function InvestmentsScreen() {
     return () => clearTimeout(timeout);
   }, [favoriteOnly, favoriteSearchQuery, searchInvestmentAssets]);
 
+  useEffect(() => {
+    quoteRequestRef.current += 1;
+    const requestId = quoteRequestRef.current;
+    if (editingInvestment || form.valuationMode !== 'automatic') {
+      setQuoteLoading(false);
+      setQuoteError(null);
+      return undefined;
+    }
+
+    const identifierError = quoteIdentifierError(form.assetType, form.ticker);
+    if (identifierError) {
+      setQuoteLoading(false);
+      setQuoteError(null);
+      return undefined;
+    }
+
+    const timeout = setTimeout(async () => {
+      setQuoteLoading(true);
+      setQuoteError(null);
+      try {
+        const price = await getInvestmentQuote(form.assetType, form.ticker);
+        if (requestId !== quoteRequestRef.current) return;
+        setForm((current) => ({
+          ...current,
+          averagePrice: formatAmountValue(price),
+          investedAmount: calculateInvestedAmount(current.quantity, formatAmountValue(price)),
+        }));
+      } catch {
+        if (requestId === quoteRequestRef.current) {
+          setQuoteError('Não foi possível obter a cotação agora.');
+        }
+      } finally {
+        if (requestId === quoteRequestRef.current) setQuoteLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [editingInvestment, form.assetType, form.ticker, form.valuationMode, getInvestmentQuote]);
+
   const openEditor = (investment?: Investment, prefill?: InvestmentSearchResult | InvestmentFavorite, markAsFavorite = false, favoriteAssetId?: string) => {
     setEditingInvestment(investment ?? null);
     setFavoriteAssetToRegister(favoriteAssetId ?? null);
+    setQuoteLoading(false);
+    setQuoteError(null);
     const initialForm = getInitialForm(investment);
     setForm(prefill && !investment ? {
       ...initialForm,
@@ -461,6 +515,28 @@ export default function InvestmentsScreen() {
         },
       ],
     );
+  };
+
+  const updateQuantity = (quantity: string) => {
+    const formattedQuantity = formatQuantityInput(quantity);
+    setForm((current) => ({
+      ...current,
+      quantity: formattedQuantity,
+      ...(!editingInvestment
+        ? { investedAmount: calculateInvestedAmount(formattedQuantity, current.averagePrice) }
+        : {}),
+    }));
+  };
+
+  const updateAveragePrice = (averagePrice: string) => {
+    const formattedAveragePrice = formatAmountInput(averagePrice);
+    setForm((current) => ({
+      ...current,
+      averagePrice: formattedAveragePrice,
+      ...(!editingInvestment
+        ? { investedAmount: calculateInvestedAmount(current.quantity, formattedAveragePrice) }
+        : {}),
+    }));
   };
 
   const requestFavoriteRemoval = (favorite: FavoriteDetail) => {
@@ -796,9 +872,11 @@ export default function InvestmentsScreen() {
               <View style={[styles.assetSearch, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.assetSearchHeader}>
                   <Text style={[styles.assetSearchLabel, { color: colors.foreground }]}>Buscar na carteira</Text>
-                  <Feather name="search" size={14} color={colors.mutedForeground} />
                 </View>
                 <View style={styles.inputWithClear}>
+                <View pointerEvents="none" style={styles.assetSearchInputIcon}>
+                  <Feather name="search" size={14} color={colors.mutedForeground} />
+                </View>
                   <TextInput
                     accessibilityLabel="Buscar investimento por nome ou ticker"
                     testID="investments-search-input"
@@ -807,7 +885,7 @@ export default function InvestmentsScreen() {
                     placeholder="Nome ou ticker"
                     placeholderTextColor={colors.mutedForeground}
                     autoCapitalize="none"
-                    style={[styles.input, styles.inputWithClearField, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
+                  style={[styles.input, styles.inputWithClearField, styles.assetSearchInputField, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
                   />
                   {assetSearchQuery ? (
                     <Pressable
@@ -1051,7 +1129,10 @@ export default function InvestmentsScreen() {
                     key={item.value}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: form.valuationMode === item.value }}
-                    onPress={() => setForm((current) => ({ ...current, valuationMode: item.value }))}
+                    onPress={() => {
+                      setQuoteError(null);
+                      setForm((current) => ({ ...current, valuationMode: item.value }));
+                    }}
                     style={({ pressed }) => [
                       styles.modeOption,
                       { backgroundColor: form.valuationMode === item.value ? colors.primary : colors.secondary, borderColor: form.valuationMode === item.value ? colors.primary : colors.border },
@@ -1233,7 +1314,7 @@ export default function InvestmentsScreen() {
                     placeholder="0"
                     placeholderTextColor={colors.mutedForeground}
                     value={form.quantity}
-                    onChangeText={(quantity) => setForm((current) => ({ ...current, quantity: formatQuantityInput(quantity) }))}
+                    onChangeText={updateQuantity}
                     style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
                   />
                 </View>
@@ -1245,11 +1326,16 @@ export default function InvestmentsScreen() {
                     placeholder="R$ 0,00"
                     placeholderTextColor={colors.mutedForeground}
                     value={form.averagePrice}
-                    onChangeText={(averagePrice) => setForm((current) => ({ ...current, averagePrice: formatAmountInput(averagePrice) }))}
+                    onChangeText={updateAveragePrice}
                     style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
                   />
                 </View>
               </View>
+              {form.valuationMode === 'automatic' && (
+                <Text style={[styles.helper, { color: quoteError ? colors.expense : colors.mutedForeground }]}>
+                  {quoteLoading ? 'Consultando valor de mercado...' : quoteError ?? 'Preço médio preenchido com a cotação atual.'}
+                </Text>
+              )}
               <Text style={[styles.label, { color: colors.foreground }]}>Valor investido</Text>
               <TextInput
                 accessibilityLabel="Valor investido"
@@ -1527,6 +1613,7 @@ const styles = StyleSheet.create({
   assetSearch: { borderWidth: 1, borderRadius: 9, padding: 12, marginTop: 12 },
   assetSearchHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   assetSearchLabel: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  assetSearchInputIcon: { position: 'absolute', left: 13, top: 15, zIndex: 1 },
   summaryLabel: { color: '#D4D4D4', fontSize: 12, fontFamily: 'Inter_500Medium' },
   summaryValue: { color: '#FFFFFF', fontSize: 29, lineHeight: 35, fontFamily: 'Inter_700Bold', marginTop: 13 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 14, marginTop: 16 },
@@ -1599,6 +1686,7 @@ const styles = StyleSheet.create({
   input: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   inputWithClear: { position: 'relative', justifyContent: 'center' },
   inputWithClearField: { paddingRight: 38 },
+  assetSearchInputField: { paddingLeft: 36 },
   selectInputText: { flex: 1, minWidth: 0, fontSize: 12, fontFamily: 'Inter_400Regular' },
   clearSearchButton: { position: 'absolute', top: 6, right: 10, width: 24, height: 32, alignItems: 'center', justifyContent: 'center' },
   suggestionList: { borderWidth: 1, borderRadius: 8, marginTop: 6, overflow: 'hidden' },

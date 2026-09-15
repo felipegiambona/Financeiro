@@ -7,6 +7,8 @@ import {
   CreateInvestmentFavoriteResponse,
   DeleteInvestmentParams,
   DeleteInvestmentFavoriteParams,
+  GetInvestmentQuoteQueryParams,
+  GetInvestmentQuoteResponse,
   ListInvestmentsResponse,
   ListInvestmentFavoritesResponse,
   SearchInvestmentsResponse,
@@ -24,6 +26,7 @@ import {
 } from "../middlewares/requireAuth";
 import {
   currentValueFromQuote,
+  fetchInvestmentQuote,
   normalizeQuoteIdentifier,
   quoteIdentifierError,
   quoteSourceForAssetType,
@@ -233,6 +236,29 @@ router.get("/investments/search", async (req, res): Promise<void> => {
     res.json(SearchInvestmentsResponse.parse(await searchInvestmentCatalog(query)));
   } catch {
     res.status(502).json({ error: "Investment catalog is temporarily unavailable" });
+  }
+});
+
+router.get("/investments/quote", async (req, res): Promise<void> => {
+  if (!assertPersonalProfile(req, res)) return;
+  const parsed = GetInvestmentQuoteQueryParams.safeParse({
+    assetType: typeof req.query.assetType === "string" ? req.query.assetType : undefined,
+    ticker: typeof req.query.ticker === "string" ? req.query.ticker : undefined,
+  });
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid investment quote identifier" });
+    return;
+  }
+  const identifierError = quoteIdentifierError(parsed.data.assetType, parsed.data.ticker);
+  if (identifierError) {
+    res.status(400).json({ error: identifierError });
+    return;
+  }
+
+  try {
+    res.json(GetInvestmentQuoteResponse.parse(await fetchInvestmentQuote(parsed.data.assetType, parsed.data.ticker)));
+  } catch {
+    res.status(502).json({ error: "Investment quote provider unavailable" });
   }
 });
 
