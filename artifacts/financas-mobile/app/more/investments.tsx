@@ -695,10 +695,26 @@ export default function InvestmentsScreen() {
           eyebrow="Patrimônio"
           title="Investimentos"
           showBack
-          rightContent={!dividendsOnly ? (
+          actionLabel={dividendsOnly ? undefined : 'Novo'}
+          actionIcon="plus"
+          onAction={dividendsOnly ? undefined : () => openEditor(undefined, undefined, favoriteOnly)}
+        />
+        <View style={styles.introRow}>
+          <Text style={[styles.intro, { color: colors.mutedForeground }]}>
+            {hasInvalidAssetType
+              ? 'O tipo de ativo solicitado não é válido. Remova o filtro para ver sua carteira.'
+              : dividendsOnly
+              ? 'Acompanhe os dividendos e JCP previstos ou já recebidos na sua carteira.'
+              : favoriteOnly
+              ? 'Acompanhe os ativos que você marcou como favoritos.'
+              : selectedAssetType
+              ? `Exibindo apenas investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.`
+              : 'Acompanhe sua carteira pessoal com valor manual ou cotações automáticas.'}
+          </Text>
+          {!dividendsOnly ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Atualizar ${dividendsOnly ? 'proventos' : favoriteOnly ? 'favoritos' : 'investimentos'}`}
+              accessibilityLabel={`Atualizar ${favoriteOnly ? 'favoritos' : 'investimentos'}`}
               accessibilityState={{ busy: refreshing, disabled: refreshing }}
               disabled={refreshing}
               testID="investments-refresh"
@@ -712,22 +728,8 @@ export default function InvestmentsScreen() {
             >
               <Feather name="refresh-cw" size={17} color={colors.foreground} />
             </Pressable>
-          ) : undefined}
-          actionLabel={dividendsOnly ? undefined : 'Novo'}
-          actionIcon="plus"
-          onAction={dividendsOnly ? undefined : () => openEditor(undefined, undefined, favoriteOnly)}
-        />
-        <Text style={[styles.intro, { color: colors.mutedForeground }]}>
-          {hasInvalidAssetType
-            ? 'O tipo de ativo solicitado não é válido. Remova o filtro para ver sua carteira.'
-            : dividendsOnly
-            ? 'Acompanhe os dividendos e JCP previstos ou já recebidos na sua carteira.'
-            : favoriteOnly
-            ? 'Acompanhe os ativos que você marcou como favoritos.'
-            : selectedAssetType
-            ? `Exibindo apenas investimentos de ${assetTypeLabel(selectedAssetType).toLocaleLowerCase('pt-BR')}.`
-            : 'Acompanhe sua carteira pessoal com valor manual ou cotações automáticas.'}
-        </Text>
+          ) : null}
+        </View>
         {lastUpdatedAt ? (
           <View
             accessibilityLabel={`Última atualização: ${formatLastUpdated(lastUpdatedAt)}`}
@@ -1701,7 +1703,8 @@ const styles = StyleSheet.create({
   headerRefreshButton: { width: 36, height: 36, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   refreshError: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 11, marginBottom: 12 },
   refreshErrorText: { flex: 1, fontSize: 11, lineHeight: 15, fontFamily: 'Inter_500Medium' },
-  intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 18 },
+  introRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: -7, marginBottom: 18 },
+  intro: { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular' },
   lastUpdated: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: -10, marginBottom: 12, paddingLeft: 1 },
   lastUpdatedText: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular' },
   activeFilter: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 11, paddingRight: 5, marginTop: -7, marginBottom: 12 },
