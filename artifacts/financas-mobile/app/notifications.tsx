@@ -1,21 +1,31 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
+import { useCards } from '@/context/CardContext';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
-import { getPendingTransactionOccurrences, formatPendingTransactionDate } from '@/services/pendingNotifications';
+import { getPendingCardInvoices, getPendingTransactionOccurrences, formatPendingTransactionDate } from '@/services/pendingNotifications';
 import { formatCurrency } from '@/utils/currency';
+import { formatMonthYearLabel } from '@/utils/date';
 import { TransactionOccurrence } from '@/types/transaction';
 
 export default function NotificationsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { transactions, loading, error, refresh, updateTransaction, updateTransactionOccurrencePaymentStatus } = useFinance();
+  const { cards, loading: cardsLoading, error: cardsError, refresh: refreshCards, payCardInvoice } = useCards();
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const pendingTransactions = useMemo(() => getPendingTransactionOccurrences(transactions), [transactions]);
+  const pendingCardInvoices = useMemo(() => getPendingCardInvoices(cards), [cards]);
+  const totalPending = pendingTransactions.length + pendingCardInvoices.length;
+
+  useFocusEffect(useCallback(() => {
+    void refreshCards();
+  }, [refreshCards]));
 
   const markAsPaid = async (transaction: TransactionOccurrence) => {
     try {
@@ -32,6 +42,18 @@ export default function NotificationsScreen() {
     }
   };
 
+  const payOverdueInvoice = async (cardId: string, invoiceMonth: string) => {
+    const key = `invoice:${cardId}:${invoiceMonth}`;
+    try {
+      setUpdatingKey(key);
+      await payCardInvoice(cardId, invoiceMonth);
+    } catch {
+      Alert.alert('Não foi possível pagar', 'Tente pagar a fatura novamente.');
+    } finally {
+      setUpdatingKey(null);
+    }
+  };
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -39,7 +61,7 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ScreenHeader eyebrow="Atenção" title="Notificações" showBack />
-        {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : pendingTransactions.length === 0 ? (
+        {loading || cardsLoading ? <LoadingState /> : error || cardsError ? <ErrorState onRetry={() => void Promise.all([refresh(), refreshCards()])} /> : totalPending === 0 ? (
           <EmptyState message="Você não tem pendências a analisar." />
         ) : (
           <>
@@ -50,13 +72,15 @@ export default function NotificationsScreen() {
               <View style={styles.summaryCopy}>
                 <Text style={[styles.summaryTitle, { color: colors.foreground }]}>Você tem pendências a analisar</Text>
                 <Text style={[styles.summaryText, { color: colors.mutedForeground }]}>
-                  {pendingTransactions.length} {pendingTransactions.length === 1 ? 'lançamento precisa' : 'lançamentos precisam'} da sua atenção.
+                  {totalPending} {totalPending === 1 ? 'pendência precisa' : 'pendências precisam'} da sua atenção.
                 </Text>
               </View>
             </View>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Lançamentos pendentes</Text>
-            <View style={styles.pendingList}>
-              {pendingTransactions.map((transaction) => {
+            {pendingTransactions.length > 0 ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Lançamentos pendentes</Text>
+                <View style={styles.pendingList}>
+                  {pendingTransactions.map((transaction) => {
                 const isIncome = transaction.type === 'income';
                 const isTransfer = transaction.type === 'transfer';
                 const tone = isTransfer ? colors.primaryForeground : isIncome ? colors.income : colors.expense;
@@ -64,49 +88,98 @@ export default function NotificationsScreen() {
                 const icon = isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right';
                 const isUpdating = updatingKey === transaction.occurrenceKey;
 
-                return (
-                  <View key={transaction.occurrenceKey} style={[styles.pendingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <View style={styles.pendingTop}>
-                      <View style={[styles.transactionIcon, { backgroundColor: softTone }]}>
-                        <Feather name={icon} size={17} color={tone} />
+                    return (
+                      <View key={transaction.occurrenceKey} style={[styles.pendingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={styles.pendingTop}>
+                          <View style={[styles.transactionIcon, { backgroundColor: softTone }]}>
+                            <Feather name={icon} size={17} color={tone} />
+                          </View>
+                          <View style={styles.transactionCopy}>
+                            <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
+                            <Text style={[styles.date, { color: colors.pending }]}>
+                              {formatPendingTransactionDate(transaction.date)}
+                              {transaction.recurrence.kind === 'installment'
+                                ? ' · Parcelado'
+                                : transaction.recurrence.kind === 'recurring' ? ' · Recorrente' : ''}
+                            </Text>
+                          </View>
+                          <Text style={[styles.amount, { color: tone }]}>
+                            {isTransfer ? '' : isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}
+                          </Text>
+                        </View>
+                        <View style={[styles.pendingBottom, { borderTopColor: colors.border }]}>
+                          <Text style={[styles.status, { color: colors.pending }]}>Não pago</Text>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Marcar ${transaction.description} como pago`}
+                            testID={`notification-pay-${transaction.occurrenceKey}`}
+                            disabled={isUpdating}
+                            onPress={() => void markAsPaid(transaction)}
+                            style={({ pressed }) => [
+                              styles.payButton,
+                              { backgroundColor: colors.primary },
+                              isUpdating && styles.updating,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Text style={[styles.payButtonText, { color: colors.primaryForeground }]}>
+                              {isUpdating ? 'Salvando...' : 'Marcar como pago'}
+                            </Text>
+                          </Pressable>
+                        </View>
                       </View>
-                      <View style={styles.transactionCopy}>
-                        <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{transaction.description}</Text>
-                        <Text style={[styles.date, { color: colors.pending }]}>
-                          {formatPendingTransactionDate(transaction.date)}
-                          {transaction.recurrence.kind === 'installment'
-                            ? ' · Parcelado'
-                            : transaction.recurrence.kind === 'recurring' ? ' · Recorrente' : ''}
-                        </Text>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
+            {pendingCardInvoices.length > 0 ? (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Faturas atrasadas</Text>
+                <View style={styles.pendingList}>
+                  {pendingCardInvoices.map(({ card, invoice }) => {
+                    const key = `invoice:${card.id}:${invoice.invoiceMonth}`;
+                    const isUpdating = updatingKey === key;
+                    return (
+                      <View key={key} style={[styles.pendingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <View style={styles.pendingTop}>
+                          <View style={[styles.transactionIcon, { backgroundColor: colors.expenseSoft }]}>
+                            <Feather name="credit-card" size={17} color={colors.expense} />
+                          </View>
+                          <View style={styles.transactionCopy}>
+                            <Text numberOfLines={1} style={[styles.description, { color: colors.foreground }]}>{card.name}</Text>
+                            <Text style={[styles.date, { color: colors.expense }]}>
+                              Fatura de {formatMonthYearLabel(new Date(`${invoice.invoiceMonth}-01T12:00:00`))}
+                            </Text>
+                          </View>
+                          <Text style={[styles.amount, { color: colors.expense }]}>{formatCurrency(invoice.amount)}</Text>
+                        </View>
+                        <View style={[styles.pendingBottom, { borderTopColor: colors.border }]}>
+                          <Text style={[styles.status, { color: colors.expense }]}>Atrasada</Text>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Pagar fatura atrasada do cartão ${card.name}`}
+                            testID={`notification-pay-invoice-${card.id}-${invoice.invoiceMonth}`}
+                            disabled={isUpdating}
+                            onPress={() => void payOverdueInvoice(card.id, invoice.invoiceMonth)}
+                            style={({ pressed }) => [
+                              styles.payButton,
+                              { backgroundColor: colors.expense },
+                              isUpdating && styles.updating,
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <Text style={[styles.payButtonText, { color: colors.destructiveForeground }]}>
+                              {isUpdating ? 'Salvando...' : 'Pagar fatura'}
+                            </Text>
+                          </Pressable>
+                        </View>
                       </View>
-                      <Text style={[styles.amount, { color: tone }]}>
-                        {isTransfer ? '' : isIncome ? '+' : '-'} {formatCurrency(transaction.amount)}
-                      </Text>
-                    </View>
-                    <View style={[styles.pendingBottom, { borderTopColor: colors.border }]}>
-                      <Text style={[styles.status, { color: colors.pending }]}>Não pago</Text>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Marcar ${transaction.description} como pago`}
-                        testID={`notification-pay-${transaction.occurrenceKey}`}
-                        disabled={isUpdating}
-                        onPress={() => void markAsPaid(transaction)}
-                        style={({ pressed }) => [
-                          styles.payButton,
-                          { backgroundColor: colors.primary },
-                          isUpdating && styles.updating,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <Text style={[styles.payButtonText, { color: colors.primaryForeground }]}>
-                          {isUpdating ? 'Salvando...' : 'Marcar como pago'}
-                        </Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
           </>
         )}
       </ScrollView>

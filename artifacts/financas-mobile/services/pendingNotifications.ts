@@ -1,6 +1,21 @@
 import { getTransactionOccurrencesInRange } from '@/services/recurrence';
+import { Card } from '@/types/card';
 import { Transaction, TransactionOccurrence } from '@/types/transaction';
 import { formatDate, getDayKey, getSaoPauloToday, parseStoredDate } from '@/utils/date';
+
+export interface PendingCardInvoice {
+  card: Card;
+  invoice: Card['overdueInvoices'][number];
+}
+
+export function getPendingCardInvoices(cards: Card[]): PendingCardInvoice[] {
+  return cards
+    .flatMap((card) => card.overdueInvoices.map((invoice) => ({ card, invoice })))
+    .sort((first, second) => (
+      first.invoice.invoiceMonth.localeCompare(second.invoice.invoiceMonth)
+      || first.card.name.localeCompare(second.card.name, 'pt-BR')
+    ));
+}
 
 function getTodayEnd(now: Date): Date {
   const today = getSaoPauloToday(now);

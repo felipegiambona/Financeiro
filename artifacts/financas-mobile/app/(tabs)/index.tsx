@@ -24,7 +24,7 @@ import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateMonthlyTotals, calculateWalletTotals } from '@/services/financialRules';
 import { calculateLimitUsage } from '@/services/limitRules';
 import { calculateGoalProgress } from '@/services/goalRules';
-import { getPendingTransactionOccurrences } from '@/services/pendingNotifications';
+import { getPendingCardInvoices, getPendingTransactionOccurrences } from '@/services/pendingNotifications';
 import { getSaoPauloHour } from '@/utils/date';
 import { formatCurrency } from '@/utils/currency';
 
@@ -65,6 +65,7 @@ export default function DashboardScreen() {
   const walletTotals = useMemo(() => calculateWalletTotals(wallets, transactions, new Date(), cards), [cards, transactions, wallets]);
   const balance = calculateCurrentBalance(wallets, transactions, cards);
   const pendingNotifications = useMemo(() => getPendingTransactionOccurrences(transactions), [transactions]);
+  const pendingCardInvoices = useMemo(() => getPendingCardInvoices(cards), [cards]);
   const limitCards = useMemo(
     () => limits.map((limit) => ({
       limit,
@@ -125,7 +126,7 @@ export default function DashboardScreen() {
         <ScreenHeader
           eyebrow="Visão geral"
           title={greeting}
-          notificationCount={pendingNotifications.length}
+          notificationCount={pendingNotifications.length + pendingCardInvoices.length}
           onNotificationPress={() => router.push('/notifications')}
           actionLabel="Sair"
           actionIcon="log-out"
