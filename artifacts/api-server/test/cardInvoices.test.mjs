@@ -340,6 +340,69 @@ test("accepts the invoice fields and statuses returned by the cards API", () => 
   assert.ok(card.invoices[0].dueDate instanceof Date);
 });
 
+test("recalculates invoice months, dates, and statuses after updating card closing and due days", async () => {
+  const createResponse = await request("/cards", {
+    method: "POST",
+    body: { name: "Cartão perto do fechamento", dueDay: 25, closingDay: 20, availableLimit: 1000 },
+  });
+  assert.equal(createResponse.status, 201);
+  const createdCard = assertCompleteCardResponse(CreateCardResponse, createResponse.body);
+
+  database.rows.get(transactionsTable.name).push(
+    {
+      id: "00000000-0000-0000-0000-000000000021",
+      userId: USER_ID,
+      cardId: createdCard.id,
+      cardEntryType: "purchase",
+      type: "expense",
+      amount: "120",
+      date: "2026-08-05",
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000022",
+      userId: USER_ID,
+      cardId: createdCard.id,
+      cardEntryType: "purchase",
+      type: "expense",
+      amount: "80",
+      date: "2026-09-19",
+    },
+  );
+
+  const beforeUpdateResponse = await request(`/cards/${createdCard.id}`);
+  assert.equal(beforeUpdateResponse.status, 200);
+  const beforeUpdate = assertCompleteCardResponse(GetCardResponse, beforeUpdateResponse.body);
+  assert.equal(beforeUpdate.invoices.find((invoice) => invoice.invoiceMonth === "2026-09")?.amount, 80);
+  assert.equal(beforeUpdate.invoices.find((invoice) => invoice.invoiceMonth === "2026-10"), undefined);
+
+  const updateResponse = await request(`/cards/${createdCard.id}`, {
+    method: "PATCH",
+    body: { closingDay: 15, dueDay: 10 },
+  });
+  assert.equal(updateResponse.status, 200);
+  const updatedCard = assertCompleteCardResponse(UpdateCardResponse, updateResponse.body);
+
+  assert.equal(updatedCard.closingDay, 15);
+  assert.equal(updatedCard.dueDay, 10);
+  assert.deepEqual(
+    updatedCard.invoices.map((invoice) => [
+      invoice.invoiceMonth,
+      invoice.amount,
+      invoice.status,
+      invoice.dueDate.toISOString().slice(0, 10),
+      invoice.closingDate.toISOString().slice(0, 10),
+    ]),
+    [
+      ["2026-08", 120, "overdue", "2026-08-10", "2026-08-15"],
+      ["2026-09", 0, "open", "2026-09-10", "2026-09-15"],
+      ["2026-10", 80, "open", "2026-10-10", "2026-10-15"],
+    ],
+  );
+  assert.deepEqual(updatedCard.overdueInvoices.map((invoice) => invoice.invoiceMonth), ["2026-08"]);
+  assert.equal(updatedCard.invoices.find((invoice) => invoice.invoiceMonth === "2026-08")?.status, "overdue");
+  assert.equal(updatedCard.invoices.find((invoice) => invoice.invoiceMonth === "2026-10")?.status, "open");
+});
+
 test("validates complete invoice payloads on every card HTTP endpoint", async () => {
   const listResponse = await request("/cards");
   assert.equal(listResponse.status, 200);
