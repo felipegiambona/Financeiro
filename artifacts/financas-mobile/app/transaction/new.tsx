@@ -1166,7 +1166,7 @@ const styles = StyleSheet.create({
   intro: { fontSize: 13, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: 10, marginBottom: 18 },
   label: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 6, marginTop: 14 },
   formField: { marginTop: 10 },
-  sectionCard: { borderRadius: 10, borderWidth: 1, padding: 12, marginTop: 16 },
+  sectionCard: { borderRadius: 10, borderWidth: 1, padding: 12, paddingTop: 0, marginTop: 16 },
   sectionHeader: { minHeight: 62, borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 },
   sectionTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   sectionHint: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular', marginTop: 3 },
