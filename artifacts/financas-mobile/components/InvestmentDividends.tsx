@@ -14,6 +14,7 @@ import type {
   InvestmentDividendType,
 } from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
+import { ConfirmationModal } from './ConfirmationModal';
 import { KeyboardAwareScrollViewCompat } from './KeyboardAwareScrollViewCompat';
 
 type DividendDraft = {
@@ -112,6 +113,7 @@ export function InvestmentDividends() {
   const [calendarError, setCalendarError] = useState<string | null>(null);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
+  const [pendingDeletion, setPendingDeletion] = useState<InvestmentDividend | null>(null);
 
   const totals = useMemo(() => dividends.reduce((summary, dividend) => ({
     received: summary.received + (dividend.status === 'received' ? dividend.amount : 0),
@@ -289,24 +291,7 @@ export function InvestmentDividends() {
   };
 
   const remove = (dividend: InvestmentDividend) => {
-    Alert.alert(
-      'Excluir provento?',
-      'O evento será removido. Se já tiver gerado uma receita, ela continuará no histórico financeiro.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteDividend(dividend.id);
-            } catch {
-              Alert.alert('Não foi possível excluir', 'Tente novamente.');
-            }
-          },
-        },
-      ],
-    );
+    setPendingDeletion(dividend);
   };
 
   return (
@@ -727,6 +712,19 @@ export function InvestmentDividends() {
           </View>
         </View>
       </Modal>
+      <ConfirmationModal
+        visible={pendingDeletion !== null}
+        title="Excluir provento?"
+        message="O evento será removido. Se já tiver gerado uma receita, ela continuará no histórico financeiro."
+        confirmLabel="Excluir"
+        onConfirm={async () => {
+          if (!pendingDeletion) return;
+          await deleteDividend(pendingDeletion.id);
+        }}
+        onClose={() => setPendingDeletion(null)}
+        errorTitle="Não foi possível excluir"
+        errorMessage="Tente novamente."
+      />
     </>
   );
 }
