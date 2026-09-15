@@ -285,6 +285,16 @@ export default function TransactionsScreen() {
       .filter((invoice) => invoice.invoiceMonth === monthKey && invoice.amount > 0)
       .map((invoice) => ({ card, invoice })));
   }, [cards, selectedMonth]);
+  const showCardInvoices = !dateRangeStart
+    && !dateRangeEnd
+    && (typeFilter === 'all' || typeFilter === 'expense')
+    && cardInvoicesForMonth.length > 0;
+  const cardInvoicesTotal = showCardInvoices
+    ? cardInvoicesForMonth.reduce((total, { invoice }) => total + invoice.amount, 0)
+    : 0;
+  const monthTotal = typeFilter === 'transfer'
+    ? filteredSummary.transferTotal
+    : filteredSummary.income - filteredSummary.expense + filteredSummary.transfer + cardInvoicesTotal;
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const leaveSelectionMode = () => {
@@ -834,7 +844,7 @@ export default function TransactionsScreen() {
                 ))}
               </View>
             ))}
-            {!dateRangeStart && !dateRangeEnd && (typeFilter === 'all' || typeFilter === 'expense') && cardInvoicesForMonth.length > 0 ? (
+            {showCardInvoices ? (
               <View style={styles.cardInvoicesSection}>
                 <View style={styles.cardInvoicesHeader}>
                   <View style={styles.cardInvoicesHeaderCopy}>
@@ -880,17 +890,13 @@ export default function TransactionsScreen() {
                 })}
               </View>
             ) : null}
-            {filteredTransactions.length > 0 ? (
+            {filteredTransactions.length > 0 || showCardInvoices ? (
               <View style={styles.monthSummary}>
                 <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
                   Total
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.foreground }]}>
-                  {formatCurrency(
-                    typeFilter === 'transfer'
-                      ? filteredSummary.transferTotal
-                      : filteredSummary.income - filteredSummary.expense + filteredSummary.transfer,
-                  )}
+                  {formatCurrency(monthTotal)}
                 </Text>
               </View>
             ) : null}
