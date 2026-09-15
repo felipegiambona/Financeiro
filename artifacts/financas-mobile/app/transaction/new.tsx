@@ -341,7 +341,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             ref={amountInputRef}
             keyboardType="decimal-pad"
             placeholder="0,00"
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={colors.foreground}
             value={amount}
             onChangeText={(value) => setAmount(formatAmountInput(value))}
             style={[styles.amountInput, { color: colors.foreground }]}
