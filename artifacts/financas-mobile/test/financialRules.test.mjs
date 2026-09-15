@@ -66,7 +66,7 @@ test('inclui faturas vencidas e não pagas nas despesas e no total a pagar do m�
 
 test('não inclui fatura paga nas despesas do mês nem no total a pagar', () => {
   const cards = [card([
-    { invoiceMonth: '2026-08', amount: 300, status: 'paid' },
+    { invoiceMonth: '2026-09', amount: 300, status: 'paid' },
   ])];
   const transactions = [{
     type: 'expense',
@@ -91,7 +91,7 @@ test('não inclui fatura paga nas despesas do mês nem no total a pagar', () => 
 
 test('não inclui o pagamento de uma fatura paga na previsão do mês', () => {
   const cards = [card([
-    { invoiceMonth: '2026-08', amount: 300, status: 'paid' },
+    { invoiceMonth: '2026-09', amount: 300, status: 'paid' },
   ])];
   const transactions = [{
     type: 'expense',
