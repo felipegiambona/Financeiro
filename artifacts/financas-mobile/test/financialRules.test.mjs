@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   calculateForecast,
+  calculateForecastByMonth,
   calculateMonthlyTotals,
   calculateWalletTotals,
 } from '../services/financialRules.ts';
@@ -61,6 +62,56 @@ test('inclui faturas vencidas e não pagas nas despesas e no total a pagar do m�
 
   assert.equal(totals.expense, 500);
   assert.equal(totals.payable, 500);
+});
+
+test('inclui o pagamento de uma fatura nas despesas do mês em que foi pago', () => {
+  const cards = [card([
+    { invoiceMonth: '2026-08', amount: 300, status: 'paid' },
+  ])];
+  const transactions = [{
+    type: 'expense',
+    amount: 300,
+    date: '2026-09-15',
+    cardId: 'card-1',
+    cardEntryType: 'invoice_payment',
+    recurrence: { kind: 'none' },
+    paymentStatus: 'paid',
+  }];
+
+  const totals = calculateMonthlyTotals(
+    transactions,
+    month('2026-09'),
+    cards,
+    new Date('2026-09-15T12:00:00'),
+  );
+
+  assert.equal(totals.expense, 300);
+  assert.equal(totals.payable, 0);
+});
+
+test('inclui o pagamento de uma fatura na previsão do mês em que foi pago', () => {
+  const cards = [card([
+    { invoiceMonth: '2026-08', amount: 300, status: 'paid' },
+  ])];
+  const transactions = [{
+    type: 'expense',
+    amount: 300,
+    date: '2026-09-15',
+    cardId: 'card-1',
+    cardEntryType: 'invoice_payment',
+    recurrence: { kind: 'none' },
+    paymentStatus: 'paid',
+  }];
+
+  assert.equal(
+    calculateForecast(transactions, month('2026-09'), cards, new Date('2026-09-15T12:00:00')),
+    -300,
+  );
+  assert.equal(
+    calculateForecastByMonth(transactions, 2026, cards, new Date('2026-09-15T12:00:00'))
+      .find((item) => item.key === '2026-09').forecast,
+    -300,
+  );
 });
 
 test('desconta compras do cartão somente quando a fatura é paga', () => {
