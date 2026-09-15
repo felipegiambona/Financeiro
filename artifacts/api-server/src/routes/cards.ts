@@ -18,7 +18,6 @@ import {
 } from "@workspace/api-zod";
 import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
 import {
-  dayDate,
   getCardInvoiceSummaries,
   monthKey,
   type CardInvoiceSummary,
@@ -223,6 +222,7 @@ router.get("/cards/:id/history", async (req, res): Promise<void> => {
       eq(categoriesTable.userId, userId),
     ));
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]));
+  const invoices = getCardInvoiceSummaries(rows, card.closingDay, card.dueDay, now);
   const history: Array<{
     id: string;
     kind: "transaction" | "closure";
@@ -240,18 +240,20 @@ router.get("/cards/:id/history", async (req, res): Promise<void> => {
       paymentStatus: row.paymentStatus as "paid" | "unpaid",
       categoryName: row.categoryId ? categoryNames.get(row.categoryId) ?? null : null,
     }));
-  if (now.getDate() >= card.closingDay) {
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  for (const invoice of invoices) {
+    if (invoice.amount <= 0 || invoice.closingDate > today) continue;
     history.push({
-      id: `closure-${card.id}-${monthKey(now)}`,
+      id: `closure-${card.id}-${invoice.invoiceMonth}`,
       kind: "closure" as const,
       description: "Fatura fechada",
       amount: 0,
-      date: dayDate(monthKey(now), card.closingDay),
+      date: invoice.closingDate,
       paymentStatus: "paid" as const,
       categoryName: null,
     });
   }
-  history.sort((a, b) => a.date.localeCompare(b.date));
+  history.sort((a, b) => b.date.localeCompare(a.date));
   res.json(GetCardHistoryResponse.parse(history));
 });
 
