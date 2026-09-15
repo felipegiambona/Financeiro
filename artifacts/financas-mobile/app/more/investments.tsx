@@ -14,6 +14,8 @@ import { useColors } from '@/hooks/useColors';
 import type { Investment, InvestmentAssetType, InvestmentFavorite, InvestmentInput, InvestmentSearchResult, InvestmentUpdate, InvestmentValuationMode } from '@workspace/api-client-react';
 import { formatAmountInput, formatAmountValue, formatCurrency, parseAmountInput } from '@/utils/currency';
 import {
+  composeFavoriteItems,
+  countFavoriteItemsByAssetType,
   filterInvestmentsByAssetType,
   INVESTMENT_ASSET_TYPES,
   INVESTMENT_ASSET_TYPE_LABELS,
@@ -97,10 +99,6 @@ function isFavoriteDraft(investment: Investment): boolean {
 }
 
 type FavoriteDetail = Investment | InvestmentFavorite;
-
-type FavoriteListItem =
-  | { kind: 'investment'; item: Investment }
-  | { kind: 'catalog'; item: InvestmentFavorite };
 
 function isPortfolioFavorite(value: FavoriteDetail): value is Investment {
   return 'quantity' in value;
@@ -202,46 +200,27 @@ export default function InvestmentsScreen() {
     () => filteredInvestments.filter((investment) => investment.isFavorite),
     [filteredInvestments],
   );
-  const favoriteItems = useMemo<FavoriteListItem[]>(() => {
-    const portfolioKeys = new Set(favoritePortfolioInvestments.map((investment) => (
-      `${investment.assetType}:${(investment.ticker ?? '').trim().toLocaleLowerCase() || investment.name.trim().toLocaleLowerCase()}`
-    )));
-    const typeOrder = new Map(ASSET_TYPES.map((item, index) => [item.value, index]));
-    return [
-      ...favoritePortfolioInvestments.map((investment) => ({ kind: 'investment' as const, item: investment })),
-      ...favoriteAssets
-        .filter((favorite) => (
-          (!selectedAssetType || favorite.assetType === selectedAssetType)
-          && !portfolioKeys.has(`${favorite.assetType}:${favorite.ticker.trim().toLocaleLowerCase() || favorite.name.trim().toLocaleLowerCase()}`)
-        ))
-        .map((favorite) => ({ kind: 'catalog' as const, item: favorite })),
-    ].sort((first, second) => {
-      const typeDifference = (typeOrder.get(first.item.assetType) ?? ASSET_TYPES.length)
-        - (typeOrder.get(second.item.assetType) ?? ASSET_TYPES.length);
-      if (typeDifference !== 0) return typeDifference;
-      return first.item.name.localeCompare(second.item.name, 'pt-BR');
-    });
-  }, [favoriteAssets, favoritePortfolioInvestments, selectedAssetType]);
-  const favoriteGroupCounts = useMemo(() => {
-    const counts = new Map<InvestmentAssetType, number>();
-    favoriteItems.forEach(({ item }) => {
-      counts.set(item.assetType, (counts.get(item.assetType) ?? 0) + 1);
-    });
-    return counts;
-  }, [favoriteItems]);
-  const favoriteGroupsInitializedRef = useRef(false);
+  const favoriteItems = useMemo(
+    () => composeFavoriteItems(investments, favoriteAssets, selectedAssetType),
+    [favoriteAssets, investments, selectedAssetType],
+  );
+  const favoriteGroupCounts = useMemo(
+    () => countFavoriteItemsByAssetType(favoriteItems),
+    [favoriteItems],
+  );
   const [expandedFavoriteTypes, setExpandedFavoriteTypes] = useState<Set<InvestmentAssetType>>(
     () => new Set(),
   );
   useEffect(() => {
-    if (!favoriteOnly) {
-      favoriteGroupsInitializedRef.current = false;
-      return;
-    }
-    if (favoriteItems.length > 0 && !favoriteGroupsInitializedRef.current) {
-      favoriteGroupsInitializedRef.current = true;
-      setExpandedFavoriteTypes(new Set([favoriteItems[0].item.assetType]));
-    }
+    if (!favoriteOnly) return;
+    const availableTypes = new Set(favoriteItems.map(({ item }) => item.assetType));
+    setExpandedFavoriteTypes((current) => {
+      const next = new Set([...current].filter((assetType) => availableTypes.has(assetType)));
+      if (favoriteItems.length > 0 && next.size === 0) {
+        next.add(favoriteItems[0].item.assetType);
+      }
+      return next;
+    });
   }, [favoriteItems, favoriteOnly]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [favoriteDetails, setFavoriteDetails] = useState<FavoriteDetail | null>(null);

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   filterInvestmentsByAssetType,
+  composeFavoriteItems,
+  countFavoriteItemsByAssetType,
   investmentCompositionRoute,
   INVESTMENT_ASSET_TYPES,
   resolveInvestmentAssetTypeParam,
@@ -16,6 +18,17 @@ function investment(assetType, values = {}) {
     investedAmount: values.investedAmount ?? 100,
     currentValue: values.currentValue ?? 110,
     returnAmount: values.returnAmount ?? 10,
+  };
+}
+
+function favorite(assetType, values = {}) {
+  return {
+    id: `favorite-${assetType}-${values.name ?? 'asset'}`,
+    name: values.name ?? assetType,
+    ticker: values.ticker ?? `${assetType.toUpperCase()}1`,
+    assetType,
+    createdAt: '2026-09-15T00:00:00.000Z',
+    updatedAt: '2026-09-15T00:00:00.000Z',
   };
 }
 
@@ -61,5 +74,59 @@ test('sem parâmetro mantém a carteira completa e lista vazia continua vazia', 
   assert.deepEqual(
     filterInvestmentsByAssetType([], resolveInvestmentAssetTypeParam('stock')),
     [],
+  );
+});
+
+test('mantém favoritos da carteira e do catálogo agrupados por tipo após recarregar', () => {
+  const firstLoad = composeFavoriteItems(
+    [
+      investment('stock', { name: 'Ação na carteira' }),
+      investment('fii', { name: 'FII na carteira' }),
+    ].map((item) => ({ ...item, isFavorite: true, ticker: `${item.assetType.toUpperCase()}1` })),
+    [
+      favorite('stock', { name: 'Ação no catálogo', ticker: 'STK2' }),
+      favorite('crypto', { name: 'Cripto no catálogo', ticker: 'BTC' }),
+    ],
+  );
+
+  assert.deepEqual(
+    firstLoad.map(({ item }) => `${item.assetType}:${item.name}`),
+    [
+      'stock:Ação na carteira',
+      'stock:Ação no catálogo',
+      'fii:FII na carteira',
+      'crypto:Cripto no catálogo',
+    ],
+  );
+  assert.deepEqual(
+    [...countFavoriteItemsByAssetType(firstLoad).entries()],
+    [['stock', 2], ['fii', 1], ['crypto', 1]],
+  );
+
+  const reloaded = composeFavoriteItems(
+    [
+      investment('stock', { name: 'Ação na carteira' }),
+      investment('fii', { name: 'FII na carteira' }),
+    ].map((item) => ({ ...item, isFavorite: true, ticker: `${item.assetType.toUpperCase()}1` })),
+    [
+      favorite('stock', { name: 'Ação no catálogo', ticker: 'STK2' }),
+      favorite('crypto', { name: 'Cripto no catálogo', ticker: 'BTC' }),
+      favorite('etf', { name: 'ETF no catálogo', ticker: 'ETF1' }),
+    ],
+  );
+
+  assert.deepEqual(
+    reloaded.map(({ item }) => `${item.assetType}:${item.name}`),
+    [
+      'stock:Ação na carteira',
+      'stock:Ação no catálogo',
+      'fii:FII na carteira',
+      'etf:ETF no catálogo',
+      'crypto:Cripto no catálogo',
+    ],
+  );
+  assert.deepEqual(
+    [...countFavoriteItemsByAssetType(reloaded).entries()],
+    [['stock', 2], ['fii', 1], ['etf', 1], ['crypto', 1]],
   );
 });

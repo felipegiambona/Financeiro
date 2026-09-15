@@ -1,4 +1,4 @@
-import type { Investment, InvestmentAssetType } from '@workspace/api-client-react';
+import type { Investment, InvestmentAssetType, InvestmentFavorite } from '@workspace/api-client-react';
 
 export const INVESTMENT_ASSET_TYPES = [
   'stock',
@@ -71,6 +71,52 @@ export function summarizeInvestments(investments: Investment[]): InvestmentSumma
     }),
     { invested: 0, current: 0, result: 0 },
   );
+}
+
+export type FavoriteListItem =
+  | { kind: 'investment'; item: Investment }
+  | { kind: 'catalog'; item: InvestmentFavorite };
+
+function favoriteAssetKey(asset: { assetType: InvestmentAssetType; ticker: string | null; name: string }): string {
+  return `${asset.assetType}:${asset.ticker?.trim().toLocaleLowerCase() || asset.name.trim().toLocaleLowerCase()}`;
+}
+
+export function composeFavoriteItems(
+  investments: Investment[],
+  favoriteAssets: InvestmentFavorite[],
+  selectedAssetType: InvestmentAssetType | null = null,
+): FavoriteListItem[] {
+  const favoritePortfolioInvestments = investments.filter((investment) => (
+    investment.isFavorite
+      && (!selectedAssetType || investment.assetType === selectedAssetType)
+  ));
+  const portfolioKeys = new Set(favoritePortfolioInvestments.map(favoriteAssetKey));
+  const typeOrder = new Map(INVESTMENT_ASSET_TYPES.map((assetType, index) => [assetType, index]));
+
+  return [
+    ...favoritePortfolioInvestments.map((investment) => ({ kind: 'investment' as const, item: investment })),
+    ...favoriteAssets
+      .filter((favorite) => (
+        (!selectedAssetType || favorite.assetType === selectedAssetType)
+        && !portfolioKeys.has(favoriteAssetKey(favorite))
+      ))
+      .map((favorite) => ({ kind: 'catalog' as const, item: favorite })),
+  ].sort((first, second) => {
+    const typeDifference = (typeOrder.get(first.item.assetType) ?? INVESTMENT_ASSET_TYPES.length)
+      - (typeOrder.get(second.item.assetType) ?? INVESTMENT_ASSET_TYPES.length);
+    if (typeDifference !== 0) return typeDifference;
+    return first.item.name.localeCompare(second.item.name, 'pt-BR');
+  });
+}
+
+export function countFavoriteItemsByAssetType(
+  favoriteItems: FavoriteListItem[],
+): Map<InvestmentAssetType, number> {
+  const counts = new Map<InvestmentAssetType, number>();
+  favoriteItems.forEach(({ item }) => {
+    counts.set(item.assetType, (counts.get(item.assetType) ?? 0) + 1);
+  });
+  return counts;
 }
 
 export function investmentCompositionRoute(assetType: InvestmentAssetType) {
