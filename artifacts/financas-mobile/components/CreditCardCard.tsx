@@ -73,7 +73,11 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
           accessibilityLabel={hasInvoiceAmount ? `Pagar fatura do cartão ${card.name}` : `Nenhum lançamento na fatura do cartão ${card.name}`}
           testID={`pay-card-invoice-${card.id}`}
           disabled={paying || !hasInvoiceAmount || isPaid}
-          onPress={onPay}
+          onStartShouldSetResponder={() => true}
+          onPress={(event) => {
+            event.stopPropagation();
+            onPay();
+          }}
           style={({ pressed }) => [
             styles.payButton,
             { backgroundColor: colors.secondary, borderColor: colors.border },
