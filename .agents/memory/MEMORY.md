@@ -15,3 +15,4 @@
 - [Calendar date API contracts](calendar-date-api-contracts.md) — date-only API fields must not be coerced through UTC midnight before returning to the mobile app.
 - [Forecast overdue invoices](forecast-overdue-invoices.md) — current-month forecasts must include unpaid overdue card invoices without duplicating them in their original month.
 - [Transaction month totals](transaction-month-total.md) — the transactions screen total includes only listed launches, not the separate card invoice summary.
+- [Expo component test bundling](expo-component-test-bundling.md) — Node tests for Expo components need native-module aliases and external React DOM modules.

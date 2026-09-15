@@ -16,3 +16,13 @@ safe-area context:
 The fallback uses only React Native primitives, Expo reload support, and static
 colors. It must not import `useColors`, `useTheme`, `useSafeAreaInsets`, or any
 authenticated provider.
+
+The provider-isolation regression test runs with:
+
+```sh
+pnpm --filter @workspace/financas-mobile run test:error-fallback
+```
+
+It renders the fallback without those providers and checks the recovery action,
+the development details, and the original error text. It also fails if the
+fallback imports a contextual hook.

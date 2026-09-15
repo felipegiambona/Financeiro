@@ -11,7 +11,8 @@
     "test:financial-rules": "../api-server/node_modules/.bin/esbuild test/financialRules.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-financialRules.test.mjs && node --test /tmp/financas-mobile-financialRules.test.mjs",
     "test:investment-composition": "../api-server/node_modules/.bin/esbuild test/investmentComposition.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-investmentComposition.test.mjs && node --test /tmp/financas-mobile-investmentComposition.test.mjs",
     "test:onboarding": "../api-server/node_modules/.bin/esbuild test/onboardingState.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-onboardingState.test.mjs && node --test /tmp/financas-mobile-onboardingState.test.mjs",
-    "test:recent-assets": "../api-server/node_modules/.bin/esbuild test/recentInvestmentAssets.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-recent-assets.test.mjs && node --test /tmp/financas-mobile-recent-assets.test.mjs"
+    "test:recent-assets": "../api-server/node_modules/.bin/esbuild test/recentInvestmentAssets.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/financas-mobile-recent-assets.test.mjs && node --test /tmp/financas-mobile-recent-assets.test.mjs",
+    "test:error-fallback": "trap 'rm -f test/.errorFallback.test.mjs' EXIT; ../api-server/node_modules/.bin/esbuild test/errorFallback.test.mjs --bundle --platform=node --format=esm --define:__DEV__=true --external:react --external:react-dom/server --alias:react-native=./test/mocks/react-native.mjs --alias:@expo/vector-icons=./test/mocks/vector-icons.mjs --alias:expo=./test/mocks/expo.mjs --outfile=test/.errorFallback.test.mjs && node --test test/.errorFallback.test.mjs"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
