@@ -196,6 +196,9 @@ export default function InvestmentsScreen() {
     });
     return counts;
   }, [favoriteItems]);
+  const [expandedFavoriteTypes, setExpandedFavoriteTypes] = useState<Set<InvestmentAssetType>>(
+    () => new Set(ASSET_TYPES.map((item) => item.value)),
+  );
   const [editorOpen, setEditorOpen] = useState(false);
   const [favoriteDetails, setFavoriteDetails] = useState<FavoriteDetail | null>(null);
   const [favoriteAssetToRegister, setFavoriteAssetToRegister] = useState<string | null>(null);
@@ -216,6 +219,14 @@ export default function InvestmentsScreen() {
       ?? investment.institution
       ?? 'Carteira não vinculada'
   );
+  const toggleFavoriteGroup = (assetType: InvestmentAssetType) => {
+    setExpandedFavoriteTypes((current) => {
+      const next = new Set(current);
+      if (next.has(assetType)) next.delete(assetType);
+      else next.add(assetType);
+      return next;
+    });
+  };
 
   const totalsInvestments = favoriteOnly ? favoritePortfolioInvestments : filteredInvestments;
   const totals = useMemo(() => totalsInvestments.reduce((summary, investment) => ({
@@ -735,20 +746,42 @@ export default function InvestmentsScreen() {
                     : investment;
                   const favoriteGroupStart = favoriteOnly
                     && (index === 0 || favoriteItems[index - 1]?.item.assetType !== investment.assetType);
+                  const favoriteGroupExpanded = !favoriteOnly || expandedFavoriteTypes.has(investment.assetType);
+                  const favoriteGroupHeader = favoriteGroupStart ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${favoriteGroupExpanded ? 'Recolher' : 'Expandir'} favoritos de ${assetTypeLabel(investment.assetType)}`}
+                      accessibilityState={{ expanded: favoriteGroupExpanded }}
+                      onPress={() => toggleFavoriteGroup(investment.assetType)}
+                      style={({ pressed }) => [styles.favoriteGroupHeader, pressed && styles.pressed]}
+                    >
+                      <View style={styles.favoriteGroupHeaderCopy}>
+                        <Text style={[styles.favoriteGroupLabel, { color: colors.mutedForeground }]}>
+                          {assetTypeLabel(investment.assetType)}
+                        </Text>
+                        <View style={[styles.favoriteGroupCount, { backgroundColor: colors.secondary }]}>
+                          <Text style={[styles.favoriteGroupCountText, { color: colors.mutedForeground }]}>
+                            {favoriteGroupCounts.get(investment.assetType) ?? 0}
+                          </Text>
+                        </View>
+                      </View>
+                      <Feather
+                        name={favoriteGroupExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color={colors.mutedForeground}
+                      />
+                    </Pressable>
+                  ) : null;
+                  if (favoriteOnly && !favoriteGroupExpanded) {
+                    return favoriteGroupHeader ? (
+                      <React.Fragment key={`${favoriteOnly ? 'favorite' : 'investment'}-${investment.id}`}>
+                        {favoriteGroupHeader}
+                      </React.Fragment>
+                    ) : null;
+                  }
                   return (
                     <React.Fragment key={`${favoriteOnly ? 'favorite' : 'investment'}-${investment.id}`}>
-                      {favoriteGroupStart ? (
-                        <View style={styles.favoriteGroupHeader}>
-                          <Text style={[styles.favoriteGroupLabel, { color: colors.mutedForeground }]}>
-                            {assetTypeLabel(investment.assetType)}
-                          </Text>
-                          <View style={[styles.favoriteGroupCount, { backgroundColor: colors.secondary }]}>
-                            <Text style={[styles.favoriteGroupCountText, { color: colors.mutedForeground }]}>
-                              {favoriteGroupCounts.get(investment.assetType) ?? 0}
-                            </Text>
-                          </View>
-                        </View>
-                      ) : null}
+                      {favoriteGroupHeader}
                       {favoriteOnly ? (
                         <Pressable
                           accessibilityRole="button"
@@ -1319,6 +1352,7 @@ const styles = StyleSheet.create({
   favoriteCompactIcon: { width: 31, height: 31, borderRadius: 7 },
   favoriteCompactAction: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   favoriteGroupHeader: { minHeight: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2, marginTop: 2 },
+  favoriteGroupHeaderCopy: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   favoriteGroupLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 0.8, textTransform: 'uppercase' },
   favoriteGroupCount: { minWidth: 23, height: 22, borderRadius: 7, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   favoriteGroupCountText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
