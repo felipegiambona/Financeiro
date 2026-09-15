@@ -84,7 +84,12 @@ export default function CardDetailsScreen() {
     return Array.from(months).sort().reverse();
   }, [currentInvoiceMonth, history]);
   const filteredHistory = useMemo(
-    () => history.filter((item) => item.date.slice(0, 7) === selectedHistoryMonth),
+    () => history
+      .filter((item) => item.date.slice(0, 7) === selectedHistoryMonth)
+      .sort((first, second) => {
+        const difference = new Date(second.date).getTime() - new Date(first.date).getTime();
+        return Number.isNaN(difference) ? second.date.localeCompare(first.date) : difference;
+      }),
     [history, selectedHistoryMonth],
   );
   const selectedHistoryMonthIndex = historyMonths.indexOf(selectedHistoryMonth);
