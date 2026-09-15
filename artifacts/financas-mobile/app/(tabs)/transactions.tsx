@@ -13,6 +13,7 @@ import { useWallets } from '@/context/WalletContext';
 import { useCards } from '@/context/CardContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateCurrentBalance, calculateForecast } from '@/services/financialRules';
+import { getFilteredCardInvoices } from '@/services/cardInvoiceFilters';
 import { getTransactionOccurrencesForMonth, getTransactionOccurrencesInRange } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
 import {
@@ -282,23 +283,13 @@ export default function TransactionsScreen() {
   const forecast = calculateForecast(transactions, selectedMonth, cards);
   const cardInvoicesForMonth = useMemo(() => {
     const monthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`;
-    const isWithinDateFilter = (date: Date) => (
-      (!dateRangeStart || date.getTime() >= dateRangeStart.getTime())
-      && (!dateRangeEnd || date.getTime() <= dateRangeEnd.getTime())
-    );
-    const matchesStatus = (status: string) => (
-      statusFilter === 'all'
-      || (statusFilter === 'paid' ? status === 'paid' : status !== 'paid')
-    );
-
-    return cards.flatMap((card) => card.invoices
-      .filter((invoice) => {
-        if (invoice.amount <= 0 || (cardFilter !== 'all' && card.id !== cardFilter)) return false;
-        if (!matchesStatus(invoice.status)) return false;
-        if (dateRangeStart || dateRangeEnd) return isWithinDateFilter(parseStoredDate(invoice.dueDate));
-        return invoice.invoiceMonth === monthKey;
-      })
-      .map((invoice) => ({ card, invoice })));
+    return getFilteredCardInvoices(cards, {
+      monthKey,
+      cardId: cardFilter,
+      status: statusFilter,
+      dateRangeStart,
+      dateRangeEnd,
+    });
   }, [cardFilter, cards, dateRangeEnd, dateRangeStart, selectedMonth, statusFilter]);
   const showCardInvoices = (typeFilter === 'all' || typeFilter === 'expense')
     && cardInvoicesForMonth.length > 0;
