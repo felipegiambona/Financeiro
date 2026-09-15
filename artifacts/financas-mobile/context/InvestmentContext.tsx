@@ -49,6 +49,7 @@ interface InvestmentContextValue {
   investments: Investment[];
   favoriteAssets: InvestmentFavorite[];
   recentAssets: RecentInvestmentAsset[];
+  lastUpdatedAt: string | null;
   loading: boolean;
   refreshing: boolean;
   error: string | null;
@@ -71,16 +72,21 @@ const InvestmentContext = createContext<InvestmentContextValue | null>(null);
 
 export function InvestmentProvider({ children }: React.PropsWithChildren) {
   const { activeProfile } = useFinancialProfiles();
+  const activeProfileId = activeProfile?.id;
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [favoriteAssets, setFavoriteAssets] = useState<InvestmentFavorite[]>([]);
   const [recentAssets, setRecentAssets] = useState<RecentInvestmentAsset[]>([]);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const recentAssetsRef = useRef<RecentInvestmentAsset[]>([]);
+  const activeProfileIdRef = useRef<string | undefined>(activeProfileId);
   const hasLoadedRef = useRef(false);
-  const refreshInFlightRef = useRef(false);
+  const refreshInFlightRef = useRef<string | undefined>(undefined);
+  const refreshRequestRef = useRef(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  activeProfileIdRef.current = activeProfileId;
   const recentAssetsStorageKey = recentInvestmentAssetsStorageKey(activeProfile);
 
   useEffect(() => {
@@ -145,14 +151,21 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
       hasLoadedRef.current = true;
       setInvestments([]);
       setFavoriteAssets([]);
+      setLastUpdatedAt(null);
       setError(null);
       setLoading(false);
       setRefreshing(false);
       return;
     }
 
-    if (refreshInFlightRef.current) return;
-    refreshInFlightRef.current = true;
+    if (refreshInFlightRef.current === activeProfileId) return;
+    const profileId = activeProfileId;
+    const requestId = ++refreshRequestRef.current;
+    const isCurrentRequest = () => (
+      requestId === refreshRequestRef.current
+      && activeProfileIdRef.current === profileId
+    );
+    refreshInFlightRef.current = profileId;
     const isInitialLoad = !hasLoadedRef.current;
     try {
       setError(null);
@@ -162,6 +175,7 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
         setRefreshing(true);
       }
       const [loaded, loadedFavorites] = await Promise.all([listInvestments(), listInvestmentFavorites()]);
+      if (!isCurrentRequest()) return;
       const legacyDrafts = loaded.filter(isLegacyFavoriteDraft);
       let nextFavorites = loadedFavorites;
       if (legacyDrafts.length > 0) {
@@ -176,44 +190,63 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
         ];
         await Promise.all(legacyDrafts.map((investment) => removeInvestment(investment.id)));
       }
+      if (!isCurrentRequest()) return;
       const portfolio = loaded.filter((investment) => !isLegacyFavoriteDraft(investment));
       setFavoriteAssets(nextFavorites);
       setInvestments(portfolio);
       hasLoadedRef.current = true;
+      let quoteRefreshFailed = false;
       if (portfolio.some((investment) => investment.valuationMode === 'automatic')) {
         try {
-          setInvestments(await persistInvestmentQuotes());
+          const quotedInvestments = await persistInvestmentQuotes();
+          if (!isCurrentRequest()) return;
+          setInvestments(quotedInvestments);
         } catch {
+          quoteRefreshFailed = true;
           // Quote provider outages are shown per asset; they should not hide the portfolio.
         }
       }
-    } catch {
-      setError('Não foi possível carregar seus investimentos.');
-    } finally {
-      if (isInitialLoad) {
-        setLoading(false);
-      } else {
-        setRefreshing(false);
+      if (isCurrentRequest() && !quoteRefreshFailed) {
+        setLastUpdatedAt(new Date().toISOString());
       }
-      refreshInFlightRef.current = false;
+    } catch {
+      if (isCurrentRequest()) {
+        setError('Não foi possível carregar seus investimentos.');
+      }
+    } finally {
+      if (isCurrentRequest()) {
+        if (isInitialLoad) {
+          setLoading(false);
+        } else {
+          setRefreshing(false);
+        }
+      }
+      if (refreshRequestRef.current === requestId) {
+        refreshInFlightRef.current = undefined;
+      }
     }
-  }, [activeProfile?.type]);
+  }, [activeProfile?.type, activeProfileId]);
 
   useEffect(() => {
     hasLoadedRef.current = false;
+    setLastUpdatedAt(null);
     void refresh();
     if (activeProfile?.type !== 'personal') return undefined;
     const interval = setInterval(() => void refresh(), 15 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [activeProfile?.type, refresh]);
+  }, [activeProfile?.type, activeProfileId, refresh]);
 
   const refreshQuotes = useCallback(async () => {
+    const profileId = activeProfileId;
     try {
-      setInvestments(await persistInvestmentQuotes());
+      const updated = await persistInvestmentQuotes();
+      if (activeProfileIdRef.current !== profileId) return;
+      setInvestments(updated);
+      setLastUpdatedAt(new Date().toISOString());
     } catch {
       throw new Error('Não foi possível atualizar as cotações agora.');
     }
-  }, []);
+  }, [activeProfileId]);
 
   const getInvestmentQuote = useCallback(async (assetType: InvestmentAssetType, ticker: string) => {
     const response = await fetchInvestmentQuote({ assetType, ticker });
@@ -310,8 +343,8 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   }, [investments]);
 
   const value = useMemo(
-    () => ({ investments, favoriteAssets, recentAssets, loading, refreshing, error, refresh, refreshQuotes, getInvestmentQuote, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, clearRecentAssets, createInvestment, createFavoriteAsset, deleteFavoriteAsset, updateInvestment, toggleFavorite, deleteInvestment }),
-    [clearRecentAssets, createFavoriteAsset, createInvestment, deleteFavoriteAsset, deleteInvestment, error, favoriteAssets, getInvestmentQuote, investments, loading, recentAssets, refresh, refreshing, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, toggleFavorite, updateInvestment],
+    () => ({ investments, favoriteAssets, recentAssets, lastUpdatedAt, loading, refreshing, error, refresh, refreshQuotes, getInvestmentQuote, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, clearRecentAssets, createInvestment, createFavoriteAsset, deleteFavoriteAsset, updateInvestment, toggleFavorite, deleteInvestment }),
+    [clearRecentAssets, createFavoriteAsset, createInvestment, deleteFavoriteAsset, deleteInvestment, error, favoriteAssets, getInvestmentQuote, investments, lastUpdatedAt, loading, recentAssets, refresh, refreshing, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, toggleFavorite, updateInvestment],
   );
 
   return <InvestmentContext.Provider value={value}>{children}</InvestmentContext.Provider>;
