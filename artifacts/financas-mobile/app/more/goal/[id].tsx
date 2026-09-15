@@ -123,6 +123,10 @@ export default function GoalDetailScreen() {
   }
 
   const history = detail?.history ?? [];
+  const historyTotal = history.reduce(
+    (total, entry) => total + (entry.type === 'contribution' ? entry.amount : -entry.amount),
+    0,
+  );
   const completed = progress.percentage >= 100;
 
   return (
@@ -227,6 +231,16 @@ export default function GoalDetailScreen() {
               </View>
             );
           })}
+          <View
+            accessibilityLabel={`Total do histórico: ${formatCurrency(historyTotal)}`}
+            testID="goal-history-total"
+            style={[styles.historyTotal, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <Text style={[styles.historyTotalLabel, { color: colors.mutedForeground }]}>Total do histórico</Text>
+            <Text style={[styles.historyTotalValue, { color: historyTotal >= 0 ? colors.income : colors.expense }]}>
+              {formatCurrency(historyTotal)}
+            </Text>
+          </View>
         </View>
       </KeyboardAwareScrollViewCompat>
 
@@ -307,6 +321,9 @@ const styles = StyleSheet.create({
   historyDescription: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 2 },
   historyDate: { fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 4 },
   historyAmount: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  historyTotal: { minHeight: 48, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
+  historyTotalLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  historyTotalValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   emptyHistory: { minHeight: 84, borderWidth: 1, borderRadius: 9, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
   emptyText: { flex: 1, fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 16 },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
