@@ -22,6 +22,11 @@ export function getSaoPauloMonthKey(date = new Date()): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
+export function getSaoPauloDateKey(date = new Date()): string {
+  const { year, month, day } = getSaoPauloDateParts(date);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 export function getDayKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }

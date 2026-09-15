@@ -25,7 +25,7 @@ import {
   TransactionType,
 } from '@/types/transaction';
 import { formatAmountInput, formatAmountValue, parseAmountInput } from '@/utils/currency';
-import { createLocalIsoDate, parseStoredDate } from '@/utils/date';
+import { createLocalIsoDate, getSaoPauloDateKey, parseStoredDate } from '@/utils/date';
 import { DatePickerModal } from '@/components/DatePickerModal';
 import { CATEGORY_COLORS } from '@/types/category';
 
@@ -233,7 +233,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           description: description.trim(),
           walletId: sourceWalletId,
           cardId: selectedCardId,
-          date: parsedDueDate ? createLocalIsoDate(parsedDueDate) : undefined,
+          date: parsedDueDate ? createLocalIsoDate(parsedDueDate) : getSaoPauloDateKey(),
           categoryId,
           goalId: type === 'expense' || type === 'income' ? goalId : null,
           destinationWalletId: type === 'transfer' ? destinationWalletId : null,
@@ -248,7 +248,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           amount: numericAmount,
           description,
           cardId: selectedCardId,
-          date: parsedDueDate ? createLocalIsoDate(parsedDueDate) : undefined,
+          date: parsedDueDate ? createLocalIsoDate(parsedDueDate) : getSaoPauloDateKey(),
           categoryId,
           goalId: type === 'expense' || type === 'income' ? goalId : null,
           dueDate: parsedDueDate ? createLocalIsoDate(parsedDueDate) : null,

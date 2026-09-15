@@ -5,7 +5,7 @@ description: Business-date handling for credit card invoice closing and status.
 
 Credit card invoice status and closing dates must be calculated using the `America/Sao_Paulo` calendar. The API process runs in UTC, so its calendar day can advance before the user's local day.
 
-Default transaction dates must use the same São Paulo calendar instead of the runtime's local date, both in the mobile fallback and in the API fallback for requests that omit a date.
+Default transaction dates must use the same São Paulo calendar instead of the runtime's local date, both in the mobile fallback and in the API fallback for requests that omit a date. Send a date-only value for this case; do not round-trip it through an ISO timestamp.
 
 **Why:** At the start of a UTC day, São Paulo can still be on the previous day. Using `Date#getDate()` directly marked invoices closed before the configured local closing day.
 
