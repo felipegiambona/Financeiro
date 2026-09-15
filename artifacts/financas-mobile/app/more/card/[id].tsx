@@ -191,8 +191,13 @@ export default function CardDetailsScreen() {
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={`Pagar fatura atrasada de ${invoice.invoiceMonth}`}
+                        testID={`pay-overdue-invoice-${invoice.invoiceMonth}`}
                         disabled={payingInvoiceMonth !== null}
-                        onPress={() => handlePay(invoice.invoiceMonth, invoice.amount, 'fatura atrasada')}
+                        onStartShouldSetResponder={() => true}
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          handlePay(invoice.invoiceMonth, invoice.amount, 'fatura atrasada');
+                        }}
                         style={({ pressed }) => [
                           styles.overdueButton,
                           { backgroundColor: colors.expense },
