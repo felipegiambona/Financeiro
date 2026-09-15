@@ -245,7 +245,8 @@ export default function TransactionsScreen() {
       label: formatTransactionGroupLabel(groupTransactions[0].date),
       transactions: groupTransactions,
       total: groupTransactions.reduce((total, transaction) => {
-        if (transaction.cardId) return total;
+        if (transaction.cardId && transaction.cardEntryType !== 'invoice_payment') return total;
+        if (transaction.cardEntryType === 'invoice_payment' && transaction.paymentStatus !== 'paid') return total;
         if (transaction.type === 'income') return total + transaction.amount;
         if (transaction.type === 'expense') return total - transaction.amount;
         if (typeFilter === 'transfer') return total + transaction.amount;
