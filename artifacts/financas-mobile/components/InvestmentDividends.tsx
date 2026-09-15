@@ -128,9 +128,10 @@ export function InvestmentDividends() {
     return [...groups.values()];
   }, [dividends]);
 
+  const selectedInvestmentId = draft.investmentId || (!editing ? investments[0]?.id ?? '' : '');
   const selectedInvestment = useMemo(
-    () => investments.find((investment) => investment.id === draft.investmentId) ?? null,
-    [draft.investmentId, investments],
+    () => investments.find((investment) => investment.id === selectedInvestmentId) ?? null,
+    [investments, selectedInvestmentId],
   );
   const filteredInvestments = useMemo(() => {
     const query = investmentSearch.trim().toLocaleLowerCase('pt-BR');
@@ -238,7 +239,7 @@ export function InvestmentDividends() {
   const save = async () => {
     const amount = parseAmountInput(draft.amount);
     const paymentDate = toApiDate(draft.paymentDate);
-    if (!draft.investmentId || !investments.some((investment) => investment.id === draft.investmentId)) {
+    if (!selectedInvestmentId || !investments.some((investment) => investment.id === selectedInvestmentId)) {
       Alert.alert('Ativo obrigatório', 'Selecione um investimento da carteira.');
       return;
     }
@@ -253,7 +254,7 @@ export function InvestmentDividends() {
     try {
       setSaving(true);
       const input = {
-        investmentId: draft.investmentId,
+        investmentId: selectedInvestmentId,
         type: draft.type,
         amount,
         paymentDate,
@@ -604,7 +605,7 @@ export function InvestmentDividends() {
                       <Pressable
                         key={investment.id}
                         accessibilityRole="radio"
-                        accessibilityState={{ selected: draft.investmentId === investment.id }}
+                        accessibilityState={{ selected: selectedInvestmentId === investment.id }}
                         onPress={() => {
                           setDraft((current) => ({ ...current, investmentId: investment.id }));
                           setInvestmentPickerOpen(false);
@@ -612,7 +613,7 @@ export function InvestmentDividends() {
                         }}
                         style={({ pressed }) => [
                           styles.comboboxOption,
-                          { backgroundColor: draft.investmentId === investment.id ? colors.secondary : colors.card },
+                          { backgroundColor: selectedInvestmentId === investment.id ? colors.secondary : colors.card },
                           pressed && styles.pressed,
                         ]}
                       >
@@ -620,7 +621,7 @@ export function InvestmentDividends() {
                           <Text numberOfLines={1} style={[styles.comboboxValue, { color: colors.foreground }]}>{investment.name}</Text>
                           {investment.ticker ? <Text style={[styles.comboboxMeta, { color: colors.mutedForeground }]}>{investment.ticker}</Text> : null}
                         </View>
-                        {draft.investmentId === investment.id ? <Feather name="check" size={14} color={colors.primary} /> : null}
+                        {selectedInvestmentId === investment.id ? <Feather name="check" size={14} color={colors.primary} /> : null}
                       </Pressable>
                     ))}
                   </View>
