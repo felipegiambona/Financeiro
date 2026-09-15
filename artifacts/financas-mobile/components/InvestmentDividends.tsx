@@ -182,12 +182,13 @@ export function InvestmentDividends() {
       })));
       setCalendarOpen(false);
       setCalendar(null);
-      if (result.skipped > 0) {
-        Alert.alert(
-          'Importação concluída',
-          `${result.created.length} evento(s) salvo(s). ${result.skipped} já existia(m) e foi(ram) ignorado(s).`,
-        );
-      }
+      const createdMessage = result.created.length === 1
+        ? '1 evento foi importado com sucesso.'
+        : `${result.created.length} eventos foram importados com sucesso.`;
+      const skippedMessage = result.skipped > 0
+        ? ` ${result.skipped} já existia(m) e foi(ram) ignorado(s).`
+        : '';
+      Alert.alert('Importação concluída', `${createdMessage}${skippedMessage}`);
     } catch {
       Alert.alert('Não foi possível importar', 'Os proventos manuais continuam disponíveis. Tente novamente.');
     } finally {
@@ -520,13 +521,13 @@ export function InvestmentDividends() {
                   {calendar.events.some((event) => !event.alreadyImported) ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Salvar eventos selecionados"
+                      accessibilityLabel="Importar eventos selecionados"
                       disabled={importing}
                       onPress={() => void importSelected()}
                       style={({ pressed }) => [styles.saveButton, { backgroundColor: colors.primary }, importing && styles.disabled, pressed && styles.pressed]}
                     >
                       <Text style={[styles.saveText, { color: colors.primaryForeground }]}>
-                        {importing ? 'Salvando...' : `Salvar selecionados (${selectedCalendarIds.size})`}
+                        {importing ? 'Importando...' : `Importar selecionados (${selectedCalendarIds.size})`}
                       </Text>
                     </Pressable>
                   ) : null}
