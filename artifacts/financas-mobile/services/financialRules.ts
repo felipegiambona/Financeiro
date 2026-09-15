@@ -54,6 +54,19 @@ function cardInvoiceTotalForMonth(cards: Card[], month: Date): number {
   );
 }
 
+function cardOverdueTotalForCurrentMonth(cards: Card[], month: Date, now: Date): number {
+  const targetMonthKey = getDateKey(month).slice(0, 7);
+  const currentMonthKey = getDateKey(now).slice(0, 7);
+  if (targetMonthKey !== currentMonthKey) return 0;
+
+  return cards.reduce(
+    (total, card) => total + card.invoices
+      .filter((invoice) => invoice.status === 'overdue' && invoice.invoiceMonth < currentMonthKey)
+      .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
+    0,
+  );
+}
+
 function cardInvoiceTotal(cards: Card[]): number {
   return cards.reduce(
     (total, card) => total + card.invoices.reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
@@ -185,24 +198,26 @@ export function calculateForecast(
   transactions: Transaction[],
   targetMonth = new Date(),
   cards: Card[] = [],
-  _now = new Date(),
+  now = new Date(),
 ): number {
   const occurrences = getTransactionOccurrencesForMonth(transactions, targetMonth);
   return occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0)
-    - cardInvoiceTotalForMonth(cards, targetMonth);
+    - cardInvoiceTotalForMonth(cards, targetMonth)
+    - cardOverdueTotalForCurrentMonth(cards, targetMonth, now);
 }
 
 export function calculateForecastByMonth(
   transactions: Transaction[],
   year: number,
   cards: Card[] = [],
-  _now = new Date(),
+  now = new Date(),
 ): MonthlyForecast[] {
   return Array.from({ length: 12 }, (_, monthIndex) => {
     const date = new Date(year, monthIndex, 1, 12);
     const occurrences = getTransactionOccurrencesForMonth(transactions, date);
     const forecast = occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0)
-      - cardInvoiceTotalForMonth(cards, date);
+        - cardInvoiceTotalForMonth(cards, date)
+        - cardOverdueTotalForCurrentMonth(cards, date, now);
 
     return { key: getDateKey(date), date, forecast };
   });
