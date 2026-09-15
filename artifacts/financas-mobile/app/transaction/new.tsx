@@ -565,6 +565,19 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           </>
         ) : null}
 
+        <Text style={[styles.label, { color: colors.foreground }]}>Status do pagamento</Text>
+        <View style={styles.recurrenceOptions}>
+          {(['paid', 'unpaid'] as PaymentStatus[]).map((option) => {
+            const active = paymentStatus === option;
+            return (
+              <Pressable key={option} testID={`${option}-status-option`} onPress={() => setPaymentStatus(option)} style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}>
+                <View style={[styles.radio, { borderColor: active ? colors.radio : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}</View>
+                <Text style={[styles.recurrenceText, { color: active ? colors.primaryForeground : colors.foreground }]}>{option === 'paid' ? 'Pago' : 'Não pago'}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ expanded: moreOptionsOpen }}
@@ -578,7 +591,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
         >
           <View>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Mais opções</Text>
-            <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Metas, recorrência e status do pagamento.</Text>
+            <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Metas e recorrência.</Text>
           </View>
           <Feather name={moreOptionsOpen ? 'chevron-up' : 'chevron-down'} size={19} color={colors.foreground} />
         </Pressable>
@@ -748,18 +761,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           </View>
         ) : null}
 
-        <Text style={[styles.label, { color: colors.foreground }]}>Status do pagamento</Text>
-        <View style={styles.recurrenceOptions}>
-          {(['paid', 'unpaid'] as PaymentStatus[]).map((option) => {
-            const active = paymentStatus === option;
-            return (
-              <Pressable key={option} testID={`${option}-status-option`} onPress={() => setPaymentStatus(option)} style={[styles.recurrenceOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}>
-                <View style={[styles.radio, { borderColor: active ? colors.radio : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}</View>
-                <Text style={[styles.recurrenceText, { color: active ? colors.primaryForeground : colors.foreground }]}>{option === 'paid' ? 'Pago' : 'Não pago'}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
           </View>
         ) : null}
 
