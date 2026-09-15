@@ -4,6 +4,7 @@ import React from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { goBackOrReplace } from '@/components/navigation';
 import {
   DASHBOARD_CARD_OPTIONS,
   useDashboardPreferences,
@@ -99,7 +100,7 @@ export default function DashboardCardsScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Voltar para o dashboard"
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace('/(tabs)')}
           style={({ pressed }) => [styles.doneButton, { backgroundColor: colors.primary }, pressed && styles.pressed]}
         >
           <Text style={[styles.doneText, { color: colors.primaryForeground }]}>Concluir</Text>

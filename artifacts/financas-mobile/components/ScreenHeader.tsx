@@ -1,8 +1,9 @@
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { type Href } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import { goBackOrReplace } from '@/components/navigation';
 
 interface ScreenHeaderProps {
   eyebrow?: string;
@@ -13,6 +14,7 @@ interface ScreenHeaderProps {
   notificationCount?: number;
   onNotificationPress?: () => void;
   showBack?: boolean;
+  backFallback?: Href;
   rightContent?: React.ReactNode;
 }
 
@@ -25,6 +27,7 @@ export function ScreenHeader({
   notificationCount = 0,
   onNotificationPress,
   showBack = false,
+  backFallback = '/(tabs)',
   rightContent,
 }: ScreenHeaderProps) {
   const colors = useColors();
@@ -35,7 +38,7 @@ export function ScreenHeader({
           <Pressable
             accessibilityLabel="Voltar"
             hitSlop={12}
-            onPress={() => router.back()}
+            onPress={() => goBackOrReplace(backFallback)}
             style={({ pressed }) => [styles.backButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
           >
             <Feather name="arrow-left" size={20} color={colors.foreground} />

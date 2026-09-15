@@ -34,6 +34,7 @@ import {
   parseStoredDate,
 } from '@/utils/date';
 import { DatePickerModal } from '@/components/DatePickerModal';
+import { goBackOrReplace } from '@/components/navigation';
 import { CATEGORY_COLORS } from '@/types/category';
 
 function toDateInput(dateString?: string): string {
@@ -64,7 +65,7 @@ export default function NewTransactionScreen() {
   const { transactions, loading } = useFinance();
   const transaction = id ? transactions.find((item) => item.id === id) : undefined;
   const colors = useColors();
-  const handleExit = () => returnToTabs ? router.replace('/(tabs)') : router.back();
+  const handleExit = () => returnToTabs ? router.replace('/(tabs)') : goBackOrReplace('/(tabs)');
 
   if (id && loading) {
     return (

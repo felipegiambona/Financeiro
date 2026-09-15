@@ -1,10 +1,11 @@
 import { Feather } from '@expo/vector-icons';
 import { getLegalDocument, type LegalDocumentKey } from '@workspace/api-client-react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { goBackOrReplace } from '@/components/navigation';
 import { useColors } from '@/hooks/useColors';
 
 const DOCUMENT_KEYS = ['privacy', 'terms', 'contact'] as const;
@@ -45,7 +46,7 @@ export default function LegalDocumentScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenHeader eyebrow="Transparência" title={content?.title ?? 'Documento'} showBack />
+        <ScreenHeader eyebrow="Transparência" title={content?.title ?? 'Documento'} showBack backFallback="/login" />
         {content?.isDraft ? (
           <View style={[styles.notice, { backgroundColor: colors.accent, borderColor: colors.border }]}>
             <Feather name="alert-circle" size={16} color={colors.accentForeground} />
@@ -74,7 +75,7 @@ export default function LegalDocumentScreen() {
         )}
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace('/login')}
           style={({ pressed }) => [styles.backButton, { borderColor: colors.border }, pressed && styles.pressed]}
         >
           <Text style={[styles.backText, { color: colors.foreground }]}>Voltar</Text>

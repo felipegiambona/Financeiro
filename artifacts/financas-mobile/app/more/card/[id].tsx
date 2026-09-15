@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreditCardCard } from '@/components/CreditCardCard';
 import { EmptyState, LoadingState } from '@/components/StateView';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { goBackOrReplace } from '@/components/navigation';
 import { useCards } from '@/context/CardContext';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
@@ -138,7 +139,7 @@ export default function CardDetailsScreen() {
     if (!card) return;
     const executeDelete = () => {
       void deleteCard(card.id)
-        .then(() => router.back())
+        .then(() => goBackOrReplace('/more/cards'))
         .catch(() => {
           if (Platform.OS === 'web' && typeof window !== 'undefined') {
             window.alert('Não foi possível excluir. Tente novamente.');
