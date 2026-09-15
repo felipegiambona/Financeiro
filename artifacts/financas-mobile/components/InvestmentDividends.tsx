@@ -59,11 +59,9 @@ function toApiDate(value: string): string | null {
 
 function displayDate(value: string): string {
   const dateKey = value.slice(0, 10);
-  const date = new Date(`${dateKey}T12:00:00Z`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('pt-BR', {
-    timeZone: 'America/Sao_Paulo',
-  }).format(date);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+  if (!match) return value;
+  return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
 function typeLabel(type: InvestmentDividendType | InvestmentDividendCalendarEvent['type']): string {
