@@ -7,6 +7,7 @@ import {
   investmentCompositionRoute,
   INVESTMENT_ASSET_TYPES,
   resolveInvestmentAssetTypeParam,
+  searchInvestmentsByNameOrTicker,
   summarizeInvestments,
 } from '../services/investmentAssetFilters.ts';
 
@@ -14,6 +15,7 @@ function investment(assetType, values = {}) {
   return {
     id: `${assetType}-${values.name ?? 'asset'}`,
     name: values.name ?? assetType,
+    ticker: values.ticker ?? null,
     assetType,
     investedAmount: values.investedAmount ?? 100,
     currentValue: values.currentValue ?? 110,
@@ -75,6 +77,25 @@ test('sem parâmetro mantém a carteira completa e lista vazia continua vazia', 
     filterInvestmentsByAssetType([], resolveInvestmentAssetTypeParam('stock')),
     [],
   );
+});
+
+test('busca por nome ou ticker respeita o filtro de tipo antes de procurar', () => {
+  const assets = [
+    investment('stock', { name: 'Banco Brasil', ticker: 'BBAS3' }),
+    investment('stock', { name: 'Petrobras', ticker: 'PETR4' }),
+    investment('fii', { name: 'Fundo Petrobras', ticker: 'PETR4' }),
+  ];
+  const stockFilter = resolveInvestmentAssetTypeParam('stock');
+
+  assert.deepEqual(
+    searchInvestmentsByNameOrTicker(assets, stockFilter, 'banco').map((item) => item.name),
+    ['Banco Brasil'],
+  );
+  assert.deepEqual(
+    searchInvestmentsByNameOrTicker(assets, stockFilter, 'pEtR4').map((item) => item.name),
+    ['Petrobras'],
+  );
+  assert.deepEqual(searchInvestmentsByNameOrTicker(assets, stockFilter, 'inexistente'), []);
 });
 
 test('mantém favoritos da carteira e do catálogo agrupados por tipo após recarregar', () => {

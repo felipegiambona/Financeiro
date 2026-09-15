@@ -20,6 +20,7 @@ import {
   INVESTMENT_ASSET_TYPES,
   INVESTMENT_ASSET_TYPE_LABELS,
   resolveInvestmentAssetTypeParam,
+  searchInvestmentsByNameOrTicker,
   summarizeInvestments,
 } from '@/services/investmentAssetFilters';
 
@@ -188,18 +189,13 @@ export default function InvestmentsScreen() {
   const [favoriteCatalogUnavailable, setFavoriteCatalogUnavailable] = useState(false);
   const [favoriteAddingKey, setFavoriteAddingKey] = useState<string | null>(null);
   const favoriteSearchRequestRef = useRef(0);
+  const searchedInvestments = useMemo(() => {
+    return searchInvestmentsByNameOrTicker(investments, routeFilter, assetSearchQuery);
+  }, [assetSearchQuery, investments, routeFilter.assetType, routeFilter.invalid]);
   const filteredInvestments = useMemo(
     () => filterInvestmentsByAssetType(investments, routeFilter),
     [investments, routeFilter.assetType, routeFilter.invalid],
   );
-  const searchedInvestments = useMemo(() => {
-    const query = assetSearchQuery.trim().toLocaleLowerCase();
-    if (!query) return filteredInvestments;
-    return filteredInvestments.filter((investment) => (
-      investment.name.toLocaleLowerCase().includes(query)
-      || (investment.ticker ?? '').toLocaleLowerCase().includes(query)
-    ));
-  }, [assetSearchQuery, filteredInvestments]);
   const favoritePortfolioInvestments = useMemo(
     () => filteredInvestments.filter((investment) => investment.isFavorite),
     [filteredInvestments],

@@ -56,6 +56,21 @@ export function filterInvestmentsByAssetType(
   return investments.filter((investment) => investment.assetType === routeFilter.assetType);
 }
 
+export function searchInvestmentsByNameOrTicker(
+  investments: Investment[],
+  routeFilter: InvestmentAssetTypeRouteFilter,
+  query: string,
+): Investment[] {
+  const filteredInvestments = filterInvestmentsByAssetType(investments, routeFilter);
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery) return filteredInvestments;
+
+  return filteredInvestments.filter((investment) => (
+    investment.name.toLocaleLowerCase().includes(normalizedQuery)
+    || (investment.ticker ?? '').toLocaleLowerCase().includes(normalizedQuery)
+  ));
+}
+
 export type InvestmentSummary = {
   invested: number;
   current: number;
