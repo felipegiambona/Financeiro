@@ -9,6 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:catalog": "pnpm exec esbuild test/investmentCatalog.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/investmentCatalog.test.mjs && node --test /tmp/investmentCatalog.test.mjs",
+    "test:search-http": "mkdir -p .test-build && pnpm exec esbuild test/investments.search-http.test.mjs --bundle --platform=node --format=esm --external:express --alias:pg=./test/pg-test-stub.mjs --outfile=.test-build/investments.search-http.test.mjs && node --test .test-build/investments.search-http.test.mjs; status=$?; rm -rf .test-build; exit $status",
     "test:quotes": "pnpm exec esbuild test/investments.quotes.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/investments.quotes.test.mjs && node --test /tmp/investments.quotes.test.mjs",
     "test:invoices": "pnpm exec esbuild test/cardInvoices.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/cardInvoices.test.mjs && node --test /tmp/cardInvoices.test.mjs",
     "test:integration": "node --test test/transactions.isolation.test.mjs"

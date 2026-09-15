@@ -224,7 +224,7 @@ router.delete("/investments/favorites/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-router.get("/investments/search", async (req, res): Promise<void> => {
+export async function searchInvestmentsHandler(req: Request, res: Response): Promise<void> {
   if (!assertPersonalProfile(req, res)) return;
   const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
   if (query.length < 2 || query.length > 40) {
@@ -237,7 +237,9 @@ router.get("/investments/search", async (req, res): Promise<void> => {
   } catch {
     res.status(502).json({ error: "Investment catalog is temporarily unavailable" });
   }
-});
+}
+
+router.get("/investments/search", searchInvestmentsHandler);
 
 router.get("/investments/quote", async (req, res): Promise<void> => {
   if (!assertPersonalProfile(req, res)) return;
