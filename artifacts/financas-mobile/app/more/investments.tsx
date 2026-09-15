@@ -146,6 +146,7 @@ export default function InvestmentsScreen() {
     searchInvestmentAssets,
     rememberRecentAsset,
     removeRecentAsset,
+    clearRecentAssets,
     createInvestment,
     createFavoriteAsset,
     deleteFavoriteAsset,
@@ -419,6 +420,22 @@ export default function InvestmentsScreen() {
     setAssetSuggestions([]);
     setSearchingAssets(false);
     setNameFocused(false);
+  };
+
+  const confirmClearRecentAssets = () => {
+    if (recentAssets.length === 0) return;
+    Alert.alert(
+      'Limpar usados recentemente?',
+      'Todos os ativos usados recentemente serão removidos deste dispositivo.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Limpar histórico',
+          style: 'destructive',
+          onPress: () => void clearRecentAssets().catch(() => undefined),
+        },
+      ],
+    );
   };
 
   const removeFavoriteFromDetails = async () => {
@@ -968,9 +985,20 @@ export default function InvestmentsScreen() {
                   accessibilityLabel="Sugestões de ativos"
                   style={[styles.suggestionList, { backgroundColor: colors.card, borderColor: colors.border }]}
                 >
-                  {matchingRecentAssets.length > 0 && (
+                  {recentAssets.length > 0 && (
                     <>
-                      <Text style={[styles.suggestionSectionLabel, { color: colors.mutedForeground }]}>Usados recentemente</Text>
+                      <View style={styles.suggestionSectionHeader}>
+                        <Text style={[styles.suggestionSectionLabel, styles.suggestionSectionLabelInline, { color: colors.mutedForeground }]}>Usados recentemente</Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Limpar histórico de ativos usados recentemente"
+                          onPress={confirmClearRecentAssets}
+                          style={({ pressed }) => [styles.clearRecentButton, pressed && styles.pressed]}
+                        >
+                          <Feather name="trash-2" size={12} color={colors.expense} />
+                          <Text style={[styles.clearRecentButtonText, { color: colors.expense }]}>Limpar histórico</Text>
+                        </Pressable>
+                      </View>
                       {matchingRecentAssets.map((asset) => (
                         <View key={`recent-${asset.assetType}-${asset.ticker || asset.name}`} style={styles.suggestionRow}>
                           <Pressable
@@ -1415,7 +1443,11 @@ const styles = StyleSheet.create({
   selectInputText: { flex: 1, minWidth: 0, fontSize: 12, fontFamily: 'Inter_400Regular' },
   clearSearchButton: { position: 'absolute', top: 6, right: 10, width: 24, height: 32, alignItems: 'center', justifyContent: 'center' },
   suggestionList: { borderWidth: 1, borderRadius: 8, marginTop: 6, overflow: 'hidden' },
+  suggestionSectionHeader: { minHeight: 34, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 8 },
   suggestionSectionLabel: { fontSize: 9, fontFamily: 'Inter_700Bold', letterSpacing: 0.7, textTransform: 'uppercase', paddingHorizontal: 11, paddingTop: 10, paddingBottom: 3 },
+  suggestionSectionLabelInline: { paddingTop: 0, paddingBottom: 0 },
+  clearRecentButton: { minHeight: 32, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 4 },
+  clearRecentButtonText: { fontSize: 9, fontFamily: 'Inter_700Bold' },
   suggestionState: { fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingHorizontal: 11, paddingVertical: 11 },
   suggestionDivider: { height: 1, marginHorizontal: 11 },
   suggestionRow: { flexDirection: 'row', alignItems: 'center' },

@@ -49,6 +49,7 @@ interface InvestmentContextValue {
   searchInvestmentAssets: (query: string) => Promise<InvestmentSearchResult[]>;
   rememberRecentAsset: (asset: RecentInvestmentAsset) => Promise<void>;
   removeRecentAsset: (asset: RecentInvestmentAsset) => Promise<void>;
+  clearRecentAssets: () => Promise<void>;
   createInvestment: (input: InvestmentInput) => Promise<Investment>;
   createFavoriteAsset: (input: InvestmentFavoriteInput) => Promise<InvestmentFavorite>;
   deleteFavoriteAsset: (id: string) => Promise<void>;
@@ -111,6 +112,17 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
     setRecentAssets(next);
     try {
       await AsyncStorage.setItem(recentAssetsStorageKey, JSON.stringify(next));
+    } catch {
+      // The UI update remains useful even if local storage is temporarily unavailable.
+    }
+  }, [recentAssetsStorageKey]);
+
+  const clearRecentAssets = useCallback(async () => {
+    if (!recentAssetsStorageKey) return;
+    recentAssetsRef.current = [];
+    setRecentAssets([]);
+    try {
+      await AsyncStorage.removeItem(recentAssetsStorageKey);
     } catch {
       // The UI update remains useful even if local storage is temporarily unavailable.
     }
@@ -255,8 +267,8 @@ export function InvestmentProvider({ children }: React.PropsWithChildren) {
   }, [investments]);
 
   const value = useMemo(
-    () => ({ investments, favoriteAssets, recentAssets, loading, error, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, createInvestment, createFavoriteAsset, deleteFavoriteAsset, updateInvestment, toggleFavorite, deleteInvestment }),
-    [createFavoriteAsset, createInvestment, deleteFavoriteAsset, deleteInvestment, error, favoriteAssets, investments, loading, recentAssets, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, toggleFavorite, updateInvestment],
+    () => ({ investments, favoriteAssets, recentAssets, loading, error, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, clearRecentAssets, createInvestment, createFavoriteAsset, deleteFavoriteAsset, updateInvestment, toggleFavorite, deleteInvestment }),
+    [clearRecentAssets, createFavoriteAsset, createInvestment, deleteFavoriteAsset, deleteInvestment, error, favoriteAssets, investments, loading, recentAssets, refresh, refreshQuotes, searchInvestmentAssets, rememberRecentAsset, removeRecentAsset, toggleFavorite, updateInvestment],
   );
 
   return <InvestmentContext.Provider value={value}>{children}</InvestmentContext.Provider>;
