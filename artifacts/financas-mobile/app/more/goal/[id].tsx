@@ -13,7 +13,7 @@ import { createGoalMovement, getGoal } from '@/services/goalRepository';
 import { calculateGoalProgress } from '@/services/goalRules';
 import type { Goal, GoalDetail, GoalHistoryEntry, GoalMovementInput } from '@/types/goal';
 import { formatAmountInput, formatCurrency, parseAmountInput } from '@/utils/currency';
-import { createLocalIsoDate, formatDate, getSaoPauloToday, parseStoredDate } from '@/utils/date';
+import { createLocalIsoDate, formatDate, getSaoPauloToday, isFutureDate, parseStoredDate } from '@/utils/date';
 
 function formatTimeRemaining(deadline: string | null, savedAmount: number, targetAmount: number): string {
   if (savedAmount >= targetAmount) return 'Meta alcançada';
@@ -123,10 +123,14 @@ export default function GoalDetailScreen() {
   }
 
   const history = detail?.history ?? [];
-  const historyTotal = history.reduce(
+  const futureHistory = history.filter((entry) => entry.paymentStatus === 'unpaid' && isFutureDate(entry.date));
+  const futureTotal = futureHistory.reduce(
     (total, entry) => total + (entry.type === 'contribution' ? entry.amount : -entry.amount),
     0,
   );
+  const forecastSavedAmount = Math.max(progress.savedAmount + futureTotal, 0);
+  const forecastPercentage = goal.targetAmount > 0 ? (forecastSavedAmount / goal.targetAmount) * 100 : 0;
+  const forecastRemaining = Math.max(goal.targetAmount - forecastSavedAmount, 0);
   const completed = progress.percentage >= 100;
 
   return (
@@ -232,15 +236,44 @@ export default function GoalDetailScreen() {
             );
           })}
           <View
-            accessibilityLabel={`Total do histórico: ${formatCurrency(historyTotal)}`}
+            accessibilityLabel={`Total do histórico: ${formatCurrency(progress.savedAmount)}`}
             testID="goal-history-total"
-            style={[styles.historyTotal, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={styles.historyTotal}
           >
-            <Text style={[styles.historyTotalLabel, { color: colors.mutedForeground }]}>Total do histórico</Text>
-            <Text style={[styles.historyTotalValue, { color: historyTotal >= 0 ? colors.income : colors.expense }]}>
-              {formatCurrency(historyTotal)}
+            <Text style={[styles.historyTotalLabel, { color: colors.mutedForeground }]}>Total</Text>
+            <Text style={[styles.historyTotalValue, { color: colors.foreground }]}>
+              {formatCurrency(progress.savedAmount)}
             </Text>
           </View>
+          {futureHistory.length > 0 ? (
+            <View
+              accessibilityLabel={`Previsão da meta: ${formatCurrency(forecastSavedAmount)}, ${Math.round(forecastPercentage)} por cento, faltam ${formatCurrency(forecastRemaining)}`}
+              testID="goal-history-forecast"
+              style={[styles.forecastCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
+              <View style={styles.forecastHeader}>
+                <View style={styles.forecastCopy}>
+                  <Text style={[styles.forecastTitle, { color: colors.foreground }]}>Previsão</Text>
+                  <Text style={[styles.forecastHint, { color: colors.mutedForeground }]}>
+                    Considerando os lançamentos futuros da meta.
+                  </Text>
+                </View>
+                <Text style={[styles.forecastAmount, { color: forecastSavedAmount >= 0 ? colors.income : colors.expense }]}>
+                  {formatCurrency(forecastSavedAmount)}
+                </Text>
+              </View>
+              <View style={[styles.forecastDetails, { borderTopColor: colors.border }]}>
+                <View>
+                  <Text style={[styles.forecastLabel, { color: colors.mutedForeground }]}>Progresso previsto</Text>
+                  <Text style={[styles.forecastValue, { color: colors.foreground }]}>{Math.round(forecastPercentage)}%</Text>
+                </View>
+                <View style={styles.forecastDetailRight}>
+                  <Text style={[styles.forecastLabel, { color: colors.mutedForeground }]}>Faltará</Text>
+                  <Text style={[styles.forecastValue, { color: colors.foreground }]}>{formatCurrency(forecastRemaining)}</Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
         </View>
       </KeyboardAwareScrollViewCompat>
 
@@ -321,9 +354,19 @@ const styles = StyleSheet.create({
   historyDescription: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 2 },
   historyDate: { fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 4 },
   historyAmount: { fontSize: 12, fontFamily: 'Inter_700Bold' },
-  historyTotal: { minHeight: 48, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
-  historyTotalLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  historyTotal: { paddingTop: 5, flexDirection: 'row', justifyContent: 'space-between' },
+  historyTotalLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   historyTotalValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  forecastCard: { borderWidth: 1, borderRadius: 9, padding: 12, marginTop: 12 },
+  forecastHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  forecastCopy: { flex: 1, minWidth: 0 },
+  forecastTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
+  forecastHint: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  forecastAmount: { fontSize: 15, fontFamily: 'Inter_700Bold' },
+  forecastDetails: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 12, paddingTop: 10, borderTopWidth: 1 },
+  forecastDetailRight: { alignItems: 'flex-end' },
+  forecastLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  forecastValue: { fontSize: 13, fontFamily: 'Inter_700Bold', marginTop: 3 },
   emptyHistory: { minHeight: 84, borderWidth: 1, borderRadius: 9, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
   emptyText: { flex: 1, fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 16 },
   modalRoot: { flex: 1, backgroundColor: 'rgba(0,0,0,0.48)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
