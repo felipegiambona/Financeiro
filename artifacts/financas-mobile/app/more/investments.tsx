@@ -104,6 +104,10 @@ function isPortfolioFavorite(value: FavoriteDetail): value is Investment {
   return 'quantity' in value;
 }
 
+function isFavoriteDetail(value: FavoriteDetail): boolean {
+  return !isPortfolioFavorite(value) || value.isFavorite;
+}
+
 function catalogFavoriteAsInvestment(favorite: InvestmentFavorite): Investment {
   return {
     id: favorite.id,
@@ -467,6 +471,19 @@ export default function InvestmentsScreen() {
     setFavoriteToRemove(favorite);
   };
 
+  const handleInvestmentFavoriteAction = (investment: Investment) => {
+    if (investment.isFavorite) {
+      requestFavoriteRemoval(investment);
+      return;
+    }
+
+    void toggleFavorite(investment.id)
+      .then((updated) => {
+        setFavoriteDetails((current) => current?.id === updated.id ? updated : current);
+      })
+      .catch(() => Alert.alert('Não foi possível atualizar o favorito', 'Tente novamente.'));
+  };
+
   const removeFavorite = async () => {
     if (!favoriteToRemove) return;
     try {
@@ -565,6 +582,8 @@ export default function InvestmentsScreen() {
       setDeleting(false);
     }
   };
+
+  const favoriteDetailsIsFavorite = favoriteDetails ? isFavoriteDetail(favoriteDetails) : false;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -939,11 +958,20 @@ export default function InvestmentsScreen() {
                             <View style={styles.investmentActions}>
                               <Pressable
                                 accessibilityRole="button"
+                                accessibilityLabel={`Ver detalhes de ${investment.name}`}
+                                testID={`investment-details-${investment.id}`}
+                                onPress={() => setFavoriteDetails(investment)}
+                                style={({ pressed }) => [styles.iconButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
+                              >
+                                <Feather name="info" size={14} color={colors.foreground} />
+                              </Pressable>
+                              <Pressable
+                                accessibilityRole="button"
                                 accessibilityLabel={investment.isFavorite ? `Remover ${investment.name} dos favoritos` : `Adicionar ${investment.name} aos favoritos`}
-                                onPress={() => void toggleFavorite(investment.id).catch(() => Alert.alert('Não foi possível atualizar o favorito', 'Tente novamente.'))}
+                                onPress={() => handleInvestmentFavoriteAction(investment)}
                                 style={({ pressed }) => [styles.iconButton, { backgroundColor: investment.isFavorite ? colors.accent : colors.secondary }, pressed && styles.pressed]}
                               >
-                                <Feather name="star" size={14} color={investment.isFavorite ? colors.accentForeground : colors.foreground} />
+                                <MaterialIcons name={investment.isFavorite ? 'star' : 'star-border'} size={16} color={investment.isFavorite ? colors.accentForeground : colors.foreground} />
                               </Pressable>
                               <Pressable accessibilityLabel={`Editar ${investment.name}`} onPress={() => openEditor(investment)} style={({ pressed }) => [styles.iconButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
                                 <Feather name="edit-2" size={14} color={colors.foreground} />
@@ -1334,16 +1362,41 @@ export default function InvestmentsScreen() {
               >
                 <View style={styles.modalHeader}>
                   <View style={styles.favoriteDetailTitleCopy}>
-                    <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>Favorito</Text>
+                    <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>{favoriteDetailsIsFavorite ? 'Favorito' : 'Ativo'}</Text>
                     <Text numberOfLines={2} style={[styles.modalTitle, { color: colors.foreground }]}>{favoriteDetails.name}</Text>
                   </View>
-                  <Pressable
-                    accessibilityLabel="Fechar detalhes do favorito"
-                    onPress={() => setFavoriteDetails(null)}
-                    style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
-                  >
-                    <Feather name="x" size={18} color={colors.foreground} />
-                  </Pressable>
+                  <View style={styles.favoriteDetailHeaderActions}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={favoriteDetailsIsFavorite ? `Remover ${favoriteDetails.name} dos favoritos` : `Adicionar ${favoriteDetails.name} aos favoritos`}
+                      testID="favorite-detail-toggle"
+                      onPress={() => {
+                        if (isPortfolioFavorite(favoriteDetails)) {
+                          handleInvestmentFavoriteAction(favoriteDetails);
+                        } else {
+                          requestFavoriteRemoval(favoriteDetails);
+                        }
+                      }}
+                      style={({ pressed }) => [
+                        styles.favoriteDetailFavoriteButton,
+                        { backgroundColor: favoriteDetailsIsFavorite ? colors.accent : colors.secondary },
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={favoriteDetailsIsFavorite ? 'star' : 'star-border'}
+                        size={19}
+                        color={favoriteDetailsIsFavorite ? colors.accentForeground : colors.foreground}
+                      />
+                    </Pressable>
+                    <Pressable
+                      accessibilityLabel="Fechar detalhes do favorito"
+                      onPress={() => setFavoriteDetails(null)}
+                      style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}
+                    >
+                      <Feather name="x" size={18} color={colors.foreground} />
+                    </Pressable>
+                  </View>
                 </View>
                 <Text style={[styles.favoriteDetailMeta, { color: colors.mutedForeground }]}>
                   {favoriteDetails.ticker ? `${favoriteDetails.ticker} · ` : ''}{assetTypeLabel(favoriteDetails.assetType)}
@@ -1411,15 +1464,17 @@ export default function InvestmentsScreen() {
                     {isPortfolioFavorite(favoriteDetails) ? 'Editar na carteira' : 'Cadastrar na carteira'}
                   </Text>
                 </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remover ${favoriteDetails.name} dos favoritos`}
-                  onPress={() => requestFavoriteRemoval(favoriteDetails)}
-                  style={({ pressed }) => [styles.favoriteDetailSecondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}
-                >
-                  <Feather name="star" size={14} color={colors.foreground} />
-                  <Text style={[styles.favoriteDetailSecondaryText, { color: colors.foreground }]}>Remover dos favoritos</Text>
-                </Pressable>
+                {favoriteDetailsIsFavorite ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover ${favoriteDetails.name} dos favoritos`}
+                    onPress={() => requestFavoriteRemoval(favoriteDetails)}
+                    style={({ pressed }) => [styles.favoriteDetailSecondaryAction, { borderColor: colors.border }, pressed && styles.pressed]}
+                  >
+                    <MaterialIcons name="star" size={16} color={colors.foreground} />
+                    <Text style={[styles.favoriteDetailSecondaryText, { color: colors.foreground }]}>Remover dos favoritos</Text>
+                  </Pressable>
+                ) : null}
               </KeyboardAwareScrollViewCompat>
             ) : null}
           </View>
@@ -1528,6 +1583,8 @@ const styles = StyleSheet.create({
   modalContent: { paddingBottom: 1 },
   modalHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 },
   favoriteDetailTitleCopy: { flex: 1, minWidth: 0, paddingRight: 10 },
+  favoriteDetailHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  favoriteDetailFavoriteButton: { width: 32, height: 32, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   favoriteDetailMeta: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: -3 },
   favoriteCatalogNotice: { borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 11, marginTop: 18 },
   favoriteCatalogNoticeText: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular' },
