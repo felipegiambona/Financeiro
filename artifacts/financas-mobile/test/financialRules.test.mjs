@@ -9,8 +9,8 @@ import {
 
 const month = (value) => new Date(`${value}-01T12:00:00`);
 
-function card(invoices) {
-  return { invoices };
+function card(invoices, id = 'card-1') {
+  return { id, invoices };
 }
 
 test('inclui faturas vencidas e não pagas na previsão do mês atual', () => {
@@ -54,7 +54,15 @@ test('inclui faturas atrasadas pagas e a pagar nas despesas do mês atual', () =
   ])];
 
   const totals = calculateMonthlyTotals(
-    [],
+    [{
+      type: 'expense',
+      amount: 400,
+      date: '2026-09-15',
+      cardId: 'card-1',
+      cardEntryType: 'invoice_payment',
+      recurrence: { kind: 'none' },
+      paymentStatus: 'paid',
+    }],
     month('2026-09'),
     cards,
     new Date('2026-09-15T12:00:00'),

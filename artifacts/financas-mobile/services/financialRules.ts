@@ -57,17 +57,48 @@ function cardInvoiceTotalForMonth(cards: Card[], month: Date): number {
   );
 }
 
-function cardOverdueTotalForCurrentMonth(cards: Card[], month: Date, now: Date): number {
+function cardOverdueTotalForCurrentMonth(
+  cards: Card[],
+  month: Date,
+  now: Date,
+  transactions: Transaction[],
+  includePaid = true,
+): number {
   const targetMonthKey = getDateKey(month).slice(0, 7);
   const currentMonthKey = getDateKey(now).slice(0, 7);
   if (targetMonthKey !== currentMonthKey) return 0;
 
+  const paymentAmountsByCard = new Map<string, number[]>();
+  for (const transaction of getTransactionOccurrencesForMonth(transactions, month)) {
+    if (
+      transaction.type !== 'expense'
+      || transaction.cardEntryType !== 'invoice_payment'
+      || !transaction.cardId
+      || transaction.paymentStatus === 'unpaid'
+    ) continue;
+
+    const payments = paymentAmountsByCard.get(transaction.cardId) ?? [];
+    payments.push(transaction.amount);
+    paymentAmountsByCard.set(transaction.cardId, payments);
+  }
+
   return cards.reduce(
-    (total, card) => total + card.invoices
-      .filter((invoice) =>
-        (invoice.status === 'overdue' || invoice.status === 'paid')
-        && invoice.invoiceMonth < currentMonthKey)
-      .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
+    (total, card) => {
+      const availablePayments = [...(paymentAmountsByCard.get(card.id) ?? [])];
+      return total + card.invoices
+        .filter((invoice) => invoice.invoiceMonth < currentMonthKey)
+        .reduce((invoiceTotal, invoice) => {
+          if (invoice.status === 'overdue') return invoiceTotal + invoice.amount;
+          if (!includePaid || invoice.status !== 'paid') return invoiceTotal;
+
+          const paymentIndex = availablePayments.findIndex((amount) =>
+            Math.round(amount * 100) === Math.round(invoice.amount * 100));
+          if (paymentIndex === -1) return invoiceTotal;
+
+          availablePayments.splice(paymentIndex, 1);
+          return invoiceTotal + invoice.amount;
+        }, 0);
+    },
     0,
   );
 }
@@ -171,7 +202,8 @@ export function calculateMonthlyTotals(
   now = new Date(),
 ): MonthlyTotals {
   const occurrences = getTransactionOccurrencesForMonth(transactions, month);
-  const overdueCardInvoices = cardOverdueTotalForCurrentMonth(cards, month, now);
+  const overdueCardInvoices = cardOverdueTotalForCurrentMonth(cards, month, now, transactions);
+  const overdueCardInvoicesPayable = cardOverdueTotalForCurrentMonth(cards, month, now, transactions, false);
   return occurrences.reduce(
     (totals, transaction) => {
       if (transaction.cardId) return totals;
@@ -188,7 +220,7 @@ export function calculateMonthlyTotals(
       income: 0,
       expense: cardInvoiceTotalForMonth(cards, month) + overdueCardInvoices,
       receivable: 0,
-      payable: cardInvoicePayableForMonth(cards, month) + overdueCardInvoices,
+      payable: cardInvoicePayableForMonth(cards, month) + overdueCardInvoicesPayable,
     },
   );
 }
@@ -202,7 +234,7 @@ export function calculateForecast(
   const occurrences = getTransactionOccurrencesForMonth(transactions, targetMonth);
   return occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0)
     - cardInvoiceTotalForMonth(cards, targetMonth)
-    - cardOverdueTotalForCurrentMonth(cards, targetMonth, now);
+    - cardOverdueTotalForCurrentMonth(cards, targetMonth, now, transactions);
 }
 
 export function calculateForecastByMonth(
@@ -216,7 +248,7 @@ export function calculateForecastByMonth(
     const occurrences = getTransactionOccurrencesForMonth(transactions, date);
     const forecast = occurrences.reduce((total, transaction) => total + transactionValue(transaction), 0)
         - cardInvoiceTotalForMonth(cards, date)
-        - cardOverdueTotalForCurrentMonth(cards, date, now);
+        - cardOverdueTotalForCurrentMonth(cards, date, now, transactions);
 
     return { key: getDateKey(date), date, forecast };
   });
