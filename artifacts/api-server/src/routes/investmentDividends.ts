@@ -419,10 +419,10 @@ router.patch("/investments/dividends/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const paymentDate = parsed.data.paymentDate === undefined
-    ? current.dividend.paymentDate
+  const requestedPaymentDate = parsed.data.paymentDate === undefined
+    ? null
     : dateOnlyInput(req.body?.paymentDate, parsed.data.paymentDate);
-  if (!paymentDate) {
+  if (parsed.data.paymentDate !== undefined && !requestedPaymentDate) {
     res.status(400).json({ error: "Invalid payment date" });
     return;
   }
@@ -433,34 +433,52 @@ router.patch("/investments/dividends/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Investment not found" });
     return;
   }
-  const status = parsed.data.status ?? current.dividend.status;
-
   try {
     const result = await db.transaction(async (tx) => {
-      const transactionId = status === "received"
+      const [lockedCurrent] = await tx.select()
+        .from(investmentDividendsTable)
+        .where(and(
+          eq(investmentDividendsTable.id, params.data.id),
+          eq(investmentDividendsTable.userId, userId),
+          eq(investmentDividendsTable.profileId, profileId),
+        ))
+        .for("update");
+      if (!lockedCurrent) return null;
+
+      const lockedInvestmentId = parsed.data.investmentId ?? lockedCurrent.investmentId;
+      const [lockedInvestment] = await tx.select().from(investmentsTable).where(and(
+        eq(investmentsTable.id, lockedInvestmentId),
+        eq(investmentsTable.userId, userId),
+        eq(investmentsTable.profileId, profileId),
+      ));
+      if (!lockedInvestment) return null;
+
+      const lockedStatus = parsed.data.status ?? lockedCurrent.status;
+      const paymentDate = requestedPaymentDate ?? lockedCurrent.paymentDate;
+      const transactionId = lockedStatus === "received"
         ? await ensureReceiptTransaction(tx, {
-            ...current.dividend,
-            investmentId: investment.id,
-            type: parsed.data.type ?? current.dividend.type,
-            amount: String(parsed.data.amount ?? current.dividend.amount),
+            ...lockedCurrent,
+            investmentId: lockedInvestment.id,
+            type: parsed.data.type ?? lockedCurrent.type,
+            amount: String(parsed.data.amount ?? lockedCurrent.amount),
             paymentDate,
-            status,
-          }, investment, userId, profileId)
-        : current.dividend.transactionId;
+            status: lockedStatus,
+          }, lockedInvestment, userId, profileId)
+        : lockedCurrent.transactionId;
       const [updated] = await tx.update(investmentDividendsTable).set({
-        investmentId: investment.id,
-        type: parsed.data.type ?? current.dividend.type,
-        amount: parsed.data.amount === undefined ? current.dividend.amount : String(parsed.data.amount),
+        investmentId: lockedInvestment.id,
+        type: parsed.data.type ?? lockedCurrent.type,
+        amount: parsed.data.amount === undefined ? lockedCurrent.amount : String(parsed.data.amount),
         paymentDate,
-        status,
-        note: parsed.data.note === undefined ? current.dividend.note : optionalNote(parsed.data.note),
+        status: lockedStatus,
+        note: parsed.data.note === undefined ? lockedCurrent.note : optionalNote(parsed.data.note),
         transactionId,
       }).where(and(
         eq(investmentDividendsTable.id, params.data.id),
         eq(investmentDividendsTable.userId, userId),
         eq(investmentDividendsTable.profileId, profileId),
       )).returning();
-      return updated ? { dividend: updated, investment } : null;
+      return updated ? { dividend: updated, investment: lockedInvestment } : null;
     });
     if (!result) {
       res.status(404).json({ error: "Investment dividend not found" });

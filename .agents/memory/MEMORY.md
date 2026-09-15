@@ -17,3 +17,4 @@
 - [Transaction month totals](transaction-month-total.md) — the transactions screen total includes only listed launches, not the separate card invoice summary.
 - [Expo component test bundling](expo-component-test-bundling.md) — Node tests for Expo components need native-module aliases and external React DOM modules.
 - [API route test bundling](api-route-test-bundling.md) — keep CommonJS server dependencies external or stubbed when bundling HTTP route tests as ESM.
+- [Linked receipt idempotency](linked-receipt-idempotency.md) — lock the source record before creating or updating a linked financial transaction.

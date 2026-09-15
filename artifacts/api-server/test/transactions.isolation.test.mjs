@@ -1283,3 +1283,205 @@ describe("credit card purchase and invoice payment flow", () => {
     ));
   });
 });
+
+describe("investment dividend receipt flow", () => {
+  let identity;
+
+  before(async () => {
+    await requireTestConfiguration();
+    identity = await createTemporaryIdentity("investment-dividend");
+  });
+
+  after(async () => {
+    if (!identity?.token) return;
+    const result = await apiRequest(identity.token, "/account", { method: "DELETE" });
+    assertStatus(result, 204);
+    identity.deletedViaApi = true;
+  });
+
+  it("keeps one historical receipt through repeated, edited, and deleted dividend states", async () => {
+    const profiles = await apiRequest(identity.token, "/financial-profiles");
+    assertStatus(profiles, 200);
+    const personalProfile = profiles.body.find((profile) => profile.type === "personal");
+    assert.ok(personalProfile);
+
+    const wallet = await profileRequest(identity.token, personalProfile.id, "/wallets", {
+      method: "POST",
+      body: {
+        title: "Carteira de proventos",
+        initialBalance: 1000,
+        icon: "wallet-outline",
+      },
+    });
+    assertStatus(wallet, 201);
+
+    const investment = await profileRequest(identity.token, personalProfile.id, "/investments", {
+      method: "POST",
+      body: {
+        name: "Ativo de proventos",
+        ticker: "PETR4",
+        assetType: "stock",
+        walletId: wallet.body.id,
+        institution: "Corretora",
+        quantity: 10,
+        averagePrice: 20,
+        investedAmount: 200,
+        currentValue: 210,
+      },
+    });
+    assertStatus(investment, 201);
+
+    const secondInvestment = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/investments",
+      {
+        method: "POST",
+        body: {
+          name: "Segundo ativo",
+          ticker: "VALE3",
+          assetType: "stock",
+          walletId: wallet.body.id,
+          institution: "Corretora",
+          quantity: 5,
+          averagePrice: 30,
+          investedAmount: 150,
+          currentValue: 155,
+        },
+      },
+    );
+    assertStatus(secondInvestment, 201);
+
+    const created = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/investments/dividends",
+      {
+        method: "POST",
+        body: {
+          investmentId: investment.body.id,
+          type: "dividend",
+          amount: 12.5,
+          paymentDate: "2026-09-10",
+          status: "received",
+        },
+      },
+    );
+    assertStatus(created, 201);
+    assert.ok(created.body.transactionId);
+
+    const receiptId = created.body.transactionId;
+    const initialIncome = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/transactions",
+    );
+    assertStatus(initialIncome, 200);
+    assert.equal(
+      initialIncome.body.filter((transaction) => transaction.id === receiptId).length,
+      1,
+    );
+
+    const repeated = await Promise.all(
+      [1, 2, 3].map(() => profileRequest(
+        identity.token,
+        personalProfile.id,
+        `/investments/dividends/${created.body.id}`,
+        {
+          method: "PATCH",
+          body: { status: "received" },
+        },
+      )),
+    );
+    for (const response of repeated) assertStatus(response, 200);
+    assert.deepEqual(
+      repeated.map((response) => response.body.transactionId),
+      [receiptId, receiptId, receiptId],
+    );
+
+    const edited = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/investments/dividends/${created.body.id}`,
+      {
+        method: "PATCH",
+        body: {
+          investmentId: secondInvestment.body.id,
+          amount: 18.75,
+          paymentDate: "2026-09-12",
+          status: "received",
+        },
+      },
+    );
+    assertStatus(edited, 200);
+    assert.equal(edited.body.transactionId, receiptId);
+    assert.equal(edited.body.investmentId, secondInvestment.body.id);
+
+    const editedTransactions = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/transactions",
+    );
+    assertStatus(editedTransactions, 200);
+    const editedReceipt = editedTransactions.body.find((transaction) => transaction.id === receiptId);
+    assert.deepEqual(
+      {
+        amount: editedReceipt?.amount,
+        date: editedReceipt?.date,
+        type: editedReceipt?.type,
+      },
+      {
+        amount: 18.75,
+        date: "2026-09-12",
+        type: "income",
+      },
+    );
+
+    const manuallyDeleted = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/transactions/${receiptId}`,
+      { method: "DELETE" },
+    );
+    assertStatus(manuallyDeleted, 204);
+
+    const recovered = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/investments/dividends/${created.body.id}`,
+      {
+        method: "PATCH",
+        body: { status: "received" },
+      },
+    );
+    assertStatus(recovered, 200);
+    assert.notEqual(recovered.body.transactionId, receiptId);
+
+    const deletedDividend = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      `/investments/dividends/${created.body.id}`,
+      { method: "DELETE" },
+    );
+    assertStatus(deletedDividend, 204);
+
+    const historicalTransactions = await profileRequest(
+      identity.token,
+      personalProfile.id,
+      "/transactions",
+    );
+    assertStatus(historicalTransactions, 200);
+    const historicalReceipt = historicalTransactions.body.find(
+      (transaction) => transaction.id === recovered.body.transactionId,
+    );
+    assert.ok(historicalReceipt);
+    assert.equal(
+      await runDatabaseQuery(
+        "SELECT COALESCE(investment_id::text, '') FROM finance_transactions " +
+        `WHERE id = ${sqlLiteral(recovered.body.transactionId)};`,
+      ),
+      "",
+      "Expected the historical receipt to keep no broken investment link",
+    );
+  });
+});
