@@ -1,7 +1,7 @@
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
 import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
@@ -170,6 +170,7 @@ export default function InvestmentsScreen() {
     favoriteAssets,
     recentAssets,
     loading,
+    refreshing,
     error,
     refresh,
     refreshQuotes,
@@ -194,6 +195,7 @@ export default function InvestmentsScreen() {
   const { assetType: selectedAssetType, invalid: hasInvalidAssetType } = routeFilter;
   const [activeTab, setActiveTab] = useState<'assets' | 'favorites'>('assets');
   const favoriteOnly = activeTab === 'favorites';
+  const hasDisplayedData = investments.length > 0 || favoriteAssets.length > 0;
   const [assetSearchQuery, setAssetSearchQuery] = useState('');
   const [favoriteSearchQuery, setFavoriteSearchQuery] = useState('');
   const [favoriteSearchResults, setFavoriteSearchResults] = useState<InvestmentSearchResult[]>([]);
@@ -672,11 +674,30 @@ export default function InvestmentsScreen() {
       <KeyboardAwareScrollViewCompat
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.primary} />}
       >
         <ScreenHeader
           eyebrow="Patrimônio"
           title="Investimentos"
           showBack
+          rightContent={(
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Atualizar ${favoriteOnly ? 'favoritos' : 'investimentos'}`}
+              accessibilityState={{ busy: refreshing, disabled: refreshing }}
+              disabled={refreshing}
+              testID="investments-refresh"
+              onPress={() => void refresh()}
+              style={({ pressed }) => [
+                styles.headerRefreshButton,
+                { backgroundColor: colors.secondary, borderColor: colors.border },
+                pressed && styles.pressed,
+                refreshing && styles.disabled,
+              ]}
+            >
+              <Feather name="refresh-cw" size={17} color={colors.foreground} />
+            </Pressable>
+          )}
           actionLabel="Novo"
           actionIcon="plus"
           onAction={() => openEditor(undefined, undefined, favoriteOnly)}
@@ -842,7 +863,15 @@ export default function InvestmentsScreen() {
             </Pressable>
           </View>
         ) : null}
-        {loading ? <LoadingState /> : error ? <ErrorState onRetry={() => void refresh()} /> : hasInvalidAssetType ? (
+        {error && hasDisplayedData ? (
+          <View style={[styles.refreshError, { backgroundColor: colors.expenseSoft, borderColor: colors.expense }]}>
+            <Feather name="alert-circle" size={14} color={colors.expense} />
+            <Text style={[styles.refreshErrorText, { color: colors.expense }]}>
+              Não foi possível atualizar agora. Os dados exibidos foram mantidos.
+            </Text>
+          </View>
+        ) : null}
+        {loading && !hasDisplayedData ? <LoadingState /> : error && !hasDisplayedData ? <ErrorState onRetry={() => void refresh()} /> : hasInvalidAssetType ? (
           <View style={styles.emptyWrap}>
             <EmptyState message="O tipo de investimento solicitado não é válido." />
           </View>
@@ -1620,6 +1649,9 @@ export default function InvestmentsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { flexGrow: 1, paddingHorizontal: 16 },
+  headerRefreshButton: { width: 36, height: 36, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  refreshError: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 11, marginBottom: 12 },
+  refreshErrorText: { flex: 1, fontSize: 11, lineHeight: 15, fontFamily: 'Inter_500Medium' },
   intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 18 },
   activeFilter: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 11, paddingRight: 5, marginTop: -7, marginBottom: 12 },
   activeFilterCopy: { flexDirection: 'row', alignItems: 'center', gap: 7 },
