@@ -5,7 +5,7 @@ import {
   Transaction,
   TransactionOccurrence,
 } from '@/types/transaction';
-import { createLocalIsoDate, getDayKey, parseStoredDate } from '@/utils/date';
+import { createLocalIsoDate, getDayKey, getSaoPauloDateParts, parseStoredDate } from '@/utils/date';
 
 const LEGACY_FREQUENCY_UNITS: Record<string, RecurrenceUnit> = {
   weekly: 'week',
@@ -170,7 +170,8 @@ export function getTransactionOccurrencesForMonth(
   transactions: Transaction[],
   month: Date,
 ): TransactionOccurrence[] {
-  const rangeStart = new Date(month.getFullYear(), month.getMonth(), 1, 0, 0, 0, 0);
-  const rangeEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0, 23, 59, 59, 999);
+  const { year, month: monthNumber } = getSaoPauloDateParts(month);
+  const rangeStart = new Date(year, monthNumber - 1, 1, 0, 0, 0, 0);
+  const rangeEnd = new Date(year, monthNumber, 0, 23, 59, 59, 999);
   return getTransactionOccurrencesInRange(transactions, rangeStart, rangeEnd);
 }

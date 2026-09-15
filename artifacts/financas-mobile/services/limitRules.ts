@@ -1,7 +1,7 @@
 import type { Limit, LimitPeriod } from '@/types/limit';
 import type { Transaction } from '@/types/transaction';
 import { getTransactionOccurrencesInRange } from '@/services/recurrence';
-import { parseStoredDate } from '@/utils/date';
+import { getSaoPauloDateParts, parseStoredDate } from '@/utils/date';
 
 export interface LimitDateRange {
   start: Date;
@@ -25,16 +25,17 @@ function addDays(date: Date, days: number): Date {
 }
 
 export function getLimitDateRange(period: LimitPeriod, now = new Date()): LimitDateRange {
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  const { year, month: monthNumber, day } = getSaoPauloDateParts(now);
+  const month = monthNumber - 1;
   if (period === 'weekly') {
-    const mondayOffset = (now.getDay() + 6) % 7;
-    const start = addDays(atNoon(year, month, now.getDate()), -mondayOffset);
+    const today = atNoon(year, month, day);
+    const mondayOffset = (today.getDay() + 6) % 7;
+    const start = addDays(today, -mondayOffset);
     return { start, end: addDays(start, 6) };
   }
   if (period === 'biweekly') {
     const yearStart = atNoon(year, 0, 1);
-    const dayIndex = Math.floor((atNoon(year, month, now.getDate()).getTime() - yearStart.getTime()) / 86_400_000);
+    const dayIndex = Math.floor((atNoon(year, month, day).getTime() - yearStart.getTime()) / 86_400_000);
     const start = addDays(yearStart, Math.floor(dayIndex / 14) * 14);
     return { start, end: addDays(start, 13) };
   }

@@ -25,6 +25,7 @@ import { calculateCurrentBalance, calculateMonthlyTotals, calculateWalletTotals 
 import { calculateLimitUsage } from '@/services/limitRules';
 import { calculateGoalProgress } from '@/services/goalRules';
 import { getPendingTransactionOccurrences } from '@/services/pendingNotifications';
+import { getSaoPauloHour } from '@/utils/date';
 import { formatCurrency } from '@/utils/currency';
 
 const DASHBOARD_CARD_GAP = 24;
@@ -54,7 +55,7 @@ export default function DashboardScreen() {
     void refreshCards();
   }, [refreshCards, refreshGoals]));
   const greeting = useMemo(() => {
-    const hour = new Date().getHours();
+    const hour = getSaoPauloHour();
     const timeGreeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
     const firstName = session?.name.trim().split(/\s+/)[0] || 'usuário';
 

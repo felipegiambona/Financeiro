@@ -190,7 +190,7 @@ router.post("/cards/:id/pay-invoice", async (req, res): Promise<void> => {
     type: "expense",
     amount: String(invoice.amount),
     description: `Pagamento da fatura ${requestedMonth} - ${existing.name}`,
-    date: new Date().toISOString().slice(0, 10),
+    date: dateKey(new Date()),
     dueDate: null,
     recurrence: { kind: "none" },
     paymentStatus: "paid",

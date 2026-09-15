@@ -17,10 +17,12 @@ import { getTransactionOccurrencesForMonth, getTransactionOccurrencesInRange } f
 import { formatCurrency } from '@/utils/currency';
 import {
   formatMonthYearLabel,
+  formatDateInput,
   formatTransactionGroupLabel,
   createLocalIsoDate,
   getDayKey,
   getMonthStart,
+  getSaoPauloToday,
   parseStoredDate,
   shiftMonth,
 } from '@/utils/date';
@@ -81,11 +83,7 @@ const normalizeSearchText = (value: string) => value
   .trim();
 
 function formatFilterDate(date: Date): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(date);
+  return formatDateInput(date);
 }
 
 export default function TransactionsScreen() {
@@ -111,7 +109,7 @@ export default function TransactionsScreen() {
   const { categories } = useCategories();
   const routeTypeFilter = Array.isArray(typeFilterParam) ? typeFilterParam[0] : typeFilterParam;
   const routeStatusFilter = Array.isArray(statusFilterParam) ? statusFilterParam[0] : statusFilterParam;
-  const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
+  const [selectedMonth, setSelectedMonth] = useState(getMonthStart(getSaoPauloToday()));
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [paymentCelebration, setPaymentCelebration] = useState<string | null>(null);
   const [openSwipeKey, setOpenSwipeKey] = useState<string | null>(null);
@@ -1256,7 +1254,7 @@ export default function TransactionsScreen() {
       </Modal>
       <DatePickerModal
         visible={batchDueDatePickerOpen}
-        value={batchDueDate !== 'unchanged' && batchDueDate !== 'clear' ? parseStoredDate(batchDueDate) : new Date()}
+        value={batchDueDate !== 'unchanged' && batchDueDate !== 'clear' ? parseStoredDate(batchDueDate) : getSaoPauloToday()}
         onClose={() => setBatchDueDatePickerOpen(false)}
         onConfirm={(date) => {
           setBatchDueDate(createLocalIsoDate(date));

@@ -52,7 +52,11 @@ function formatPercentage(value: number): string {
 
 function formatQuoteDate(value: string | null): string {
   if (!value) return 'ainda não consultada';
-  return new Date(value).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  return new Date(value).toLocaleString('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'America/Sao_Paulo',
+  });
 }
 
 function quoteSourceLabel(source: string | null): string {

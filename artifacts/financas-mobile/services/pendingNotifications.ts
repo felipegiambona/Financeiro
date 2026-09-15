@@ -1,9 +1,11 @@
 import { getTransactionOccurrencesInRange } from '@/services/recurrence';
 import { Transaction, TransactionOccurrence } from '@/types/transaction';
-import { formatDate, getDayKey, parseStoredDate } from '@/utils/date';
+import { formatDate, getDayKey, getSaoPauloToday, parseStoredDate } from '@/utils/date';
 
 function getTodayEnd(now: Date): Date {
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const today = getSaoPauloToday(now);
+  today.setHours(23, 59, 59, 999);
+  return today;
 }
 
 function getTransactionRangeStart(transactions: Transaction[], fallback: Date): Date {
@@ -37,7 +39,7 @@ export function getPendingTransactionOccurrences(
 
 export function formatPendingTransactionDate(dateString: string, now = new Date()): string {
   const date = parseStoredDate(dateString);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+  const today = getSaoPauloToday(now);
 
   if (getDayKey(date) === getDayKey(today)) return 'Vence hoje';
   return `Vencido em ${formatDate(dateString)}`;

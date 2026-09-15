@@ -15,24 +15,19 @@ import { useColors } from '@/hooks/useColors';
 import { calculateGoalProgress } from '@/services/goalRules';
 import type { Goal } from '@/types/goal';
 import { formatAmountInput, formatAmountValue, parseAmountInput } from '@/utils/currency';
-import { createLocalIsoDate, formatDate, parseStoredDate } from '@/utils/date';
+import {
+  createLocalIsoDate,
+  formatDate,
+  formatDateInput,
+  getSaoPauloToday,
+  parseDateInput,
+  parseStoredDate,
+} from '@/utils/date';
 import { DatePickerModal } from '@/components/DatePickerModal';
 
 function toDateInput(dateString?: string | null): string {
   if (!dateString) return '';
-  const date = parseStoredDate(dateString);
-  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-}
-
-function parseDateInput(value: string): Date | null {
-  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
-  if (!match) return null;
-  const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]), 12);
-  return date.getFullYear() === Number(match[3])
-    && date.getMonth() === Number(match[2]) - 1
-    && date.getDate() === Number(match[1])
-    ? date
-    : null;
+  return formatDateInput(parseStoredDate(dateString));
 }
 
 export default function GoalsScreen() {
@@ -240,11 +235,11 @@ export default function GoalsScreen() {
       </Modal>
       <DatePickerModal
         visible={datePickerOpen}
-        value={parseDateInput(deadline) ?? new Date()}
+        value={parseDateInput(deadline) ?? getSaoPauloToday()}
         eyebrow="DATA FINAL"
         onClose={() => setDatePickerOpen(false)}
         onConfirm={(date) => {
-          setDeadline(`${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`);
+          setDeadline(formatDateInput(date));
           setDatePickerOpen(false);
         }}
       />

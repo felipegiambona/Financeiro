@@ -34,7 +34,7 @@ function dateOnly(value: Date | string): string;
 function dateOnly(value: Date | string | null | undefined): string | null;
 function dateOnly(value: Date | string | null | undefined): string | null {
   if (value == null) return null;
-  return typeof value === "string" ? value : value.toISOString().slice(0, 10);
+  return dateKey(value);
 }
 
 function serializeTransaction(

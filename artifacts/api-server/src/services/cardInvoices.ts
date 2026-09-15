@@ -28,8 +28,12 @@ type InvoiceRow = {
 };
 
 function localDate(value: string | Date): Date {
-  if (value instanceof Date) return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 12);
-  return new Date(`${value.slice(0, 10)}T12:00:00`);
+  if (value instanceof Date) {
+    const { year, month, day } = calendarDateParts(value);
+    return new Date(year, month - 1, day, 12);
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(`${value}T12:00:00`);
+  return localDate(new Date(value));
 }
 
 function calendarDateParts(date: Date) {
@@ -63,7 +67,8 @@ export function dayDate(month: string, day: number): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(safeDay).padStart(2, "0")}`;
 }
 
-export function dateKey(date: Date): string {
+export function dateKey(value: Date | string): string {
+  const date = typeof value === "string" ? localDate(value) : value;
   const { year, month, day } = calendarDateParts(date);
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }

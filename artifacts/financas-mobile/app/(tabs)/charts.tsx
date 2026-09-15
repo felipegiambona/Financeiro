@@ -16,7 +16,7 @@ import type { Investment, InvestmentAssetType } from '@workspace/api-client-reac
 import { calculateTotalsByMonth } from '@/services/financialRules';
 import { getTransactionOccurrencesForMonth } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
-import { formatMonthYearLabel, formatShortMonthLabel, shiftMonth } from '@/utils/date';
+import { formatMonthYearLabel, formatShortMonthLabel, getSaoPauloMonthKey, getSaoPauloToday, shiftMonth } from '@/utils/date';
 
 export default function ChartsScreen() {
   const colors = useColors();
@@ -35,7 +35,7 @@ export default function ChartsScreen() {
   const hasData = totals.some((month) => month.income > 0 || month.expense > 0);
   const maxValue = Math.max(...totals.flatMap((month) => [month.income, month.expense]), 1);
   const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null);
-  const [categoryMonth, setCategoryMonth] = useState(() => shiftMonth(new Date(), 0));
+  const [categoryMonth, setCategoryMonth] = useState(() => shiftMonth(getSaoPauloToday(), 0));
   const [chartWidth, setChartWidth] = useState(0);
   const selectedMonth = totals.find((month) => month.key === selectedMonthKey) ?? totals[totals.length - 1];
   const selectedMonthIndex = selectedMonth ? totals.findIndex((month) => month.key === selectedMonth.key) : -1;
@@ -48,7 +48,7 @@ export default function ChartsScreen() {
     }
     const cardInvoiceTotal = cards.reduce(
       (total, card) => total + card.invoices
-        .filter((invoice) => invoice.invoiceMonth === `${categoryMonth.getFullYear()}-${String(categoryMonth.getMonth() + 1).padStart(2, '0')}`)
+        .filter((invoice) => invoice.invoiceMonth === getSaoPauloMonthKey(categoryMonth))
         .reduce((invoiceTotal, invoice) => invoiceTotal + invoice.amount, 0),
       0,
     );
@@ -64,7 +64,7 @@ export default function ChartsScreen() {
       .sort((a, b) => b.amount - a.amount);
   }, [cards, categories, categoryMonth, colors.mutedForeground, transactions]);
   const categoryTotal = categoryTotals.reduce((total, item) => total + item.amount, 0);
-  const [incomeCategoryMonth, setIncomeCategoryMonth] = useState(() => shiftMonth(new Date(), 0));
+  const [incomeCategoryMonth, setIncomeCategoryMonth] = useState(() => shiftMonth(getSaoPauloToday(), 0));
   const incomeCategoryTotals = useMemo(() => {
     const totalsByCategory = new Map<string, number>();
     for (const transaction of getTransactionOccurrencesForMonth(transactions, incomeCategoryMonth)) {

@@ -15,7 +15,7 @@ import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 import { useColors } from '@/hooks/useColors';
 import { CATEGORY_COLORS } from '@/types/category';
 import { LIMIT_PERIODS, type LimitPeriod } from '@/types/limit';
-import { createLocalIsoDate } from '@/utils/date';
+import { createLocalIsoDate, formatDateInput, getSaoPauloToday } from '@/utils/date';
 import { formatAmountInput, parseAmountInput } from '@/utils/currency';
 
 export type OnboardingStep = 'name' | 'profile' | 'wallet' | 'goal' | 'limit' | 'card';
@@ -34,10 +34,6 @@ function getPreviousStep(step: OnboardingStep, initialStep: OnboardingStep): Onb
   const previousIndex = currentIndex - 1;
   const firstStepIndex = initialStep === 'wallet' ? STEPS.indexOf('wallet') : 0;
   return previousIndex >= firstStepIndex ? STEPS[previousIndex] : null;
-}
-
-function formatDateInput(date: Date): string {
-  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
 }
 
 function StepProgress({ step, colors }: { step: OnboardingStep; colors: ReturnType<typeof useColors> }) {
@@ -488,7 +484,7 @@ function GoalStep({ colors, onContinue, setError, error }: StepProps & { onConti
   const [amount, setAmount] = useState('');
   const [deadline, setDeadline] = useState('');
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [datePickerValue, setDatePickerValue] = useState(new Date());
+  const [datePickerValue, setDatePickerValue] = useState(getSaoPauloToday);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {

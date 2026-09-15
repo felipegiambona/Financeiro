@@ -13,13 +13,12 @@ import { createGoalMovement, getGoal } from '@/services/goalRepository';
 import { calculateGoalProgress } from '@/services/goalRules';
 import type { Goal, GoalDetail, GoalHistoryEntry, GoalMovementInput } from '@/types/goal';
 import { formatAmountInput, formatCurrency, parseAmountInput } from '@/utils/currency';
-import { createLocalIsoDate, formatDate, parseStoredDate } from '@/utils/date';
+import { createLocalIsoDate, formatDate, getSaoPauloToday, parseStoredDate } from '@/utils/date';
 
 function formatTimeRemaining(deadline: string | null, savedAmount: number, targetAmount: number): string {
   if (savedAmount >= targetAmount) return 'Meta alcançada';
   if (!deadline) return 'Sem data final definida';
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
+  const startOfToday = getSaoPauloToday();
   const deadlineDate = parseStoredDate(deadline);
   const days = Math.ceil((deadlineDate.getTime() - startOfToday.getTime()) / 86400000);
   if (days === 0) return 'Prazo termina hoje';

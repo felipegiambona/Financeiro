@@ -3,7 +3,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 import { formatCurrency } from '@/utils/currency';
-import { formatDate, parseStoredDate } from '@/utils/date';
+import { formatDate, formatDateInput, formatMonthYearLabel } from '@/utils/date';
 
 export type TransactionExportFormat = 'csv' | 'pdf';
 
@@ -154,7 +154,7 @@ function createPdfHtml(items: TransactionExportItem[], periodLabel: string): str
 }
 
 function createFileName(format: TransactionExportFormat): string {
-  const stamp = new Intl.DateTimeFormat('en-CA').format(new Date()).replace(/-/g, '');
+  const stamp = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()).replace(/-/g, '');
   return `extrato-lancamentos-${stamp}.${format}`;
 }
 
@@ -234,9 +234,9 @@ export function getExportPeriodLabel(
   dateRangeEnd: Date | null,
 ): string {
   if (dateRangeStart || dateRangeEnd) {
-    const start = dateRangeStart ? formatDate(dateRangeStart.toISOString()) : 'Início';
-    const end = dateRangeEnd ? formatDate(dateRangeEnd.toISOString()) : 'Fim';
+    const start = dateRangeStart ? formatDateInput(dateRangeStart) : 'Início';
+    const end = dateRangeEnd ? formatDateInput(dateRangeEnd) : 'Fim';
     return `${start} até ${end}`;
   }
-  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(parseStoredDate(selectedMonth.toISOString()));
+  return formatMonthYearLabel(selectedMonth);
 }

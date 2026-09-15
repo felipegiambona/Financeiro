@@ -16,6 +16,7 @@ import {
   UpdateGoalResponse,
 } from "@workspace/api-zod";
 import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
+import { dateKey } from "../services/cardInvoices";
 import { ensureDefaultWallet } from "./wallets";
 
 const router: IRouter = Router();
@@ -25,7 +26,7 @@ const userIdFrom = scopedUserIdFrom;
 
 function dateOnly(value: Date | string | null | undefined): string | null {
   if (value == null) return null;
-  return typeof value === "string" ? value.slice(0, 10) : value.toISOString().slice(0, 10);
+  return dateKey(value);
 }
 
 function toResponse(row: typeof goalsTable.$inferSelect, savedAmount: number) {
@@ -206,7 +207,7 @@ router.post("/goals/:id/movements", async (req, res): Promise<void> => {
       type: "income",
       amount: String(body.data.amount),
       description,
-      date: dateOnly(body.data.date ?? new Date()) ?? new Date().toISOString().slice(0, 10),
+      date: dateOnly(body.data.date ?? dateKey(new Date())) ?? dateKey(new Date()),
       dueDate: null,
       recurrence: { kind: "none" },
       paymentStatus: "paid",
@@ -232,7 +233,7 @@ router.post("/goals/:id/movements", async (req, res): Promise<void> => {
     type: body.data.type,
     amount: String(body.data.amount),
     description: body.data.description?.trim() || (body.data.type === "contribution" ? "Inclusão manual" : "Retirada manual"),
-    date: dateOnly(body.data.date ?? new Date()) ?? new Date().toISOString().slice(0, 10),
+    date: dateOnly(body.data.date ?? dateKey(new Date())) ?? dateKey(new Date()),
   }).returning();
   res.status(201).json(CreateGoalMovementResponse.parse(toMovementResponse(row)));
 });

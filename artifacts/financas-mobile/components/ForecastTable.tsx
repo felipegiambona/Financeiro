@@ -6,10 +6,11 @@ import { calculateForecastByMonth } from '@/services/financialRules';
 import { Transaction } from '@/types/transaction';
 import { Card } from '@/types/card';
 import { formatCurrency } from '@/utils/currency';
+import { getSaoPauloToday, SAO_PAULO_TIME_ZONE } from '@/utils/date';
 
 export function ForecastTable({ transactions, cards = [] }: { transactions: Transaction[]; cards?: Card[] }) {
   const colors = useColors();
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(getSaoPauloToday().getFullYear());
   const forecasts = useMemo(
     () => calculateForecastByMonth(transactions, selectedYear, cards),
     [cards, transactions, selectedYear],
@@ -54,7 +55,7 @@ export function ForecastTable({ transactions, cards = [] }: { transactions: Tran
           style={[styles.row, index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 }]}
         >
           <Text style={[styles.month, { color: colors.foreground }]}>
-            {new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(item.date)}
+            {new Intl.DateTimeFormat('pt-BR', { month: 'long', timeZone: SAO_PAULO_TIME_ZONE }).format(item.date)}
           </Text>
           <Text style={[styles.value, { color: item.forecast < 0 ? colors.expense : colors.foreground }]}>
             {formatCurrency(item.forecast)}

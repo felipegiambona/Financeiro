@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useColors } from '@/hooks/useColors';
-import { getDateKey } from '@/utils/date';
+import { getDateKey, getSaoPauloDateParts, getSaoPauloToday, SAO_PAULO_TIME_ZONE } from '@/utils/date';
 
 interface DatePickerModalProps {
   visible: boolean;
@@ -15,9 +15,13 @@ interface DatePickerModalProps {
 const WEEKDAYS = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
 
 function isSameDay(first: Date, second: Date): boolean {
-  return first.getFullYear() === second.getFullYear()
-    && first.getMonth() === second.getMonth()
-    && first.getDate() === second.getDate();
+  return getDateKey(first) === getDateKey(second)
+    && getSaoPauloDateParts(first).day === getSaoPauloDateParts(second).day;
+}
+
+function toCalendarDate(date: Date): Date {
+  const { year, month, day } = getSaoPauloDateParts(date);
+  return new Date(year, month - 1, day, 12);
 }
 
 export function DatePickerModal({
@@ -29,12 +33,13 @@ export function DatePickerModal({
 }: DatePickerModalProps) {
   const colors = useColors();
   const valueTime = value.getTime();
-  const [selectedDate, setSelectedDate] = useState(value);
-  const [visibleMonth, setVisibleMonth] = useState(new Date(value.getFullYear(), value.getMonth(), 1, 12));
+  const initialDate = toCalendarDate(value);
+  const [selectedDate, setSelectedDate] = useState(initialDate);
+  const [visibleMonth, setVisibleMonth] = useState(new Date(initialDate.getFullYear(), initialDate.getMonth(), 1, 12));
 
   useEffect(() => {
     if (!visible) return;
-    const nextDate = new Date(valueTime);
+    const nextDate = toCalendarDate(new Date(valueTime));
     setSelectedDate(nextDate);
     setVisibleMonth(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1, 12));
   }, [valueTime, visible]);
@@ -50,8 +55,12 @@ export function DatePickerModal({
     ));
   }, [visibleMonth]);
 
-  const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(visibleMonth);
-  const today = new Date();
+  const monthLabel = new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: SAO_PAULO_TIME_ZONE,
+  }).format(visibleMonth);
+  const today = getSaoPauloToday();
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
@@ -95,7 +104,7 @@ export function DatePickerModal({
               return (
                 <Pressable
                   key={`${getDateKey(date)}-${date.getDate()}`}
-                  accessibilityLabel={`${date.getDate()} de ${new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(date)}`}
+                  accessibilityLabel={`${date.getDate()} de ${new Intl.DateTimeFormat('pt-BR', { month: 'long', timeZone: SAO_PAULO_TIME_ZONE }).format(date)}`}
                   onPress={() => setSelectedDate(date)}
                   style={({ pressed }) => [
                     styles.day,

@@ -31,6 +31,7 @@ import {
   type InvestmentQuoteStore,
 } from "../lib/investmentQuotes";
 import { searchInvestmentCatalog } from "../lib/investmentCatalog";
+import { dateKey } from "../services/cardInvoices";
 import { getUserWallet } from "./wallets";
 
 const router: IRouter = Router();
@@ -315,7 +316,7 @@ router.post("/investments", async (req, res): Promise<void> => {
       isInvestment: true,
       amount: String(parsed.data.investedAmount),
       description: `Investimento · ${parsed.data.name.trim()}`,
-      date: new Date().toISOString().slice(0, 10),
+      date: dateKey(new Date()),
       dueDate: null,
       recurrence: { kind: "none" },
       paymentStatus: "paid",

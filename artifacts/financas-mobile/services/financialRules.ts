@@ -1,7 +1,7 @@
 import { Transaction } from '@/types/transaction';
 import { Wallet } from '@/types/wallet';
 import { Card } from '@/types/card';
-import { getDateKey, parseStoredDate } from '@/utils/date';
+import { getDateKey, getSaoPauloDateParts, getSaoPauloToday, parseStoredDate } from '@/utils/date';
 import {
   getTransactionOccurrencesForMonth,
   getTransactionOccurrencesInRange,
@@ -172,7 +172,8 @@ export function calculateWalletTotals(
   now = new Date(),
   cards: Card[] = [],
 ): WalletTotal[] {
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const todayEnd = getSaoPauloToday(now);
+  todayEnd.setHours(23, 59, 59, 999);
   const balanceRangeEnd = getBalanceRangeEnd(transactions, todayEnd);
 
   return wallets.map((wallet) => {
@@ -260,8 +261,9 @@ export function calculateTotalsByMonth(
   cards: Card[] = [],
   now = new Date(),
 ): Array<{ key: string; date: Date; income: number; expense: number }> {
+  const { year, month } = getSaoPauloDateParts(now);
   return Array.from({ length: months }, (_, index) => {
-    const date = new Date(now.getFullYear(), now.getMonth() - (months - 1 - index), 1, 12);
+    const date = new Date(year, month - 1 - (months - 1 - index), 1, 12);
     const totals = calculateMonthlyTotals(transactions, date, cards, now);
     return { key: getDateKey(date), date, ...totals };
   });
