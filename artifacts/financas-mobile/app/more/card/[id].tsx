@@ -306,9 +306,6 @@ export default function CardDetailsScreen() {
                   ) : (
                     <View style={styles.historyAmount}>
                       <Text style={[styles.historyValue, { color: colors.expense }]}>-{formatCurrency(item.amount)}</Text>
-                      <Text style={[styles.historyStatus, { color: item.paymentStatus === 'paid' ? colors.paid : colors.pending }]}>
-                        {item.paymentStatus === 'paid' ? 'Pago' : 'Não pago'}
-                      </Text>
                     </View>
                   )}
                   {item.kind === 'transaction' ? (
@@ -394,7 +391,6 @@ const styles = StyleSheet.create({
   historyDate: { fontSize: 9, fontFamily: 'Inter_400Regular', marginTop: 3 },
   historyAmount: { alignItems: 'flex-end' },
   historyValue: { fontSize: 11, fontFamily: 'Inter_700Bold' },
-  historyStatus: { fontSize: 9, fontFamily: 'Inter_600SemiBold', marginTop: 3 },
   historyDeleteButton: { width: 30, height: 30, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   closureLabel: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   disabled: { opacity: 0.5 },
