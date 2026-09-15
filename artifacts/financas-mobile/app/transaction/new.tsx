@@ -312,6 +312,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
             const active = type === option;
             const isIncome = option === 'income';
             const isTransfer = option === 'transfer';
+            const typeColor = isTransfer ? colors.transfer : isIncome ? colors.income : colors.expense;
             return (
               <Pressable
                 key={option}
@@ -326,7 +327,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 }}
                 style={[styles.segment, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
               >
-                <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={16} color={active ? colors.primaryForeground : colors.mutedForeground} />
+                <Feather name={isTransfer ? 'repeat' : isIncome ? 'arrow-down-left' : 'arrow-up-right'} size={16} color={typeColor} />
                 <Text numberOfLines={1} style={[styles.segmentText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>{isTransfer ? 'Transferência' : isIncome ? 'Receita' : 'Despesa'}</Text>
               </Pressable>
             );
