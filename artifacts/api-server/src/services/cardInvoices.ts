@@ -9,6 +9,17 @@ export interface CardInvoiceSummary {
   closingDate: string;
 }
 
+export function calculateAvailableLimit(
+  availableLimit: string | number | null | undefined,
+  invoices: CardInvoiceSummary[],
+): number | null {
+  if (availableLimit == null) return null;
+  const outstanding = invoices
+    .filter((invoice) => invoice.status !== "paid")
+    .reduce((total, invoice) => total + invoice.amount, 0);
+  return Math.max(0, Number(availableLimit) - outstanding);
+}
+
 type InvoiceRow = {
   date: string | Date;
   amount: string | number;

@@ -69,12 +69,12 @@ export function calculateLimitUsage(
   const occurrences = getTransactionOccurrencesInRange(transactions, range.start, range.end);
   const expectedDescription = limit.description ? normalizeName(limit.description) : null;
   const used = occurrences.reduce((total, transaction) => {
+    const isCardPurchase = Boolean(transaction.cardId) && transaction.cardEntryType !== 'invoice_payment';
     if (
       transaction.isInvestment
-      || transaction.cardId
-      ||
-      transaction.type !== 'expense'
-      || transaction.paymentStatus !== 'paid'
+      || (transaction.cardId && !isCardPurchase)
+      || transaction.type !== 'expense'
+      || (!isCardPurchase && transaction.paymentStatus !== 'paid')
       || transaction.categoryId !== limit.categoryId
       || (expectedDescription && normalizeName(transaction.description) !== expectedDescription)
     ) {

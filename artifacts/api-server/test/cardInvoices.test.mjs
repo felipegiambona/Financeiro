@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getCardInvoiceSummaries, invoiceMonthForPurchase } from "../src/services/cardInvoices.ts";
+import {
+  calculateAvailableLimit,
+  getCardInvoiceSummaries,
+  invoiceMonthForPurchase,
+} from "../src/services/cardInvoices.ts";
 
 test("assigns purchases after closing to the following invoice month", () => {
   assert.equal(invoiceMonthForPurchase("2026-09-10", 10), "2026-09");
@@ -38,4 +42,12 @@ test("uses the Sao Paulo calendar date before closing the current invoice", () =
   const invoice = invoices.find((item) => item.invoiceMonth === "2026-09");
 
   assert.equal(invoice?.status, "open");
+});
+
+test("reduces the available limit for unpaid invoices, including overdue invoices", () => {
+  assert.equal(calculateAvailableLimit(2000, [
+    { invoiceMonth: "2026-08", amount: 120, status: "overdue" },
+    { invoiceMonth: "2026-09", amount: 80, status: "closed" },
+    { invoiceMonth: "2026-07", amount: 50, status: "paid" },
+  ]), 1800);
 });

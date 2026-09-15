@@ -12,3 +12,9 @@ The forecast for the current month includes unpaid overdue card invoices from pr
 The transactions screen must refresh card summaries when it regains focus, because transaction mutations can change invoice totals while the card context remains mounted.
 
 Dashboard monthly expenses and payable totals also include prior-month overdue invoices that remain unpaid, while paid invoices stay excluded from payable totals.
+
+Card purchases consume both the category spending limit for their transaction period and the card's available credit; invoice-payment entries must not consume either limit a second time.
+
+**Why:** A purchase represents spending when it is made, even if the card invoice is still unpaid. The invoice payment settles that purchase rather than creating new spending.
+
+**How to apply:** Count card entries as purchases unless their `cardEntryType` is `invoice_payment`; keep the transaction date as the period boundary for category limits and use unpaid invoice summaries when deriving available card credit.

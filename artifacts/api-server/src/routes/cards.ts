@@ -19,6 +19,7 @@ import {
 import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
 import {
   dateKey,
+  calculateAvailableLimit,
   getCardInvoiceSummaries,
   monthKey,
   type CardInvoiceSummary,
@@ -39,7 +40,7 @@ function toResponse(
   return {
     ...row,
     currentInvoiceAmount: currentInvoice?.amount ?? 0,
-    availableLimit: row.availableLimit == null ? null : Number(row.availableLimit),
+    availableLimit: calculateAvailableLimit(row.availableLimit, invoices),
     invoiceStatus: currentInvoice?.status ?? "open",
     invoices,
     overdueInvoices: invoices.filter((invoice) => invoice.status === "overdue"),
