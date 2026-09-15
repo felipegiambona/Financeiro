@@ -126,16 +126,32 @@ async function findDividend(
     : null;
 }
 
-function dividendIdentity(
-  event: Pick<StoredInvestmentDividend, "investmentId" | "type" | "amount" | "paymentDate">
-    | Pick<CalendarDividendEvent, "investmentId" | "type" | "amount" | "paymentDate">,
+function legacyDividendIdentity(
+  event: Pick<StoredInvestmentDividend, "investmentId" | "type" | "paymentDate">
+    | Pick<CalendarDividendEvent, "investmentId" | "type" | "paymentDate">,
 ): string {
   return [
     event.investmentId,
     event.type,
-    Number(event.amount).toFixed(2),
     event.paymentDate,
   ].join(":");
+}
+
+function sourceDividendIdentity(
+  event: Pick<StoredInvestmentDividend, "investmentId" | "sourceEventId">
+    | Pick<CalendarDividendEvent, "investmentId" | "sourceEventId">,
+): string | null {
+  return event.sourceEventId ? `${event.investmentId}:${event.sourceEventId}` : null;
+}
+
+function calendarEventAlreadyImported(
+  event: CalendarDividendEvent,
+  existingSourceIdentities: Set<string>,
+  existingLegacyIdentities: Set<string>,
+): boolean {
+  const sourceIdentity = sourceDividendIdentity(event);
+  return (sourceIdentity !== null && existingSourceIdentities.has(sourceIdentity))
+    || existingLegacyIdentities.has(legacyDividendIdentity(event));
 }
 
 async function ensureReceiptTransaction(
@@ -222,14 +238,22 @@ router.get("/investments/dividends/calendar", async (req, res): Promise<void> =>
   const eligibleInvestments = investments.filter((investment) => investment.ticker && Number(investment.quantity) > 0);
   const existingRows = await db.select({
     investmentId: investmentDividendsTable.investmentId,
+    sourceEventId: investmentDividendsTable.sourceEventId,
     type: investmentDividendsTable.type,
-    amount: investmentDividendsTable.amount,
     paymentDate: investmentDividendsTable.paymentDate,
   }).from(investmentDividendsTable).where(and(
     eq(investmentDividendsTable.userId, userId),
     eq(investmentDividendsTable.profileId, profileId),
   ));
-  const existing = new Set(existingRows.map(dividendIdentity));
+  const existingSourceIdentities = new Set(
+    existingRows.flatMap((row) => {
+      const identity = sourceDividendIdentity(row);
+      return identity ? [identity] : [];
+    }),
+  );
+  const existingLegacyIdentities = new Set(
+    existingRows.filter((row) => !row.sourceEventId).map(legacyDividendIdentity),
+  );
   const results = await Promise.allSettled(eligibleInvestments.map((investment) => (
     fetchBrapiDividendEvents(investment)
   )));
@@ -245,7 +269,11 @@ router.get("/investments/dividends/calendar", async (req, res): Promise<void> =>
     if (result.status === "fulfilled") {
       result.value.forEach((event) => events.push({
         ...event,
-        alreadyImported: existing.has(dividendIdentity(event)),
+        alreadyImported: calendarEventAlreadyImported(
+          event,
+          existingSourceIdentities,
+          existingLegacyIdentities,
+        ),
       }));
     } else {
       failures.push({
@@ -303,20 +331,37 @@ router.post("/investments/dividends/import", async (req, res): Promise<void> => 
   const result = await db.transaction(async (tx) => {
     const existingRows = await tx.select({
       investmentId: investmentDividendsTable.investmentId,
+      sourceEventId: investmentDividendsTable.sourceEventId,
       type: investmentDividendsTable.type,
-      amount: investmentDividendsTable.amount,
       paymentDate: investmentDividendsTable.paymentDate,
     }).from(investmentDividendsTable).where(and(
       eq(investmentDividendsTable.userId, userId),
       eq(investmentDividendsTable.profileId, profileId),
     ));
-    const existing = new Set(existingRows.map(dividendIdentity));
-    const seen = new Set<string>();
+    const existingSourceIdentities = new Set(
+      existingRows.flatMap((row) => {
+        const identity = sourceDividendIdentity(row);
+        return identity ? [identity] : [];
+      }),
+    );
+    const existingLegacyIdentities = new Set(
+      existingRows.filter((row) => !row.sourceEventId).map(legacyDividendIdentity),
+    );
+    const seenSourceIdentities = new Set<string>();
+    const seenLegacyIdentities = new Set<string>();
     const created: StoredInvestmentDividend[] = [];
     let skipped = 0;
     for (const event of normalizedEvents) {
-      const identity = dividendIdentity(event);
-      if (existing.has(identity) || seen.has(identity)) {
+      const legacyIdentity = legacyDividendIdentity(event);
+      const sourceIdentity = sourceDividendIdentity(event);
+      if (
+        (sourceIdentity !== null && (
+          existingSourceIdentities.has(sourceIdentity)
+          || seenSourceIdentities.has(sourceIdentity)
+        ))
+        || existingLegacyIdentities.has(legacyIdentity)
+        || seenLegacyIdentities.has(legacyIdentity)
+      ) {
         skipped += 1;
         continue;
       }
@@ -324,6 +369,7 @@ router.post("/investments/dividends/import", async (req, res): Promise<void> => 
         userId,
         profileId,
         investmentId: event.investmentId,
+        sourceEventId: event.sourceEventId,
         type: event.type,
         amount: String(event.amount),
         paymentDate: event.paymentDate,
@@ -331,7 +377,8 @@ router.post("/investments/dividends/import", async (req, res): Promise<void> => 
         note: "Importado automaticamente da BRAPI",
       }).returning();
       created.push(row);
-      seen.add(identity);
+      if (sourceIdentity) seenSourceIdentities.add(sourceIdentity);
+      seenLegacyIdentities.add(legacyIdentity);
     }
     return { created, skipped };
   });
