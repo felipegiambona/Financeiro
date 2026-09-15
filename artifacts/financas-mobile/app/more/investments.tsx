@@ -1025,22 +1025,22 @@ export default function InvestmentsScreen() {
                   )}
                 </View>
               )}
-              <View style={styles.fieldsRow}>
-                <View style={styles.halfField}>
-               <Text style={[styles.label, { color: colors.foreground }]}>
-                 {form.valuationMode === 'automatic' ? `${quoteGuidance?.identifierLabel ?? 'Identificador'} obrigatório` : 'Ticker ou identificador opcional'}
-               </Text>
+              <View style={styles.stackedFields}>
+                <View style={styles.fullField}>
+                  <Text style={[styles.label, { color: colors.foreground }]}>
+                    {form.valuationMode === 'automatic' ? `${quoteGuidance?.identifierLabel ?? 'Identificador'} obrigatório` : 'Ticker ou identificador opcional'}
+                  </Text>
                   <TextInput
-                     accessibilityLabel={form.valuationMode === 'automatic' ? `${quoteGuidance?.identifierLabel ?? 'Identificador'} obrigatório` : 'Ticker ou identificador opcional'}
-                     autoCapitalize={form.assetType === 'crypto' ? 'none' : 'characters'}
-                     placeholder={form.valuationMode === 'automatic' ? quoteGuidance?.example : 'PETR4'}
+                    accessibilityLabel={form.valuationMode === 'automatic' ? `${quoteGuidance?.identifierLabel ?? 'Identificador'} obrigatório` : 'Ticker ou identificador opcional'}
+                    autoCapitalize={form.assetType === 'crypto' ? 'none' : 'characters'}
+                    placeholder={form.valuationMode === 'automatic' ? quoteGuidance?.example : 'PETR4'}
                     placeholderTextColor={colors.mutedForeground}
                     value={form.ticker}
                     onChangeText={(ticker) => setForm((current) => ({ ...current, ticker }))}
                     style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
                   />
                 </View>
-                <View style={styles.halfField}>
+                <View style={styles.fullField}>
                   <Text style={[styles.label, { color: colors.foreground }]}>Carteira obrigatória</Text>
                   <Pressable
                     accessibilityRole="button"
@@ -1053,7 +1053,7 @@ export default function InvestmentsScreen() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Text numberOfLines={1} style={{ color: form.walletId ? colors.foreground : colors.mutedForeground, fontSize: 12, fontFamily: 'Inter_400Regular' }}>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.selectInputText, { color: form.walletId ? colors.foreground : colors.mutedForeground }]}>
                       {wallets.find((wallet) => wallet.id === form.walletId)?.title ?? 'Selecione uma carteira'}
                     </Text>
                     <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
@@ -1358,6 +1358,8 @@ const styles = StyleSheet.create({
   emptyAction: { minHeight: 42, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   emptyActionText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   list: { gap: 10, marginTop: 12 },
+  stackedFields: { gap: 1 },
+  fullField: { width: '100%', minWidth: 0 },
   investmentCard: { borderWidth: 1, borderRadius: 9, padding: 13 },
   favoriteCompactCard: { padding: 10 },
   favoriteCompactIcon: { width: 31, height: 31, borderRadius: 7 },
@@ -1410,6 +1412,7 @@ const styles = StyleSheet.create({
   input: { minHeight: 45, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 13, fontFamily: 'Inter_400Regular' },
   inputWithClear: { position: 'relative', justifyContent: 'center' },
   inputWithClearField: { paddingRight: 38 },
+  selectInputText: { flex: 1, minWidth: 0, fontSize: 12, fontFamily: 'Inter_400Regular' },
   clearSearchButton: { position: 'absolute', top: 6, right: 10, width: 24, height: 32, alignItems: 'center', justifyContent: 'center' },
   suggestionList: { borderWidth: 1, borderRadius: 8, marginTop: 6, overflow: 'hidden' },
   suggestionSectionLabel: { fontSize: 9, fontFamily: 'Inter_700Bold', letterSpacing: 0.7, textTransform: 'uppercase', paddingHorizontal: 11, paddingTop: 10, paddingBottom: 3 },
