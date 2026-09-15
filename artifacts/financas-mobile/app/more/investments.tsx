@@ -1177,6 +1177,11 @@ export default function InvestmentsScreen() {
                     onChangeText={(ticker) => setForm((current) => ({ ...current, ticker }))}
                     style={[styles.input, { backgroundColor: colors.card, borderColor: colors.input, color: colors.foreground }]}
                   />
+                  {form.valuationMode === 'automatic' && (
+                    <Text style={[styles.helper, { color: colors.mutedForeground }]}>
+                      Fonte: {quoteGuidance?.source ?? 'não disponível'}. {quoteGuidance?.identifierHint ?? 'Escolha uma classe com fonte automática.'}
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.fullField}>
                   <Text style={[styles.label, { color: colors.foreground }]}>Carteira obrigatória</Text>
@@ -1198,11 +1203,6 @@ export default function InvestmentsScreen() {
                   </Pressable>
                 </View>
               </View>
-               {form.valuationMode === 'automatic' && (
-                 <Text style={[styles.helper, { color: colors.mutedForeground }]}>
-                   Fonte: {quoteGuidance?.source ?? 'não disponível'}. {quoteGuidance?.identifierHint ?? 'Escolha uma classe com fonte automática.'}
-                 </Text>
-               )}
               <Text style={[styles.label, { color: colors.foreground }]}>Tipo de ativo</Text>
               <KeyboardAwareScrollViewCompat horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.assetTypeList}>
                 {ASSET_TYPES.map((item) => (
