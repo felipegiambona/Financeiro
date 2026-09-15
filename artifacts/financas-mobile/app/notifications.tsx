@@ -8,7 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/StateView';
 import { useCards } from '@/context/CardContext';
 import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
-import { getCardInvoiceNotifications, getPendingTransactionOccurrences, formatPendingTransactionDate } from '@/services/pendingNotifications';
+import { getCardInvoiceNotificationSections, getPendingTransactionOccurrences, formatPendingTransactionDate } from '@/services/pendingNotifications';
 import { formatCurrency } from '@/utils/currency';
 import { formatMonthYearLabel } from '@/utils/date';
 import { TransactionOccurrence } from '@/types/transaction';
@@ -20,16 +20,9 @@ export default function NotificationsScreen() {
   const { cards, loading: cardsLoading, error: cardsError, refresh: refreshCards, payCardInvoice } = useCards();
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const pendingTransactions = useMemo(() => getPendingTransactionOccurrences(transactions), [transactions]);
-  const cardInvoiceNotifications = useMemo(() => getCardInvoiceNotifications(cards), [cards]);
-  const closedCardInvoices = useMemo(
-    () => cardInvoiceNotifications.filter(({ invoice }) => invoice.status === 'closed'),
-    [cardInvoiceNotifications],
-  );
-  const overdueCardInvoices = useMemo(
-    () => cardInvoiceNotifications.filter(({ invoice }) => invoice.status === 'overdue'),
-    [cardInvoiceNotifications],
-  );
-  const totalPending = pendingTransactions.length + cardInvoiceNotifications.length;
+  const cardInvoiceSections = useMemo(() => getCardInvoiceNotificationSections(cards), [cards]);
+  const { closed: closedCardInvoices, overdue: overdueCardInvoices } = cardInvoiceSections;
+  const totalPending = pendingTransactions.length + cardInvoiceSections.total;
 
   useFocusEffect(useCallback(() => {
     void refreshCards();

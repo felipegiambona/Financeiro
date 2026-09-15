@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createCard as persistCard,
   deleteCard as removeCard,
@@ -8,6 +8,7 @@ import {
 } from '@/services/cardRepository';
 import type { Card, CardUpdate, NewCardInput } from '@/types/card';
 import { useFinance } from '@/context/FinanceContext';
+import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 
 interface CardContextValue {
   cards: Card[];
@@ -24,25 +25,33 @@ const CardContext = createContext<CardContextValue | null>(null);
 
 export function CardProvider({ children }: React.PropsWithChildren) {
   const { refresh: refreshFinance } = useFinance();
+  const { activeProfile } = useFinancialProfiles();
+  const activeProfileId = activeProfile?.id;
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const refreshRequestRef = useRef(0);
 
   const refresh = useCallback(async () => {
+    const requestId = ++refreshRequestRef.current;
     try {
       setError(null);
       setLoading(true);
-      setCards(await getCards());
+      const nextCards = await getCards();
+      if (requestId === refreshRequestRef.current) setCards(nextCards);
     } catch {
-      setError('Não foi possível carregar seus cartões.');
+      if (requestId === refreshRequestRef.current) {
+        setError('Não foi possível carregar seus cartões.');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === refreshRequestRef.current) setLoading(false);
     }
-  }, []);
+  }, [activeProfileId]);
 
   useEffect(() => {
+    setCards([]);
     void refresh();
-  }, [refresh]);
+  }, [activeProfileId, refresh]);
 
   const createCard = useCallback(async (input: NewCardInput) => {
     try {

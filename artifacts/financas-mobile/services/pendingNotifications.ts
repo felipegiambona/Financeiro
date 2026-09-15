@@ -8,6 +8,12 @@ export interface CardInvoiceNotification {
   invoice: Card['invoices'][number];
 }
 
+export interface CardInvoiceNotificationSections {
+  closed: CardInvoiceNotification[];
+  overdue: CardInvoiceNotification[];
+  total: number;
+}
+
 export function getCardInvoiceNotifications(cards: Card[]): CardInvoiceNotification[] {
   return cards
     .flatMap((card) => card.invoices
@@ -17,6 +23,18 @@ export function getCardInvoiceNotifications(cards: Card[]): CardInvoiceNotificat
       first.invoice.invoiceMonth.localeCompare(second.invoice.invoiceMonth)
       || first.card.name.localeCompare(second.card.name, 'pt-BR')
     ));
+}
+
+export function getCardInvoiceNotificationSections(cards: Card[]): CardInvoiceNotificationSections {
+  const notifications = getCardInvoiceNotifications(cards);
+  const closed = notifications.filter(({ invoice }) => invoice.status === 'closed');
+  const overdue = notifications.filter(({ invoice }) => invoice.status === 'overdue');
+
+  return {
+    closed,
+    overdue,
+    total: notifications.length,
+  };
 }
 
 function getTodayEnd(now: Date): Date {
