@@ -432,11 +432,10 @@ router.delete("/investments/:id", async (req, res): Promise<void> => {
       eq(investmentsTable.profileId, profileId),
     )).returning({ id: investmentsTable.id });
     if (!deletedInvestment) return [];
-    await tx.delete(transactionsTable).where(and(
+    await tx.update(transactionsTable).set({ investmentId: null }).where(and(
       eq(transactionsTable.investmentId, deletedInvestment.id),
       eq(transactionsTable.userId, userId),
       eq(transactionsTable.profileId, profileId),
-      eq(transactionsTable.isInvestment, true),
     ));
     return [deletedInvestment];
   });
