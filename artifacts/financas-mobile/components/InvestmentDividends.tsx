@@ -83,6 +83,8 @@ export function InvestmentDividends() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<InvestmentDividend | null>(null);
   const [draft, setDraft] = useState<DividendDraft>(() => initialDraft(investments[0]?.id ?? ''));
+  const [investmentPickerOpen, setInvestmentPickerOpen] = useState(false);
+  const [investmentSearch, setInvestmentSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
   const totals = useMemo(() => dividends.reduce((summary, dividend) => ({
@@ -100,9 +102,24 @@ export function InvestmentDividends() {
     return [...groups.values()];
   }, [dividends]);
 
+  const selectedInvestment = useMemo(
+    () => investments.find((investment) => investment.id === draft.investmentId) ?? null,
+    [draft.investmentId, investments],
+  );
+  const filteredInvestments = useMemo(() => {
+    const query = investmentSearch.trim().toLocaleLowerCase('pt-BR');
+    if (!query) return investments;
+    return investments.filter((investment) => (
+      investment.name.toLocaleLowerCase('pt-BR').includes(query)
+      || investment.ticker?.toLocaleLowerCase('pt-BR').includes(query)
+    ));
+  }, [investmentSearch, investments]);
+
   const openNew = () => {
     setEditing(null);
     setDraft(initialDraft(investments[0]?.id ?? ''));
+    setInvestmentPickerOpen(false);
+    setInvestmentSearch('');
     setEditorOpen(true);
   };
 
@@ -116,11 +133,17 @@ export function InvestmentDividends() {
       status: dividend.status,
       note: dividend.note ?? '',
     });
+    setInvestmentPickerOpen(false);
+    setInvestmentSearch('');
     setEditorOpen(true);
   };
 
   const closeEditor = () => {
-    if (!saving) setEditorOpen(false);
+    if (!saving) {
+      setInvestmentPickerOpen(false);
+      setInvestmentSearch('');
+      setEditorOpen(false);
+    }
   };
 
   const save = async () => {
@@ -312,24 +335,85 @@ export function InvestmentDividends() {
                 </Pressable>
               </View>
               <Text style={[styles.label, { color: colors.foreground }]}>Ativo</Text>
-              <View style={styles.choiceList}>
-                {investments.map((investment) => (
-                  <Pressable
-                    key={investment.id}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: draft.investmentId === investment.id }}
-                    onPress={() => setDraft((current) => ({ ...current, investmentId: investment.id }))}
-                    style={({ pressed }) => [
-                      styles.choice,
-                      { backgroundColor: draft.investmentId === investment.id ? colors.primary : colors.secondary, borderColor: draft.investmentId === investment.id ? colors.primary : colors.border },
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text numberOfLines={1} style={[styles.choiceText, { color: draft.investmentId === investment.id ? colors.primaryForeground : colors.foreground }]}>{investment.name}</Text>
-                    {draft.investmentId === investment.id ? <Feather name="check" size={14} color={colors.primaryForeground} /> : null}
-                  </Pressable>
-                ))}
-              </View>
+              <Pressable
+                accessibilityRole="combobox"
+                accessibilityLabel="Selecionar ativo do provento"
+                accessibilityState={{ expanded: investmentPickerOpen }}
+                testID="investment-dividend-combobox"
+                disabled={investments.length === 0}
+                onPress={() => setInvestmentPickerOpen((open) => !open)}
+                style={({ pressed }) => [
+                  styles.combobox,
+                  { backgroundColor: colors.card, borderColor: investmentPickerOpen ? colors.primary : colors.input },
+                  pressed && styles.pressed,
+                  investments.length === 0 && styles.disabled,
+                ]}
+              >
+                <View style={styles.comboboxCopy}>
+                  <Text numberOfLines={1} style={[styles.comboboxValue, { color: selectedInvestment ? colors.foreground : colors.mutedForeground }]}>
+                    {selectedInvestment?.name ?? 'Nenhum investimento disponível'}
+                  </Text>
+                  {selectedInvestment?.ticker ? (
+                    <Text numberOfLines={1} style={[styles.comboboxMeta, { color: colors.mutedForeground }]}>{selectedInvestment.ticker}</Text>
+                  ) : null}
+                </View>
+                <Feather name={investmentPickerOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+              </Pressable>
+              {investmentPickerOpen ? (
+                <View style={[styles.comboboxDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={[styles.comboboxSearch, { backgroundColor: colors.secondary, borderColor: colors.input }]}>
+                    <Feather name="search" size={14} color={colors.mutedForeground} />
+                    <TextInput
+                      accessibilityLabel="Buscar ativo do provento"
+                      testID="investment-dividend-combobox-search"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoFocus
+                      value={investmentSearch}
+                      onChangeText={setInvestmentSearch}
+                      placeholder="Buscar por nome ou ticker"
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[styles.comboboxSearchInput, { color: colors.foreground }]}
+                    />
+                    {investmentSearch ? (
+                      <Pressable
+                        accessibilityLabel="Limpar busca de ativo"
+                        onPress={() => setInvestmentSearch('')}
+                        hitSlop={8}
+                      >
+                        <Feather name="x" size={14} color={colors.mutedForeground} />
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  <View style={styles.comboboxOptions}>
+                    {filteredInvestments.length === 0 ? (
+                      <Text style={[styles.comboboxEmpty, { color: colors.mutedForeground }]}>Nenhum ativo encontrado.</Text>
+                    ) : filteredInvestments.map((investment) => (
+                      <Pressable
+                        key={investment.id}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: draft.investmentId === investment.id }}
+                        onPress={() => {
+                          setDraft((current) => ({ ...current, investmentId: investment.id }));
+                          setInvestmentPickerOpen(false);
+                          setInvestmentSearch('');
+                        }}
+                        style={({ pressed }) => [
+                          styles.comboboxOption,
+                          { backgroundColor: draft.investmentId === investment.id ? colors.secondary : colors.card },
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <View style={styles.comboboxCopy}>
+                          <Text numberOfLines={1} style={[styles.comboboxValue, { color: colors.foreground }]}>{investment.name}</Text>
+                          {investment.ticker ? <Text style={[styles.comboboxMeta, { color: colors.mutedForeground }]}>{investment.ticker}</Text> : null}
+                        </View>
+                        {draft.investmentId === investment.id ? <Feather name="check" size={14} color={colors.primary} /> : null}
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
               <View style={styles.fieldsRow}>
                 <View style={styles.halfField}>
                   <Text style={[styles.label, { color: colors.foreground }]}>Tipo</Text>
@@ -455,9 +539,16 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 19, fontFamily: 'Inter_700Bold', marginTop: 3 },
   closeButton: { width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   label: { fontSize: 11, fontFamily: 'Inter_700Bold', marginBottom: 7, marginTop: 13 },
-  choiceList: { gap: 7 },
-  choice: { minHeight: 40, borderWidth: 1, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  choiceText: { flex: 1, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  combobox: { minHeight: 52, borderWidth: 1, borderRadius: 7, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  comboboxCopy: { flex: 1, minWidth: 0 },
+  comboboxValue: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  comboboxMeta: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  comboboxDropdown: { borderWidth: 1, borderRadius: 8, marginTop: 6, padding: 8 },
+  comboboxSearch: { minHeight: 38, borderWidth: 1, borderRadius: 7, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  comboboxSearchInput: { flex: 1, minWidth: 0, paddingVertical: 0, fontSize: 12, fontFamily: 'Inter_400Regular' },
+  comboboxOptions: { gap: 3, marginTop: 7 },
+  comboboxOption: { minHeight: 43, borderRadius: 6, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  comboboxEmpty: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 9, paddingHorizontal: 3 },
   fieldsRow: { flexDirection: 'row', gap: 7 },
   halfField: { flex: 1, minWidth: 0 },
   typeChoice: { flex: 1, minHeight: 38, borderWidth: 1, borderRadius: 7, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
