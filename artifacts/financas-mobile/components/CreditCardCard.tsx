@@ -19,24 +19,8 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
   const isPaid = card.invoiceStatus === 'paid';
   const isOverdue = card.invoiceStatus === 'overdue';
   const hasInvoiceAmount = card.currentInvoiceAmount > 0;
-  const Wrapper = onPress ? Pressable : View;
-
-  return (
-    <Wrapper
-      {...(onPress ? {
-        accessibilityRole: 'button' as const,
-        accessibilityLabel: `Abrir detalhes do cartão ${card.name}`,
-        onPress,
-        style: ({ pressed }: { pressed: boolean }) => [
-          styles.card,
-          { backgroundColor: colors.card, borderColor: colors.border },
-          style,
-          pressed && styles.pressed,
-        ],
-      } : {
-        style: [styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style],
-      })}
-    >
+  const cardSummary = (
+    <>
       <View style={styles.header}>
         <View style={[styles.icon, { backgroundColor: colors.primary }]}>
           <Feather name="credit-card" size={18} color={colors.primaryForeground} />
@@ -67,6 +51,21 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
           </Text>
         </View>
       </View>
+    </>
+  );
+
+  return (
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style]}>
+      {onPress ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Abrir detalhes do cartão ${card.name}`}
+          onPress={onPress}
+          style={({ pressed }) => [pressed && styles.pressed]}
+        >
+          {cardSummary}
+        </Pressable>
+      ) : cardSummary}
 
       {onPay ? (
         <Pressable
@@ -74,10 +73,7 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
           accessibilityLabel={hasInvoiceAmount ? `Pagar fatura do cartão ${card.name}` : `Nenhum lançamento na fatura do cartão ${card.name}`}
           testID={`pay-card-invoice-${card.id}`}
           disabled={paying || !hasInvoiceAmount || isPaid}
-          onPress={(event) => {
-            event.stopPropagation();
-            onPay();
-          }}
+          onPress={onPay}
           style={({ pressed }) => [
             styles.payButton,
             { backgroundColor: colors.secondary, borderColor: colors.border },
@@ -91,7 +87,7 @@ export function CreditCardCard({ card, onPress, onPay, paying = false, style }: 
           </Text>
         </Pressable>
       ) : null}
-    </Wrapper>
+    </View>
   );
 }
 
