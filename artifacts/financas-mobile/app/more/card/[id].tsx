@@ -96,6 +96,31 @@ export default function CardDetailsScreen() {
 
   const handleDeleteHistoryItem = (item: CardHistoryItem) => {
     if (item.kind !== 'transaction') return;
+    const executeDelete = () => {
+      setDeletingHistoryId(item.id);
+      void deleteTransaction(item.id)
+        .then(async () => {
+          await Promise.all([loadHistory(), refresh()]);
+        })
+        .catch(() => {
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.alert('Não foi possível excluir. Tente novamente.');
+          } else {
+            Alert.alert('Não foi possível excluir', 'Tente novamente.');
+          }
+        })
+        .finally(() => setDeletingHistoryId(null));
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(
+        'Excluir movimentação?\n\nEssa movimentação será removida do cartão e a fatura será recalculada.',
+      )) {
+        executeDelete();
+      }
+      return;
+    }
+
     Alert.alert(
       'Excluir movimentação?',
       'Essa movimentação será removida do cartão e a fatura será recalculada.',
@@ -104,15 +129,7 @@ export default function CardDetailsScreen() {
         {
           text: 'Excluir',
           style: 'destructive',
-          onPress: () => {
-            setDeletingHistoryId(item.id);
-            void deleteTransaction(item.id)
-              .then(async () => {
-                await Promise.all([loadHistory(), refresh()]);
-              })
-              .catch(() => Alert.alert('Não foi possível excluir', 'Tente novamente.'))
-              .finally(() => setDeletingHistoryId(null));
-          },
+          onPress: executeDelete,
         },
       ],
     );
@@ -120,6 +137,27 @@ export default function CardDetailsScreen() {
 
   const handleDelete = () => {
     if (!card) return;
+    const executeDelete = () => {
+      void deleteCard(card.id)
+        .then(() => router.back())
+        .catch(() => {
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.alert('Não foi possível excluir. Tente novamente.');
+          } else {
+            Alert.alert('Não foi possível excluir', 'Tente novamente.');
+          }
+        });
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(
+        `Excluir ${card.name}?\n\nO cartão e os dados da fatura serão removidos.`,
+      )) {
+        executeDelete();
+      }
+      return;
+    }
+
     Alert.alert(
       `Excluir ${card.name}?`,
       'O cartão e os dados da fatura serão removidos.',
@@ -128,11 +166,7 @@ export default function CardDetailsScreen() {
         {
           text: 'Excluir',
           style: 'destructive',
-          onPress: () => {
-            void deleteCard(card.id)
-              .then(() => router.back())
-              .catch(() => Alert.alert('Não foi possível excluir', 'Tente novamente.'));
-          },
+          onPress: executeDelete,
         },
       ],
     );
