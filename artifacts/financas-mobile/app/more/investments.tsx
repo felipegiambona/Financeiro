@@ -193,8 +193,9 @@ export default function InvestmentsScreen() {
     [assetTypeParam],
   );
   const { assetType: selectedAssetType, invalid: hasInvalidAssetType } = routeFilter;
-  const [activeTab, setActiveTab] = useState<'assets' | 'favorites'>('assets');
+  const [activeTab, setActiveTab] = useState<'assets' | 'favorites' | 'dividends'>('assets');
   const favoriteOnly = activeTab === 'favorites';
+  const dividendsOnly = activeTab === 'dividends';
   const hasDisplayedData = investments.length > 0 || favoriteAssets.length > 0;
   const [assetSearchQuery, setAssetSearchQuery] = useState('');
   const [favoriteSearchQuery, setFavoriteSearchQuery] = useState('');
@@ -680,10 +681,10 @@ export default function InvestmentsScreen() {
           eyebrow="Patrimônio"
           title="Investimentos"
           showBack
-          rightContent={(
+          rightContent={!dividendsOnly ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Atualizar ${favoriteOnly ? 'favoritos' : 'investimentos'}`}
+              accessibilityLabel={`Atualizar ${dividendsOnly ? 'proventos' : favoriteOnly ? 'favoritos' : 'investimentos'}`}
               accessibilityState={{ busy: refreshing, disabled: refreshing }}
               disabled={refreshing}
               testID="investments-refresh"
@@ -697,14 +698,16 @@ export default function InvestmentsScreen() {
             >
               <Feather name="refresh-cw" size={17} color={colors.foreground} />
             </Pressable>
-          )}
-          actionLabel="Novo"
+          ) : undefined}
+          actionLabel={dividendsOnly ? undefined : 'Novo'}
           actionIcon="plus"
-          onAction={() => openEditor(undefined, undefined, favoriteOnly)}
+          onAction={dividendsOnly ? undefined : () => openEditor(undefined, undefined, favoriteOnly)}
         />
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>
           {hasInvalidAssetType
             ? 'O tipo de ativo solicitado não é válido. Remova o filtro para ver sua carteira.'
+            : dividendsOnly
+            ? 'Acompanhe os dividendos e JCP previstos ou já recebidos na sua carteira.'
             : favoriteOnly
             ? 'Acompanhe os ativos que você marcou como favoritos.'
             : selectedAssetType
@@ -742,7 +745,26 @@ export default function InvestmentsScreen() {
             <Feather name="star" size={14} color={activeTab === 'favorites' ? colors.foreground : colors.mutedForeground} />
             <Text style={[styles.investmentTabText, { color: activeTab === 'favorites' ? colors.foreground : colors.mutedForeground }]}>Favoritos</Text>
           </Pressable>
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === 'dividends' }}
+            accessibilityLabel="Listar proventos"
+            testID="investments-dividends-tab"
+            onPress={() => setActiveTab('dividends')}
+            style={({ pressed }) => [
+              styles.investmentTab,
+              activeTab === 'dividends' && { backgroundColor: colors.card, borderColor: colors.border },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Feather name="dollar-sign" size={14} color={activeTab === 'dividends' ? colors.foreground : colors.mutedForeground} />
+            <Text style={[styles.investmentTabText, { color: activeTab === 'dividends' ? colors.foreground : colors.mutedForeground }]}>Proventos</Text>
+          </Pressable>
         </View>
+        {dividendsOnly ? (
+          <InvestmentDividends />
+        ) : (
+          <>
         {favoriteOnly ? (
           <View style={[styles.favoriteAddPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.favoriteAddHeader}>
@@ -1140,7 +1162,8 @@ export default function InvestmentsScreen() {
             )}
           </>
         )}
-        {!favoriteOnly && !hasInvalidAssetType ? <InvestmentDividends /> : null}
+          </>
+        )}
       </KeyboardAwareScrollViewCompat>
 
       <Modal animationType="fade" transparent visible={editorOpen} onRequestClose={closeEditor}>
