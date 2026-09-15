@@ -256,11 +256,18 @@ router.get("/investments/dividends/calendar", async (req, res): Promise<void> =>
       });
     }
   });
-  res.json(GetInvestmentDividendCalendarResponse.parse({
+  const parsedResponse = GetInvestmentDividendCalendarResponse.parse({
     source: INVESTMENT_DIVIDEND_CALENDAR_SOURCE,
     events,
     failures,
-  }));
+  });
+  res.json({
+    ...parsedResponse,
+    events: parsedResponse.events.map((event) => ({
+      ...event,
+      paymentDate: dateKey(event.paymentDate),
+    })),
+  });
 });
 
 router.post("/investments/dividends/import", async (req, res): Promise<void> => {

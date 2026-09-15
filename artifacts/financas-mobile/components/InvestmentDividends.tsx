@@ -57,8 +57,12 @@ function toApiDate(value: string): string | null {
 }
 
 function displayDate(value: string): string {
-  const [year, month, day] = value.slice(0, 10).split('-').map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString('pt-BR');
+  const dateKey = value.slice(0, 10);
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+  }).format(date);
 }
 
 function typeLabel(type: InvestmentDividendType | InvestmentDividendCalendarEvent['type']): string {
