@@ -121,7 +121,7 @@ router.patch("/financial-profiles/:profileId", async (req, res): Promise<void> =
 
   const [updated] = await db.update(financialProfilesTable)
     .set({
-      ...(businessName === undefined ? {} : { businessName: businessName.trim() }),
+      ...(businessName === undefined ? {} : { name: businessName.trim(), businessName: businessName.trim() }),
       ...(imageData === undefined ? {} : { imageData }),
       updatedAt: new Date(),
     })

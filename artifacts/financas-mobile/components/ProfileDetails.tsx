@@ -131,6 +131,18 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
     }
   };
 
+  const resetBusinessEditor = () => {
+    setBusinessEditorOpen(false);
+    setBusinessProfileBeingEdited(null);
+    setBusinessNameInput('');
+    setBusinessImageData(null);
+  };
+
+  const cancelBusinessEditor = () => {
+    if (savingBusinessProfile) return;
+    resetBusinessEditor();
+  };
+
   const handleSaveBusinessProfile = async () => {
     const trimmedName = businessNameInput.trim();
     if (!trimmedName) {
@@ -151,8 +163,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
           imageData: businessImageData,
         });
       }
-      setBusinessEditorOpen(false);
-      setBusinessProfileBeingEdited(null);
+      resetBusinessEditor();
     } catch {
       Alert.alert(
         businessProfileBeingEdited ? 'Não foi possível salvar o perfil' : 'Não foi possível criar o perfil',
@@ -300,14 +311,17 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
                 pressed && styles.pressed,
               ]}
             >
-              {profile.type === 'business' && profile.imageData ? (
-                <Image source={{ uri: profile.imageData }} style={styles.profileOptionImage} />
+              {(profile.type === 'business' ? profile.imageData : user?.imageUrl) ? (
+                <Image
+                  source={{ uri: profile.type === 'business' ? profile.imageData! : user!.imageUrl }}
+                  style={styles.profileOptionImage}
+                />
               ) : (
                 <Feather name={profile.type === 'business' ? 'briefcase' : 'user'} size={16} color={colors.foreground} />
               )}
               <View style={styles.profileOptionCopy}>
                 <Text style={[styles.profileOptionName, { color: colors.foreground }]}>
-                  {profile.type === 'business' ? profile.businessName || 'Empresarial' : profile.name}
+                  {profile.type === 'business' ? profile.businessName || 'Empresarial' : name}
                 </Text>
                 <Text style={[styles.profileOptionType, { color: colors.mutedForeground }]}>
                   {profile.type === 'business' ? 'Empresarial' : 'Pessoal'}
@@ -448,16 +462,16 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
         errorTitle="Não foi possível excluir o perfil"
         errorMessage="O perfil empresarial não foi excluído. Tente novamente."
       />
-      <Modal animationType="fade" transparent visible={businessEditorOpen} onRequestClose={() => { setBusinessEditorOpen(false); setBusinessProfileBeingEdited(null); }}>
+      <Modal animationType="fade" transparent visible={businessEditorOpen} onRequestClose={cancelBusinessEditor}>
         <View style={styles.modalRoot}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => { setBusinessEditorOpen(false); setBusinessProfileBeingEdited(null); }} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={cancelBusinessEditor} />
           <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderCopy}>
                 <Text style={[styles.modalEyebrow, { color: colors.mutedForeground }]}>{businessProfileBeingEdited ? 'Editar perfil' : 'Novo perfil'}</Text>
                 <Text style={[styles.modalTitle, { color: colors.foreground }]}>{businessProfileBeingEdited ? 'Editar perfil empresarial' : 'Perfil empresarial'}</Text>
               </View>
-              <Pressable accessibilityLabel="Fechar edição de perfil empresarial" onPress={() => { setBusinessEditorOpen(false); setBusinessProfileBeingEdited(null); }} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
+              <Pressable accessibilityLabel="Fechar edição de perfil empresarial" onPress={cancelBusinessEditor} style={({ pressed }) => [styles.closeButton, { backgroundColor: colors.secondary }, pressed && styles.pressed]}>
                 <Feather name="x" size={18} color={colors.foreground} />
               </Pressable>
             </View>
@@ -486,7 +500,7 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
               <Pressable
                 accessibilityRole="button"
                 disabled={savingBusinessProfile}
-                onPress={() => { setBusinessEditorOpen(false); setBusinessProfileBeingEdited(null); }}
+                onPress={cancelBusinessEditor}
                 style={({ pressed }) => [styles.profileCancelButton, { borderColor: colors.border }, savingBusinessProfile && styles.disabled, pressed && styles.pressed]}
               >
                 <Text style={[styles.profileCancelText, { color: colors.foreground }]}>Cancelar criação</Text>
