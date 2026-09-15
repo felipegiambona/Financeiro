@@ -345,6 +345,13 @@ async function readInvestmentDatabaseState(name) {
   return JSON.parse(result);
 }
 
+async function readTransactionInvestmentId(id) {
+  const result = await runDatabaseQuery(
+    `SELECT investment_id::text FROM finance_transactions WHERE id = ${sqlLiteral(id)};`,
+  );
+  return result || null;
+}
+
 async function countRowsForOwner(userId, profileId, table) {
   const scopedOwner = sqlLiteral(`${userId}::${profileId}`);
   const result = await runDatabaseQuery(
@@ -912,6 +919,10 @@ describe("financial profile deletion isolation", () => {
       { method: "DELETE" },
     );
     assertStatus(deletedPersonalInvestment, 204);
+    assert.equal(
+      await readTransactionInvestmentId(personalInvestmentTransaction.id),
+      null,
+    );
     const emptyPersonalInvestments = await profileRequest(
       identity.token,
       personalProfile.id,
@@ -935,12 +946,7 @@ describe("financial profile deletion isolation", () => {
       identity.token,
       personalProfile.id,
     );
-    assert.deepEqual(personalAfterFailedDeletion, {
-      ...personalBeforeDeletion,
-      transactions: personalBeforeDeletion.transactions.filter(
-        (transaction) => transaction.description !== "Investimento · Tesouro Selic",
-      ),
-    });
+    assert.deepEqual(personalAfterFailedDeletion, personalBeforeDeletion);
   });
 });
 
