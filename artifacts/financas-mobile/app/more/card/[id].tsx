@@ -11,7 +11,7 @@ import { useFinance } from '@/context/FinanceContext';
 import { useColors } from '@/hooks/useColors';
 import { formatCurrency } from '@/utils/currency';
 import { getCardHistory } from '@/services/cardRepository';
-import { formatDate, formatMonthYearLabel } from '@/utils/date';
+import { formatDate, formatMonthYearLabel, getSaoPauloMonthKey } from '@/utils/date';
 import type { CardHistoryItem } from '@/types/card';
 
 export default function CardDetailsScreen() {
@@ -24,9 +24,7 @@ export default function CardDetailsScreen() {
   const [history, setHistory] = useState<CardHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
-  const [selectedHistoryMonth, setSelectedHistoryMonth] = useState(
-    `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
-  );
+  const [selectedHistoryMonth, setSelectedHistoryMonth] = useState(getSaoPauloMonthKey);
   const card = cards.find((item) => item.id === id);
 
   const loadHistory = useCallback(async () => {
@@ -77,7 +75,7 @@ export default function CardDetailsScreen() {
     );
   };
 
-  const currentInvoiceMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+  const currentInvoiceMonth = getSaoPauloMonthKey();
   const historyMonths = useMemo(() => {
     const months = new Set(history.map((item) => item.date.slice(0, 7)));
     months.add(currentInvoiceMonth);

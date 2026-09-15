@@ -18,6 +18,7 @@ import {
 } from "@workspace/api-zod";
 import { profileIdFrom, requireAuth, resolveFinancialProfile, scopedUserIdFrom } from "../middlewares/requireAuth";
 import {
+  dateKey,
   getCardInvoiceSummaries,
   monthKey,
   type CardInvoiceSummary,
@@ -240,7 +241,7 @@ router.get("/cards/:id/history", async (req, res): Promise<void> => {
       paymentStatus: row.paymentStatus as "paid" | "unpaid",
       categoryName: row.categoryId ? categoryNames.get(row.categoryId) ?? null : null,
     }));
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const today = dateKey(now);
   for (const invoice of invoices) {
     if (invoice.amount <= 0 || invoice.closingDate > today) continue;
     history.push({

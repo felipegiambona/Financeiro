@@ -1,4 +1,5 @@
 export type CardInvoiceStatus = "open" | "closed" | "paid" | "overdue";
+const CARD_TIME_ZONE = "America/Sao_Paulo";
 
 export interface CardInvoiceSummary {
   invoiceMonth: string;
@@ -20,8 +21,20 @@ function localDate(value: string | Date): Date {
   return new Date(`${value.slice(0, 10)}T12:00:00`);
 }
 
+function calendarDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: CARD_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const value = (type: string) => Number(parts.find((part) => part.type === type)?.value);
+  return { year: value("year"), month: value("month"), day: value("day") };
+}
+
 export function monthKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  const { year, month } = calendarDateParts(date);
+  return `${year}-${String(month).padStart(2, "0")}`;
 }
 
 function monthDate(value: string): Date {
@@ -37,6 +50,11 @@ export function dayDate(month: string, day: number): string {
   const date = monthDate(month);
   const safeDay = Math.min(day, new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate());
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(safeDay).padStart(2, "0")}`;
+}
+
+export function dateKey(date: Date): string {
+  const { year, month, day } = calendarDateParts(date);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 export function invoiceMonthForPurchase(date: string | Date, closingDay: number): string {
@@ -73,6 +91,7 @@ export function getCardInvoiceSummaries(
   }
 
   const currentMonth = monthKey(now);
+  const currentDay = calendarDateParts(now).day;
   return Array.from(months)
     .sort()
     .map((invoiceMonth) => {
@@ -88,8 +107,8 @@ export function getCardInvoiceSummaries(
       } else if (isPast) {
         status = "overdue";
       } else if (isCurrent) {
-        if (now.getDate() >= dueDay && now.getDate() >= closingDay) status = "overdue";
-        else if (now.getDate() >= closingDay) status = "closed";
+        if (currentDay >= dueDay && currentDay >= closingDay) status = "overdue";
+        else if (currentDay >= closingDay) status = "closed";
       }
 
       return {

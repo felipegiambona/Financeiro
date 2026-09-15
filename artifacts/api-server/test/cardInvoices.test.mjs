@@ -29,3 +29,13 @@ test("marks a paid invoice by its explicit competence without changing the balan
   assert.equal(invoice?.status, "paid");
   assert.equal(invoice?.amount, 120);
 });
+
+test("uses the Sao Paulo calendar date before closing the current invoice", () => {
+  const rows = [
+    { date: "2026-09-03", amount: "80", cardEntryType: "purchase" },
+  ];
+  const invoices = getCardInvoiceSummaries(rows, 15, 20, new Date("2026-09-15T01:00:00.000Z"));
+  const invoice = invoices.find((item) => item.invoiceMonth === "2026-09");
+
+  assert.equal(invoice?.status, "open");
+});
