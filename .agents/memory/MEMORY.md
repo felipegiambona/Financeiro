@@ -12,5 +12,6 @@
 - [Expo web preview loading](expo-web-clerk-loading.md) — do not gate web rendering on ClerkLoaded; AuthProvider already handles loading and otherwise the browser can remain blank.
 - [Onboarding state recovery](onboarding-state-recovery.md) — wallet load errors and stale local steps must not be treated as a new profile during profile switching.
 - [Card invoice timezone](card-invoice-timezone.md) — invoice status and closing dates must use the America/Sao_Paulo calendar, not the server's UTC date.
+- [Calendar date API contracts](calendar-date-api-contracts.md) — date-only API fields must not be coerced through UTC midnight before returning to the mobile app.
 - [Forecast overdue invoices](forecast-overdue-invoices.md) — current-month forecasts must include unpaid overdue card invoices without duplicating them in their original month.
 - [Transaction month totals](transaction-month-total.md) — the transactions screen total includes only listed launches, not the separate card invoice summary.

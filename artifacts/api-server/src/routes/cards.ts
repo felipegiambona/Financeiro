@@ -256,7 +256,17 @@ router.get("/cards/:id/history", async (req, res): Promise<void> => {
     });
   }
   history.sort((a, b) => b.date.localeCompare(a.date));
-  res.json(GetCardHistoryResponse.parse(history));
+  // The generated response schema coerces dates to Date objects. Calendar
+  // dates must be validated at São Paulo noon, otherwise YYYY-MM-DD becomes
+  // midnight UTC and is displayed as the previous day in São Paulo.
+  const parsedHistory = GetCardHistoryResponse.parse(history.map((item) => ({
+    ...item,
+    date: `${item.date}T12:00:00-03:00`,
+  })));
+  res.json(parsedHistory.map((item) => ({
+    ...item,
+    date: dateKey(item.date),
+  })));
 });
 
 export default router;
