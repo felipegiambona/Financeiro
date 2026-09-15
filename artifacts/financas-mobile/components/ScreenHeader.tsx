@@ -46,9 +46,9 @@ export function ScreenHeader({
             <Feather name="arrow-left" size={20} color={colors.foreground} />
           </Pressable>
         ) : null}
-        <View>
+        <View style={styles.titleCopy}>
           {eyebrow ? <Text style={[styles.eyebrow, { color: colors.mutedForeground }]}>{eyebrow}</Text> : null}
-          <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
+          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.title, { color: colors.foreground }]}>{title}</Text>
         </View>
       </View>
       <View style={styles.actions}>
@@ -88,11 +88,12 @@ export function ScreenHeader({
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
-  titleGroup: { flexDirection: 'row', alignItems: 'center', gap: 9, flex: 1 },
+  titleGroup: { flexDirection: 'row', alignItems: 'center', gap: 9, flex: 1, minWidth: 0 },
+  titleCopy: { flex: 1, minWidth: 0 },
   backButton: { width: 34, height: 34, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   eyebrow: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 5 },
   title: { fontSize: 24, lineHeight: 29, fontFamily: 'Inter_700Bold', letterSpacing: -0.5 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 0 },
   notificationButton: { width: 36, height: 36, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   notificationBadge: { position: 'absolute', top: -4, right: -4, minWidth: 15, height: 15, borderRadius: 8, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center' },
   notificationBadgeText: { fontSize: 8, lineHeight: 10, fontFamily: 'Inter_700Bold' },
