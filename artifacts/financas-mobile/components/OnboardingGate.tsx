@@ -1,7 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { OnboardingFlow, type OnboardingStep } from '@/components/OnboardingFlow';
+import { OnboardingFlow } from '@/components/OnboardingFlow';
+import {
+  initialStepForProfile,
+  resolveOnboardingStep,
+  type OnboardingStep,
+} from '@/components/onboardingState';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useWallets } from '@/context/WalletContext';
@@ -9,21 +14,6 @@ import { useFinancialProfiles } from '@/context/FinancialProfileContext';
 import { useColors } from '@/hooks/useColors';
 
 type GateMode = 'checking' | 'onboarding' | 'app';
-
-function isOnboardingStep(value: string | null): value is OnboardingStep {
-  return value === 'name' || value === 'profile' || value === 'wallet' || value === 'goal' || value === 'limit' || value === 'card';
-}
-
-function initialStepForProfile(profileType: 'personal' | 'business'): OnboardingStep {
-  return profileType === 'business' ? 'wallet' : 'name';
-}
-
-function normalizeStepForProfile(step: OnboardingStep, profileType: 'personal' | 'business'): OnboardingStep {
-  if (profileType === 'business' && (step === 'name' || step === 'profile')) {
-    return 'wallet';
-  }
-  return step;
-}
 
 function storageKeys(userId: string, profileId: string) {
   const prefix = `financas-mobile:onboarding:${userId}:${profileId}`;
@@ -92,10 +82,11 @@ export function OnboardingGate({ children }: React.PropsWithChildren) {
           if (active) setMode('app');
           return;
         }
-        const fallbackStep = wallets.length === 0 ? initialStepForProfile(activeProfile.type) : 'wallet';
-        const savedStep = isOnboardingStep(storedStep) ? storedStep : fallbackStep;
-        const normalizedStep = normalizeStepForProfile(savedStep, activeProfile.type);
-        const resumedStep = normalizedStep === 'wallet' && wallets.length > 0 ? 'goal' : normalizedStep;
+        const resumedStep = resolveOnboardingStep({
+          storedStep,
+          profileType: activeProfile.type,
+          walletCount: wallets.length,
+        });
         if (resumedStep !== storedStep) {
           await AsyncStorage.setItem(keys.step, resumedStep);
         }

@@ -17,8 +17,7 @@ import { CATEGORY_COLORS } from '@/types/category';
 import { LIMIT_PERIODS, type LimitPeriod } from '@/types/limit';
 import { createLocalIsoDate, formatDateInput, getSaoPauloToday } from '@/utils/date';
 import { formatAmountInput, parseAmountInput } from '@/utils/currency';
-
-export type OnboardingStep = 'name' | 'profile' | 'wallet' | 'goal' | 'limit' | 'card';
+import { getPreviousStep, ONBOARDING_STEPS, type OnboardingStep } from '@/components/onboardingState';
 
 interface OnboardingFlowProps {
   initialStep: OnboardingStep;
@@ -27,20 +26,11 @@ interface OnboardingFlowProps {
   onCancel: () => void;
 }
 
-const STEPS: OnboardingStep[] = ['name', 'profile', 'wallet', 'goal', 'limit', 'card'];
-
-function getPreviousStep(step: OnboardingStep, initialStep: OnboardingStep): OnboardingStep | null {
-  const currentIndex = STEPS.indexOf(step);
-  const previousIndex = currentIndex - 1;
-  const firstStepIndex = initialStep === 'wallet' ? STEPS.indexOf('wallet') : 0;
-  return previousIndex >= firstStepIndex ? STEPS[previousIndex] : null;
-}
-
 function StepProgress({ step, colors }: { step: OnboardingStep; colors: ReturnType<typeof useColors> }) {
-  const currentIndex = STEPS.indexOf(step);
+  const currentIndex = ONBOARDING_STEPS.indexOf(step);
   return (
-    <View style={styles.progressRow} accessibilityLabel={`Etapa ${currentIndex + 1} de ${STEPS.length}`}>
-      {STEPS.map((item, index) => (
+    <View style={styles.progressRow} accessibilityLabel={`Etapa ${currentIndex + 1} de ${ONBOARDING_STEPS.length}`}>
+      {ONBOARDING_STEPS.map((item, index) => (
         <View
           key={item}
           style={[
