@@ -8,10 +8,18 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useColors } from '@/hooks/useColors';
 import { Feather } from '@expo/vector-icons';
 import { reloadAppAsync } from 'expo';
+
+const FALLBACK_COLORS = {
+  background: '#0F1115',
+  card: '#1A1D23',
+  foreground: '#F5F7FA',
+  mutedForeground: '#B8C0CC',
+  primary: '#B8EF91',
+  primaryForeground: '#122033',
+  border: '#303642',
+} as const;
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -19,9 +27,6 @@ export type ErrorFallbackProps = {
 };
 
 export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const handleRestart = async () => {
@@ -48,7 +53,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   });
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: FALLBACK_COLORS.background }]}>
       {__DEV__ ? (
         <Pressable
           onPress={() => setIsModalVisible(true)}
@@ -57,22 +62,21 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           style={({ pressed }) => [
             styles.topButton,
             {
-              top: insets.top + 16,
-              backgroundColor: colors.card,
+              backgroundColor: FALLBACK_COLORS.card,
               opacity: pressed ? 0.8 : 1,
             },
           ]}
         >
-          <Feather name="alert-circle" size={20} color={colors.foreground} />
+          <Feather name="alert-circle" size={20} color={FALLBACK_COLORS.foreground} />
         </Pressable>
       ) : null}
 
       <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.foreground }]}>
+        <Text style={[styles.title, { color: FALLBACK_COLORS.foreground }]}>
           Something went wrong
         </Text>
 
-        <Text style={[styles.message, { color: colors.mutedForeground }]}>
+        <Text style={[styles.message, { color: FALLBACK_COLORS.mutedForeground }]}>
           Please reload the app to continue.
         </Text>
 
@@ -81,14 +85,14 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           style={({ pressed }) => [
             styles.button,
             {
-              backgroundColor: colors.primary,
+              backgroundColor: FALLBACK_COLORS.primary,
               opacity: pressed ? 0.9 : 1,
               transform: [{ scale: pressed ? 0.98 : 1 }],
             },
           ]}
         >
           <Text
-            style={[styles.buttonText, { color: colors.primaryForeground }]}
+            style={[styles.buttonText, { color: FALLBACK_COLORS.primaryForeground }]}
           >
             Try Again
           </Text>
@@ -106,16 +110,16 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
             <View
               style={[
                 styles.modalContainer,
-                { backgroundColor: colors.background },
+                { backgroundColor: FALLBACK_COLORS.background },
               ]}
             >
               <View
                 style={[
                   styles.modalHeader,
-                  { borderBottomColor: colors.border },
+                  { borderBottomColor: FALLBACK_COLORS.border },
                 ]}
               >
-                <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                <Text style={[styles.modalTitle, { color: FALLBACK_COLORS.foreground }]}>
                   Error Details
                 </Text>
                 <Pressable
@@ -127,7 +131,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                     { opacity: pressed ? 0.6 : 1 },
                   ]}
                 >
-                  <Feather name="x" size={24} color={colors.foreground} />
+                  <Feather name="x" size={24} color={FALLBACK_COLORS.foreground} />
                 </Pressable>
               </View>
 
@@ -135,21 +139,21 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                 style={styles.modalScrollView}
                 contentContainerStyle={[
                   styles.modalScrollContent,
-                  { paddingBottom: insets.bottom + 16 },
+                  { paddingBottom: 24 },
                 ]}
                 showsVerticalScrollIndicator
               >
                 <View
                   style={[
                     styles.errorContainer,
-                    { backgroundColor: colors.card },
+                    { backgroundColor: FALLBACK_COLORS.card },
                   ]}
                 >
                   <Text
                     style={[
                       styles.errorText,
                       {
-                        color: colors.foreground,
+                        color: FALLBACK_COLORS.foreground,
                         fontFamily: monoFont,
                       },
                     ]}
