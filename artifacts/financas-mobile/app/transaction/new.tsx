@@ -598,29 +598,6 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
 
         {moreOptionsOpen ? (
           <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        {type === 'expense' || type === 'income' ? (
-          <>
-            <Text style={[styles.label, { color: colors.foreground }]}>Meta</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Selecionar meta para esta ${type === 'income' ? 'receita' : 'despesa'}`}
-              testID="goal-select"
-              onPress={() => setGoalPickerOpen(true)}
-              style={({ pressed }) => [styles.dateInputShell, { backgroundColor: colors.card, borderColor: colors.input }, pressed && styles.pressed]}
-            >
-              <Feather name="target" size={17} color={goalId ? colors.accent : colors.mutedForeground} />
-              <Text style={[styles.dateInput, { color: goalId ? colors.foreground : colors.mutedForeground }]}>
-                {goals.find((goal) => goal.id === goalId)?.title ?? 'Sem meta associada'}
-              </Text>
-              <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
-            </Pressable>
-            <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
-              {type === 'income'
-                ? 'Receitas pagas associadas a uma meta registram uma retirada do valor guardado.'
-                : 'Despesas pagas associadas a uma meta entram automaticamente no valor guardado.'}
-            </Text>
-          </>
-        ) : null}
 
         <Text style={[styles.label, { color: colors.foreground }]}>Recorrência</Text>
         <View style={styles.recurrenceTypeOptions}>
@@ -759,6 +736,30 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
               </>
             ) : null}
           </View>
+        ) : null}
+
+        {type === 'expense' || type === 'income' ? (
+          <>
+            <Text style={[styles.label, { color: colors.foreground }]}>Meta</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Selecionar meta para esta ${type === 'income' ? 'receita' : 'despesa'}`}
+              testID="goal-select"
+              onPress={() => setGoalPickerOpen(true)}
+              style={({ pressed }) => [styles.dateInputShell, { backgroundColor: colors.card, borderColor: colors.input }, pressed && styles.pressed]}
+            >
+              <Feather name="target" size={17} color={goalId ? colors.accent : colors.mutedForeground} />
+              <Text style={[styles.dateInput, { color: goalId ? colors.foreground : colors.mutedForeground }]}>
+                {goals.find((goal) => goal.id === goalId)?.title ?? 'Sem meta associada'}
+              </Text>
+              <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+            </Pressable>
+            <Text style={[styles.intervalHint, { color: colors.mutedForeground }]}>
+              {type === 'income'
+                ? 'Receitas pagas associadas a uma meta registram uma retirada do valor guardado.'
+                : 'Despesas pagas associadas a uma meta entram automaticamente no valor guardado.'}
+            </Text>
+          </>
         ) : null}
 
           </View>
