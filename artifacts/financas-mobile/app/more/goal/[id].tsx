@@ -48,6 +48,7 @@ export default function GoalDetailScreen() {
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [forecastOpen, setForecastOpen] = useState(false);
 
   const loadDetail = useCallback(async () => {
     if (!id) return;
@@ -247,31 +248,46 @@ export default function GoalDetailScreen() {
           </View>
           {futureHistory.length > 0 ? (
             <View
-              accessibilityLabel={`Previsão da meta: ${formatCurrency(forecastSavedAmount)}, ${Math.round(forecastPercentage)} por cento, faltam ${formatCurrency(forecastRemaining)}`}
+              accessibilityLabel="Previsão futura da meta"
               testID="goal-history-forecast"
               style={[styles.forecastCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
-              <View style={styles.forecastHeader}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={forecastOpen ? 'Fechar previsão futura da meta' : 'Abrir previsão futura da meta'}
+                accessibilityState={{ expanded: forecastOpen }}
+                testID="goal-history-forecast-toggle"
+                onPress={() => setForecastOpen((open) => !open)}
+                style={({ pressed }) => [styles.forecastToggle, pressed && styles.pressed]}
+              >
                 <View style={styles.forecastCopy}>
-                  <Text style={[styles.forecastTitle, { color: colors.foreground }]}>Previsão</Text>
+                  <Text style={[styles.forecastTitle, { color: colors.foreground }]}>Previsão futura</Text>
                   <Text style={[styles.forecastHint, { color: colors.mutedForeground }]}>
                     Considerando os lançamentos futuros da meta.
                   </Text>
                 </View>
-                <Text style={[styles.forecastAmount, { color: forecastSavedAmount >= 0 ? colors.income : colors.expense }]}>
-                  {formatCurrency(forecastSavedAmount)}
-                </Text>
-              </View>
-              <View style={[styles.forecastDetails, { borderTopColor: colors.border }]}>
-                <View>
-                  <Text style={[styles.forecastLabel, { color: colors.mutedForeground }]}>Progresso previsto</Text>
-                  <Text style={[styles.forecastValue, { color: colors.foreground }]}>{Math.round(forecastPercentage)}%</Text>
-                </View>
-                <View style={styles.forecastDetailRight}>
-                  <Text style={[styles.forecastLabel, { color: colors.mutedForeground }]}>Faltará</Text>
-                  <Text style={[styles.forecastValue, { color: colors.foreground }]}>{formatCurrency(forecastRemaining)}</Text>
-                </View>
-              </View>
+                <Feather name={forecastOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.foreground} />
+              </Pressable>
+              {forecastOpen ? (
+                <>
+                  <View style={styles.forecastAmountRow}>
+                    <Text style={[styles.forecastLabel, { color: colors.mutedForeground }]}>Valor previsto</Text>
+                    <Text style={[styles.forecastAmount, { color: colors.income }]}>
+                      {formatCurrency(forecastSavedAmount)}
+                    </Text>
+                  </View>
+                  <View style={[styles.forecastDetails, { borderTopColor: colors.border }]}>
+                    <View>
+                      <Text style={[styles.forecastLabel, { color: colors.mutedForeground }]}>Progresso previsto</Text>
+                      <Text style={[styles.forecastValue, { color: colors.foreground }]}>{Math.round(forecastPercentage)}%</Text>
+                    </View>
+                    <View style={styles.forecastDetailRight}>
+                      <Text style={[styles.forecastLabel, { color: colors.mutedForeground }]}>Faltará</Text>
+                      <Text style={[styles.forecastValue, { color: colors.foreground }]}>{formatCurrency(forecastRemaining)}</Text>
+                    </View>
+                  </View>
+                </>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -358,12 +374,13 @@ const styles = StyleSheet.create({
   historyTotalLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   historyTotalValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   forecastCard: { borderWidth: 1, borderRadius: 9, padding: 12, marginTop: 12 },
-  forecastHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  forecastToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   forecastCopy: { flex: 1, minWidth: 0 },
   forecastTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   forecastHint: { fontSize: 10, lineHeight: 14, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  forecastAmountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTopWidth: 1 },
   forecastAmount: { fontSize: 15, fontFamily: 'Inter_700Bold' },
-  forecastDetails: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 12, paddingTop: 10, borderTopWidth: 1 },
+  forecastDetails: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 10, paddingTop: 10, borderTopWidth: 1 },
   forecastDetailRight: { alignItems: 'flex-end' },
   forecastLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   forecastValue: { fontSize: 13, fontFamily: 'Inter_700Bold', marginTop: 3 },
