@@ -651,7 +651,6 @@ export default function InvestmentsScreen() {
                   Busque um ativo para adicionar aos favoritos.
                 </Text>
               </View>
-              <Feather name="star" size={16} color={colors.accent} />
             </View>
             <View style={[styles.inputWithClear, styles.favoriteSearchInput]}>
               <TextInput
