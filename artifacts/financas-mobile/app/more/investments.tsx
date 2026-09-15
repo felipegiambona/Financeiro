@@ -196,9 +196,20 @@ export default function InvestmentsScreen() {
     });
     return counts;
   }, [favoriteItems]);
+  const favoriteGroupsInitializedRef = useRef(false);
   const [expandedFavoriteTypes, setExpandedFavoriteTypes] = useState<Set<InvestmentAssetType>>(
-    () => new Set(ASSET_TYPES.map((item) => item.value)),
+    () => new Set(),
   );
+  useEffect(() => {
+    if (!favoriteOnly) {
+      favoriteGroupsInitializedRef.current = false;
+      return;
+    }
+    if (favoriteItems.length > 0 && !favoriteGroupsInitializedRef.current) {
+      favoriteGroupsInitializedRef.current = true;
+      setExpandedFavoriteTypes(new Set([favoriteItems[0].item.assetType]));
+    }
+  }, [favoriteItems, favoriteOnly]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [favoriteDetails, setFavoriteDetails] = useState<FavoriteDetail | null>(null);
   const [favoriteAssetToRegister, setFavoriteAssetToRegister] = useState<string | null>(null);
