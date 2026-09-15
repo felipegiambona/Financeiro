@@ -120,6 +120,7 @@ export default function TransactionsScreen() {
   const [recurrenceFilter, setRecurrenceFilter] = useState<RecurrenceFilter>('all');
   const [walletFilter, setWalletFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const [cardFilter, setCardFilter] = useState('all');
   const [searchText, setSearchText] = useState('');
   const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
   const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
@@ -127,6 +128,7 @@ export default function TransactionsScreen() {
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
   const [walletPickerOpen, setWalletPickerOpen] = useState(false);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [cardPickerOpen, setCardPickerOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<DeleteConfirmation | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [batchEditOpen, setBatchEditOpen] = useState(false);
@@ -198,8 +200,9 @@ export default function TransactionsScreen() {
         || (categoryFilter === 'uncategorized' && !transaction.categoryId)
         || transaction.categoryId === categoryFilter
       )
+       && (cardFilter === 'all' || transaction.cardId === cardFilter)
     )),
-    [categoryFilter, recurrenceFilter, searchQuery, selectedTransactions, statusFilter, typeFilter, walletFilter],
+     [cardFilter, categoryFilter, recurrenceFilter, searchQuery, selectedTransactions, statusFilter, typeFilter, walletFilter],
   );
   const exportItems = useMemo<TransactionExportItem[]>(
     () => filteredTransactions.map((transaction) => ({
@@ -279,13 +282,25 @@ export default function TransactionsScreen() {
   const forecast = calculateForecast(transactions, selectedMonth, cards);
   const cardInvoicesForMonth = useMemo(() => {
     const monthKey = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`;
+    const isWithinDateFilter = (date: Date) => (
+      (!dateRangeStart || date.getTime() >= dateRangeStart.getTime())
+      && (!dateRangeEnd || date.getTime() <= dateRangeEnd.getTime())
+    );
+    const matchesStatus = (status: string) => (
+      statusFilter === 'all'
+      || (statusFilter === 'paid' ? status === 'paid' : status !== 'paid')
+    );
+
     return cards.flatMap((card) => card.invoices
-      .filter((invoice) => invoice.invoiceMonth === monthKey && invoice.amount > 0)
+      .filter((invoice) => {
+        if (invoice.amount <= 0 || (cardFilter !== 'all' && card.id !== cardFilter)) return false;
+        if (!matchesStatus(invoice.status)) return false;
+        if (dateRangeStart || dateRangeEnd) return isWithinDateFilter(parseStoredDate(invoice.dueDate));
+        return invoice.invoiceMonth === monthKey;
+      })
       .map((invoice) => ({ card, invoice })));
-  }, [cards, selectedMonth]);
-  const showCardInvoices = !dateRangeStart
-    && !dateRangeEnd
-    && (typeFilter === 'all' || typeFilter === 'expense')
+  }, [cardFilter, cards, dateRangeEnd, dateRangeStart, selectedMonth, statusFilter]);
+  const showCardInvoices = (typeFilter === 'all' || typeFilter === 'expense')
     && cardInvoicesForMonth.length > 0;
   const monthTotal = typeFilter === 'transfer'
     ? filteredSummary.transferTotal
@@ -460,6 +475,7 @@ export default function TransactionsScreen() {
     setRecurrenceFilter('all');
     setWalletFilter('all');
     setCategoryFilter('all');
+    setCardFilter('all');
     setSearchText('');
     setDateRangeStart(null);
     setDateRangeEnd(null);
@@ -467,6 +483,7 @@ export default function TransactionsScreen() {
     setMoreFiltersOpen(false);
     setWalletPickerOpen(false);
     setCategoryPickerOpen(false);
+    setCardPickerOpen(false);
     leaveSelectionMode();
     router.setParams({ typeFilter: undefined, statusFilter: undefined });
   };
@@ -562,7 +579,7 @@ export default function TransactionsScreen() {
           >
             <View style={styles.moreFiltersControl}>
               <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
-              {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter !== 'all' || categoryFilter !== 'all' || dateRangeStart !== null || dateRangeEnd !== null) ? (
+               {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter !== 'all' || categoryFilter !== 'all' || cardFilter !== 'all' || dateRangeStart !== null || dateRangeEnd !== null) ? (
                 <View style={[styles.activeFiltersDot, { backgroundColor: colors.radio }]} />
               ) : null}
               <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
@@ -653,6 +670,26 @@ export default function TransactionsScreen() {
                   <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
                 </Pressable>
               </View>
+               <View style={styles.filterGroup}>
+                 <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Cartão</Text>
+                 <Pressable
+                   accessibilityRole="button"
+                   accessibilityLabel={`Selecionar cartão, ${cardFilter === 'all' ? 'todos os cartões' : cards.find((card) => card.id === cardFilter)?.name ?? 'cartão selecionado'}`}
+                   testID="card-filter-picker"
+                   onPress={() => setCardPickerOpen(true)}
+                   style={({ pressed }) => [
+                     styles.walletFilterCombo,
+                     { backgroundColor: colors.card, borderColor: colors.border },
+                     pressed && styles.pressed,
+                   ]}
+                 >
+                   <Feather name="credit-card" size={14} color={colors.mutedForeground} />
+                   <Text numberOfLines={1} style={[styles.walletFilterText, { color: colors.foreground }]}>
+                     {cardFilter === 'all' ? 'Todos os cartões' : cards.find((card) => card.id === cardFilter)?.name ?? 'Cartão selecionado'}
+                   </Text>
+                   <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
+                 </Pressable>
+               </View>
               <View style={styles.filterGroup}>
                 <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Data</Text>
                 <View style={styles.dateFilterContent}>
@@ -887,6 +924,9 @@ export default function TransactionsScreen() {
                         <Text style={[styles.cardInvoiceStatus, { color: invoice.status === 'overdue' ? colors.expense : colors.mutedForeground }]}>
                           {statusLabel}
                         </Text>
+                         <Text style={[styles.cardInvoiceDueDate, { color: colors.mutedForeground }]}>
+                           Vencimento: {formatDateInput(parseStoredDate(invoice.dueDate))}
+                         </Text>
                       </View>
                       <Text style={[styles.cardInvoiceAmount, { color: colors.expense }]}>{formatCurrency(invoice.amount)}</Text>
                       <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
@@ -1116,6 +1156,63 @@ export default function TransactionsScreen() {
           </View>
         </View>
       </Modal>
+       <Modal
+         animationType="fade"
+         transparent
+         visible={cardPickerOpen}
+         onRequestClose={() => setCardPickerOpen(false)}
+       >
+         <View style={styles.modalRoot}>
+           <Pressable
+             accessibilityLabel="Fechar seletor de cartão"
+             onPress={() => setCardPickerOpen(false)}
+             style={StyleSheet.absoluteFill}
+           />
+           <View style={[styles.walletMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+             <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por cartão</Text>
+             <Pressable
+               testID="card-filter-option-all"
+               onPress={() => {
+                 setCardFilter('all');
+                 setCardPickerOpen(false);
+                 leaveSelectionMode();
+               }}
+               style={({ pressed }) => [
+                 styles.walletMenuOption,
+                 { backgroundColor: cardFilter === 'all' ? colors.primary : colors.card, borderColor: cardFilter === 'all' ? colors.primary : colors.border },
+                 pressed && styles.pressed,
+               ]}
+             >
+               <Feather name="layers" size={17} color={cardFilter === 'all' ? colors.primaryForeground : colors.mutedForeground} />
+               <Text style={[styles.walletMenuOptionText, { color: cardFilter === 'all' ? colors.primaryForeground : colors.foreground }]}>Todos os cartões</Text>
+               {cardFilter === 'all' ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+             </Pressable>
+             {cards.map((card) => {
+               const active = cardFilter === card.id;
+               return (
+                 <Pressable
+                   key={card.id}
+                   testID={`card-filter-option-${card.id}`}
+                   onPress={() => {
+                     setCardFilter(card.id);
+                     setCardPickerOpen(false);
+                     leaveSelectionMode();
+                   }}
+                   style={({ pressed }) => [
+                     styles.walletMenuOption,
+                     { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+                     pressed && styles.pressed,
+                   ]}
+                 >
+                   <Feather name="credit-card" size={17} color={active ? colors.primaryForeground : colors.mutedForeground} />
+                   <Text numberOfLines={1} style={[styles.walletMenuOptionText, { color: active ? colors.primaryForeground : colors.foreground }]}>{card.name}</Text>
+                   {active ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+                 </Pressable>
+               );
+             })}
+           </View>
+         </View>
+       </Modal>
       <Modal
         animationType="fade"
         transparent
@@ -1415,6 +1512,7 @@ const styles = StyleSheet.create({
   cardInvoiceCopy: { flex: 1, minWidth: 0 },
   cardInvoiceTitle: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   cardInvoiceStatus: { fontSize: 10, fontFamily: 'Inter_500Medium', marginTop: 3 },
+  cardInvoiceDueDate: { fontSize: 9, fontFamily: 'Inter_500Medium', marginTop: 2 },
   cardInvoiceAmount: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   groupHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 3, marginBottom: 7 },
   groupLabel: { fontSize: 10, fontFamily: 'Inter_700Bold', textTransform: 'capitalize' },
