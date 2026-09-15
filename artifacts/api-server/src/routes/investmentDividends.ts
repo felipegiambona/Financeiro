@@ -286,7 +286,12 @@ router.get("/investments/dividends/calendar", async (req, res): Promise<void> =>
   });
   const parsedResponse = GetInvestmentDividendCalendarResponse.parse({
     source: INVESTMENT_DIVIDEND_CALENDAR_SOURCE,
-    events,
+    events: events.map((event) => ({
+      ...event,
+      // The generated date schema coerces date-only strings through UTC midnight.
+      // Use São Paulo noon during validation so the calendar day is preserved.
+      paymentDate: `${event.paymentDate}T12:00:00-03:00`,
+    })),
     failures,
   });
   res.json({
