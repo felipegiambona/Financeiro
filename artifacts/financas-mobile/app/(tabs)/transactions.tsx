@@ -715,7 +715,7 @@ export default function TransactionsScreen() {
                           { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
                         ]}
                       >
-                        <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
+                        <Text numberOfLines={1} style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
                           {option.label}
                         </Text>
                       </Pressable>
@@ -1446,7 +1446,7 @@ const styles = StyleSheet.create({
   filterRows: { flex: 1, gap: 5 },
   filterRow: { flexDirection: 'row', gap: 5 },
   filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  recurrenceOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 5 },
+  recurrenceOptions: { flex: 1, flexDirection: 'row', flexWrap: 'nowrap', justifyContent: 'space-between', gap: 5 },
   filterChip: { minHeight: 28, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   walletFilterCombo: { minHeight: 34, flex: 1, borderRadius: 6, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
