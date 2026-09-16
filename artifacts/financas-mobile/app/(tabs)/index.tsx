@@ -294,7 +294,7 @@ export default function DashboardScreen() {
             </View> : null}
             {visibility.goals ? <View style={styles.goalsSection}>
               <View style={styles.goalsHeader}>
-                <View>
+                <View style={styles.goalsHeaderCopy}>
                   <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Metas e objetivos</Text>
                   <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Acompanhe o progresso do que você quer conquistar.</Text>
                 </View>
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
   walletSection: { marginTop: 0 },
   walletCard: { borderRadius: 9, borderWidth: 1, padding: 14 },
   walletHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
-  manageWalletButton: { minHeight: 27, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  manageWalletButton: { minHeight: 27, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   manageWalletButtonText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   walletState: { fontSize: 11, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   walletRows: { gap: 0 },
@@ -654,6 +654,7 @@ const styles = StyleSheet.create({
   walletValue: { fontSize: 13, fontFamily: 'Inter_700Bold', textAlign: 'right' },
   goalsSection: { marginTop: 24 },
   goalsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  goalsHeaderCopy: { flex: 1, minWidth: 0 },
   emptyGoalCard: { minHeight: 72, borderWidth: 1, borderRadius: 9, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
   goalState: { flex: 1, fontSize: 11, lineHeight: 16, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
   limitsSection: { marginTop: 24 },
