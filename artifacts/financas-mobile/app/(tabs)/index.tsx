@@ -296,7 +296,7 @@ export default function DashboardScreen() {
               <View style={styles.goalsHeader}>
                 <View style={styles.goalsHeaderCopy}>
                   <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Metas e objetivos</Text>
-                  <Text style={[styles.sectionHint, { color: colors.mutedForeground }]}>Acompanhe o progresso do que você quer conquistar.</Text>
+                  <Text numberOfLines={1} style={[styles.sectionHint, { color: colors.mutedForeground }]}>Acompanhe seus objetivos.</Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
