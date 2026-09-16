@@ -600,7 +600,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
 
         <Text style={[styles.label, { color: colors.foreground }]}>Recorrência</Text>
-        <View style={styles.recurrenceTypeOptions}>
+        <View style={[styles.recurrenceTypeOptions, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
           {(['none', 'recurring', 'installment'] as const).map((option) => {
             const active = recurrence === option;
             return (
@@ -614,7 +614,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                   setRecurrence(option);
                   if (option === 'installment' && recurrencePeriod === 'fixed') setRecurrencePeriod('monthly');
                 }}
-                style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}
+                style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : 'transparent', backgroundColor: active ? colors.primary : 'transparent' }]}
               >
                 <View style={[styles.radio, { borderColor: active ? colors.radio : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}</View>
                 <Text numberOfLines={1} style={[styles.recurrenceText, styles.recurrenceTypeText, { color: active ? colors.primaryForeground : colors.foreground }]}>
@@ -1184,7 +1184,7 @@ const styles = StyleSheet.create({
   defaultWalletLabel: { marginLeft: 'auto', fontSize: 10, fontFamily: 'Inter_500Medium' },
   recurrenceOptions: { flexDirection: 'row', gap: 8 },
   recurrenceOption: { flex: 1, minWidth: 140, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  recurrenceTypeOptions: { flexDirection: 'row', gap: 6 },
+  recurrenceTypeOptions: { flexDirection: 'row', gap: 4, borderWidth: 1, borderRadius: 8, padding: 4 },
   recurrenceTypeOption: { flex: 1, minWidth: 0, minHeight: 44, borderRadius: 7, borderWidth: 1, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 4 },
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   radioDot: { width: 7, height: 7, borderRadius: 4 },
