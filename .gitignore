@@ -49,6 +49,7 @@ Thumbs.db
 .local/
 
 # Local Android build artifacts
+.android-sdk/
 .gradle-build-home/
 .tmp/
 artifacts/financas-mobile/android/.gradle/
