@@ -9,12 +9,12 @@ import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
   useFonts,
-} from '@expo-google-fonts/plus-jakarta-sans';
+} from '@expo-google-fonts/dm-sans';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { ClerkProvider } from '@clerk/expo';
@@ -159,10 +159,10 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     // Keep the existing family keys so all screens switch together without
     // changing their style contracts one by one.
-    Inter_400Regular: PlusJakartaSans_400Regular,
-    Inter_500Medium: PlusJakartaSans_500Medium,
-    Inter_600SemiBold: PlusJakartaSans_600SemiBold,
-    Inter_700Bold: PlusJakartaSans_700Bold,
+    Inter_400Regular: DMSans_400Regular,
+    Inter_500Medium: DMSans_500Medium,
+    Inter_600SemiBold: DMSans_600SemiBold,
+    Inter_700Bold: DMSans_700Bold,
   });
 
   useEffect(() => {
