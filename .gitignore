@@ -47,3 +47,12 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Local Android build artifacts
+.gradle-build-home/
+.tmp/
+artifacts/financas-mobile/android/.gradle/
+artifacts/financas-mobile/android/app/build/
+artifacts/financas-mobile/*.apk
+artifacts/financas-mobile/*.aab
+artifacts/financas-mobile/*.zip

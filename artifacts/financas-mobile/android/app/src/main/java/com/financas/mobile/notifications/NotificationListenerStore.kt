@@ -32,7 +32,7 @@ internal object NotificationListenerStore {
   }
 
   fun pendingEvents(context: Context): JSONArray =
-    readEvents(preferences(context).getString(EVENTS, "[]"))
+    readEvents(preferences(context).getString(EVENTS, "[]") ?: "[]")
 
   fun enqueue(context: Context, notification: StatusBarNotification) {
     if (!isEnabled(context)) return

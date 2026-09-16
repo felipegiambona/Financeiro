@@ -19,3 +19,4 @@
 - [Expo component test bundling](expo-component-test-bundling.md) — Node tests for Expo components need native-module aliases and external React DOM modules.
 - [API route test bundling](api-route-test-bundling.md) — keep CommonJS server dependencies external or stubbed when bundling HTTP route tests as ESM.
 - [Linked receipt idempotency](linked-receipt-idempotency.md) — lock the source record before creating or updating a linked financial transaction.
+- [Android APK build environment](android-apk-build-environment.md) — native APK builds need official SDK packages, OpenJDK 17, arm64-only output, and low Gradle concurrency in this workspace.

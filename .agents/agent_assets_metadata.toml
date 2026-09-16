@@ -14,3 +14,59 @@ mtime_ms = 1788965663094
 storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:21b0ff03-f513-4dda-9c12-4a8f26728dff/67e60923-bb30-4fd9-b361-199b162f3c83/b1a48541-d0f6-4d2b-a7df-7b90bd2192b1"
 storage_version_token = "1788965668587148"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "_j1Ilthsplqmc2amWj3iF"
+uri = "file://artifacts/financas-mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+type = "unspecified"
+title = "Finanças Mobile — APK Android arm64 (debug)"
+description = "APK de debug assinado para instalação em celulares Android arm64-v8a. A leitura de notificações nativa está incluída."
+logical_id = "afe3dcd9-df2a-4fd1-97e5-aa71479f5bde"
+content_hash = "sha256:aea87a539f38536113a216558e5e109338654f5bb36959535f6d94fce551d885"
+size = 90533515
+mtime_ms = 1789578287149
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:21b0ff03-f513-4dda-9c12-4a8f26728dff/afe3dcd9-df2a-4fd1-97e5-aa71479f5bde/9ffedfa3-115a-405a-bab3-4b5bc0cae342"
+storage_version_token = "1789578332141749"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "gPNf4lG7PiuNlhcjwBp76"
+uri = "file://artifacts/financas-mobile/financas-mobile-arm64-debug.zip"
+type = "unspecified"
+title = "Finanças Mobile — download do APK Android"
+description = "Baixe este ZIP, extraia o app-debug.apk e instale-o no Android. APK debug arm64-v8a com leitura nativa de notificações."
+logical_id = "04894411-32e2-475d-9f3f-753a2f380f77"
+content_hash = "sha256:36714580e696c7779ac05f737c1894072417d770db7e240954cf90a800cdc460"
+size = 43177742
+mtime_ms = 1789579536093
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:21b0ff03-f513-4dda-9c12-4a8f26728dff/04894411-32e2-475d-9f3f-753a2f380f77/1b4d2ba3-5e80-4d53-844e-62616a3a6211"
+storage_version_token = "1789579540921291"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "wijkO93od30LBCIXKHSFk"
+uri = "file://artifacts/financas-mobile/financas-mobile-arm64-release.apk"
+type = "unspecified"
+title = "Finanças Mobile — APK release Android"
+description = "Versão release arm64-v8a com index.android.bundle embutido. Não depende do Metro nem de localhost:8081."
+logical_id = "37cac7b2-7829-4792-8951-8050417afc1f"
+content_hash = "sha256:e5ac41dad0817d3d0423ecd602fb5fe00f34c8599db42886eefdb56e7f4a2561"
+size = 55536358
+mtime_ms = 1789582001098
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:21b0ff03-f513-4dda-9c12-4a8f26728dff/37cac7b2-7829-4792-8951-8050417afc1f/6fc1ddec-1ffc-44ee-8ff8-946017b7186e"
+storage_version_token = "1789582016355321"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "BtkhCziyoEWDG3sBdfGVb"
+uri = "file://artifacts/financas-mobile/financas-mobile-arm64-release.zip"
+type = "unspecified"
+title = "Finanças Mobile — download do APK release"
+description = "Baixe o ZIP, extraia financas-mobile-arm64-release.apk e instale no Android. Esta é a versão correta para uso fora do Expo Go."
+logical_id = "1aa18b5f-99ca-41ad-8d67-bf6ac8fb5a61"
+content_hash = "sha256:499c93e0985c47c1d199aca619ae19e03547b4dda0914a419c1c30b951b39032"
+size = 35075784
+mtime_ms = 1789582006331
+storage_uri = "gcs://replit-rams-assets-riker/rams/assets/repl:21b0ff03-f513-4dda-9c12-4a8f26728dff/1aa18b5f-99ca-41ad-8d67-bf6ac8fb5a61/2d0d3d62-4af3-470e-b055-0ddc201d06d9"
+storage_version_token = "1789582017562693"
+content_type = "application/octet-stream"

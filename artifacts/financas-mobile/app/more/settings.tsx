@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useNotificationAutomation } from '@/context/NotificationAutomationContext';
@@ -38,15 +38,6 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { themeMode, setThemeMode } = useTheme();
   const automation = useNotificationAutomation();
-  const [packagesText, setPackagesText] = useState('');
-
-  useEffect(() => {
-    setPackagesText(automation.allowedPackages.join(', '));
-  }, [automation.allowedPackages]);
-
-  const savePackages = () => {
-    void automation.setAllowedPackages(packagesText.split(','));
-  };
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -89,7 +80,7 @@ export default function SettingsScreen() {
           })}
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Automação Android</Text>
+        <Text style={[styles.sectionLabel, styles.automationSectionLabel, { color: colors.mutedForeground }]}>Automação Android</Text>
         <View style={[styles.automationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.automationHeader}>
             <View style={styles.optionIconAndCopy}>
@@ -99,7 +90,7 @@ export default function SettingsScreen() {
               <View style={styles.optionCopy}>
                 <Text style={[styles.optionTitle, { color: colors.foreground }]}>Ler notificações bancárias</Text>
                 <Text style={[styles.optionDescription, { color: colors.mutedForeground }]}>
-                  {automation.enabled ? 'Ativa para os aplicativos configurados.' : 'Desativada até você autorizar.'}
+                  {automation.enabled ? 'Ativa para os aplicativos preparados.' : 'Desativada até você autorizar.'}
                 </Text>
               </View>
             </View>
@@ -116,7 +107,7 @@ export default function SettingsScreen() {
             </Pressable>
           </View>
           <Text style={[styles.helper, { color: colors.mutedForeground }]}>
-            O texto é processado no aparelho. Somente notificações dos pacotes informados abaixo entram na fila de automação.
+            O texto é processado no aparelho. O app lê apenas notificações dos aplicativos bancários preparados.
           </Text>
           {!automation.status.supported ? (
             <View style={[styles.notice, { backgroundColor: colors.secondary }]}>
@@ -126,30 +117,6 @@ export default function SettingsScreen() {
               </Text>
             </View>
           ) : null}
-          <Text style={[styles.label, { color: colors.foreground }]}>Pacotes Android autorizados</Text>
-          <TextInput
-            testID="notification-package-input"
-            defaultValue={automation.allowedPackages.join(', ')}
-            key={automation.allowedPackages.join('|')}
-            onChangeText={setPackagesText}
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder="com.exemplo.banco, com.outro.app"
-            placeholderTextColor={colors.mutedForeground}
-            style={[styles.input, { color: colors.foreground, borderColor: colors.input, backgroundColor: colors.card }]}
-          />
-          <Text style={[styles.packageHint, { color: colors.mutedForeground }]}>
-            Separe vários pacotes por vírgula. O nome pode ser conferido nas informações do aplicativo Android.
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            testID="save-notification-packages"
-            disabled={automation.busy || !automation.status.supported}
-            onPress={savePackages}
-            style={({ pressed }) => [styles.secondaryButton, { borderColor: colors.border }, automation.busy && styles.disabled, pressed && styles.pressed]}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.foreground }]}>Salvar aplicativos</Text>
-          </Pressable>
           {automation.status.supported && !automation.status.listenerAccessGranted ? (
             <Pressable
               accessibilityRole="button"
@@ -160,11 +127,6 @@ export default function SettingsScreen() {
               <Feather name="settings" size={15} color={colors.primaryForeground} />
               <Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>Abrir acesso às notificações</Text>
             </Pressable>
-          ) : null}
-          {automation.pendingCount > 0 ? (
-            <Text style={[styles.packageHint, { color: colors.mutedForeground }]}>
-              {automation.pendingCount} notificação(ões) aguardando processamento.
-            </Text>
           ) : null}
           {automation.message ? <Text style={[styles.message, { color: colors.foreground }]}>{automation.message}</Text> : null}
         </View>
@@ -178,6 +140,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16 },
   intro: { fontSize: 12, lineHeight: 18, fontFamily: 'Inter_400Regular', marginTop: -7, marginBottom: 22 },
   sectionLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 },
+  automationSectionLabel: { marginTop: 24 },
   optionsCard: { borderWidth: 1, borderRadius: 9, paddingHorizontal: 13 },
   automationCard: { borderWidth: 1, borderRadius: 9, padding: 13, gap: 10 },
   automationHeader: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -187,9 +150,6 @@ const styles = StyleSheet.create({
   optionCopy: { flex: 1, minWidth: 0 },
   optionTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   optionDescription: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular', marginTop: 3 },
-  label: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 3, marginBottom: -3 },
-  input: { minHeight: 44, borderWidth: 1, borderRadius: 7, paddingHorizontal: 10, fontSize: 12, fontFamily: 'Inter_400Regular' },
-  packageHint: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular' },
   notice: { borderRadius: 7, padding: 10, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   noticeText: { flex: 1, fontSize: 10, lineHeight: 15, fontFamily: 'Inter_500Medium' },
   message: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_600SemiBold' },
@@ -199,8 +159,6 @@ const styles = StyleSheet.create({
   radio: { width: 19, height: 19, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   radioDot: { width: 9, height: 9, borderRadius: 5 },
   divider: { height: 1 },
-  secondaryButton: { minHeight: 42, borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  secondaryButtonText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   primaryButton: { minHeight: 42, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryButtonText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   disabled: { opacity: 0.5 },

@@ -28,16 +28,21 @@ function parseBrazilianAmount(value: string): number | null {
 }
 
 function transactionKind(text: string): 'income' | 'expense' | null {
-  const received = /\b(pix\s+recebid[oa]|recebiment[oa]|recebeu|creditad[oa]|entrada|deposit[oa])\b/.test(text);
-  const spent = /\b(pix\s+enviad[oa]|enviou|pagament[oa]|compras?|debitad[oa]|said[ai]|transferenci[ae])\b/.test(text);
+  const received = /\b(pix\s+recebid[oa]|recebiment[oa]s?|recebeu|creditad[oa]|entrada|deposit[oa]s?)\b/.test(text);
+  const spent = /\b(pix\s+enviad[oa]|enviou|pagament[oa]s?|compras?|saque[s]?|debitad[oa]|said[ai]|transferenci[ae])\b/.test(text);
   if (received === spent) return null;
   return received ? 'income' : 'expense';
 }
 
 function descriptionFor(text: string, type: 'income' | 'expense'): string {
   if (text.includes('pix')) return type === 'income' ? 'Automático · Pix recebido' : 'Automático · Pix enviado';
-  if (text.includes('compra')) return 'Automático · Compra';
-  if (text.includes('pagamento')) return 'Automático · Pagamento';
+  if (text.includes('saque')) return 'Automático · Saque em dinheiro';
+  if (text.includes('compra')) return text.includes('cartao') ? 'Automático · Compra no cartão' : 'Automático · Compra';
+  if (text.includes('pagamento')) return text.includes('conta') || text.includes('boleto')
+    ? 'Automático · Pagamento de conta'
+    : 'Automático · Pagamento';
+  if (text.includes('deposit')) return 'Automático · Depósito';
+  if (text.includes('recebiment') || text.includes('recebeu')) return 'Automático · Recebimento';
   return type === 'income' ? 'Automático · Receita' : 'Automático · Despesa';
 }
 

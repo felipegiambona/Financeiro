@@ -33,12 +33,27 @@ test('reconhece Pix enviado como despesa', () => {
   assert.equal(result?.description, 'Automático · Pix enviado');
 });
 
-test('reconhece compra e pagamento com valores brasileiros', () => {
-  const purchase = parseNotificationTransaction(event('Compra aprovada no valor de R$ 42,90'));
-  const payment = parseNotificationTransaction(event('Pagamento realizado: R$ 89,99', { eventId: 'bank|notification|2' }));
-  assert.equal(purchase?.description, 'Automático · Compra');
-  assert.equal(payment?.description, 'Automático · Pagamento');
+test('reconhece compra no cartão e pagamento de conta', () => {
+  const purchase = parseNotificationTransaction(event('Compra no cartão aprovada no valor de R$ 42,90'));
+  const payment = parseNotificationTransaction(event('Pagamento de conta realizado: R$ 89,99', { eventId: 'bank|notification|2' }));
+  assert.equal(purchase?.description, 'Automático · Compra no cartão');
+  assert.equal(payment?.description, 'Automático · Pagamento de conta');
   assert.equal(payment?.amount, 89.99);
+});
+
+test('reconhece saque em dinheiro como despesa', () => {
+  const result = parseNotificationTransaction(event('Saque em dinheiro realizado no valor de R$ 200,00'));
+  assert.equal(result?.type, 'expense');
+  assert.equal(result?.description, 'Automático · Saque em dinheiro');
+  assert.equal(result?.amount, 200);
+});
+
+test('reconhece depósitos e recebimentos como receitas', () => {
+  const deposit = parseNotificationTransaction(event('Depósito recebido no valor de R$ 300,00'));
+  const receipt = parseNotificationTransaction(event('Recebimento confirmado: R$ 75,00', { eventId: 'bank|notification|5' }));
+  assert.equal(deposit?.description, 'Automático · Depósito');
+  assert.equal(receipt?.description, 'Automático · Recebimento');
+  assert.equal(receipt?.type, 'income');
 });
 
 test('mantém o dia de São Paulo para notificações próximas da meia-noite UTC', () => {

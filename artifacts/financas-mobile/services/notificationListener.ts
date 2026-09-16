@@ -1,4 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
+import { DEFAULT_NOTIFICATION_PACKAGES, normalizeNotificationPackages } from '@/services/notificationPackages';
 
 export interface AndroidNotificationEvent {
   eventId: string;
@@ -44,7 +45,7 @@ export async function getNotificationListenerStatus(): Promise<NotificationListe
       enabled: false,
       listenerAccessGranted: false,
       pendingCount: 0,
-      allowedPackages: [],
+      allowedPackages: Array.from(DEFAULT_NOTIFICATION_PACKAGES),
     };
   }
   const status = await nativeModule.getStatus();
@@ -56,7 +57,9 @@ export function setNotificationListenerEnabled(enabled: boolean): Promise<void> 
 }
 
 export function setNotificationListenerPackages(packages: string[]): Promise<void> {
-  return nativeModule?.setAllowedPackages(packages) ?? Promise.resolve();
+  const normalizedPackages = normalizeNotificationPackages(packages);
+  if (nativeModule) return nativeModule.setAllowedPackages(normalizedPackages);
+  return Promise.resolve();
 }
 
 export function getPendingAndroidNotifications(): Promise<AndroidNotificationEvent[]> {
@@ -65,10 +68,6 @@ export function getPendingAndroidNotifications(): Promise<AndroidNotificationEve
 
 export function acknowledgeAndroidNotifications(eventIds: string[]): Promise<void> {
   return nativeModule?.acknowledgeEvents(eventIds) ?? Promise.resolve();
-}
-
-export function clearPendingAndroidNotifications(): Promise<void> {
-  return nativeModule?.clearEvents() ?? Promise.resolve();
 }
 
 export function openNotificationListenerSettings(): Promise<void> {
