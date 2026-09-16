@@ -9,12 +9,12 @@ import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
   useFonts,
-} from '@expo-google-fonts/inter';
+} from '@expo-google-fonts/manrope';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { ClerkProvider } from '@clerk/expo';
@@ -157,10 +157,12 @@ function ThemedApp() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    // Keep the existing family keys so all screens switch together without
+    // changing their style contracts one by one.
+    Inter_400Regular: Manrope_400Regular,
+    Inter_500Medium: Manrope_500Medium,
+    Inter_600SemiBold: Manrope_600SemiBold,
+    Inter_700Bold: Manrope_700Bold,
   });
 
   useEffect(() => {
