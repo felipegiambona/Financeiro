@@ -15,6 +15,7 @@ export interface TransactionInput {
   destinationWalletId?: string | null;
   categoryId?: string | null;
   goalId?: string | null;
+  sourceId?: string | null;
   type: TransactionInputType;
   isInvestment?: boolean;
   /** @exclusiveMinimum 0 */

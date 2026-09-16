@@ -604,6 +604,44 @@ describe("transaction account isolation", () => {
   });
 });
 
+describe("notification transaction idempotency", () => {
+  let identity;
+
+  before(async () => {
+    await requireTestConfiguration();
+    identity = await createTemporaryIdentity("notif-idemp");
+  });
+
+  after(async () => {
+    if (!identity?.token) return;
+    const result = await apiRequest(identity.token, "/account", { method: "DELETE" });
+    assertStatus(result, 204);
+    identity.deletedViaApi = true;
+  });
+
+  it("returns the same transaction for concurrent delivery of one notification", async () => {
+    const sourceId = `android-notification-${randomUUID()}`;
+    const body = {
+      ...transactionInput("Automático · Pix recebido"),
+      sourceId,
+      amount: 25,
+      paymentStatus: "paid",
+    };
+    const [first, second] = await Promise.all([
+      apiRequest(identity.token, "/transactions", { method: "POST", body }),
+      apiRequest(identity.token, "/transactions", { method: "POST", body }),
+    ]);
+
+    assertStatus(first, 201);
+    assertStatus(second, 201);
+    assert.equal(first.body.id, second.body.id);
+
+    const listed = await apiRequest(identity.token, "/transactions");
+    assertStatus(listed, 200);
+    assert.equal(listed.body.filter((transaction) => transaction.sourceId === sourceId).length, 1);
+  });
+});
+
 
 describe("financial profile deletion isolation", () => {
   let identity;

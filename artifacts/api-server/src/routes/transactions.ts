@@ -101,6 +101,20 @@ router.post("/transactions", async (req, res): Promise<void> => {
     return;
   }
   const userId = userIdFrom(req);
+  const profileId = profileIdFrom(req);
+  if (parsed.data.sourceId) {
+    const [existing] = await db.select().from(transactionsTable)
+      .where(and(
+        eq(transactionsTable.userId, userId),
+        eq(transactionsTable.profileId, profileId),
+        eq(transactionsTable.sourceId, parsed.data.sourceId),
+      ))
+      .limit(1);
+    if (existing) {
+      res.json(serializeTransaction(existing, CreateTransactionResponse));
+      return;
+    }
+  }
   const wallet = await getUserWallet(userId, parsed.data.walletId);
   const destinationWallet = parsed.data.type === "transfer"
     ? await getUserWallet(userId, parsed.data.destinationWalletId ?? undefined)
@@ -143,7 +157,7 @@ router.post("/transactions", async (req, res): Promise<void> => {
   const [row] = await db.insert(transactionsTable).values({
     ...parsed.data,
     userId,
-    profileId: profileIdFrom(req),
+    profileId,
     walletId: wallet.id,
     cardId: parsed.data.type === "expense" ? parsed.data.cardId ?? null : null,
     cardEntryType: "purchase",
@@ -158,7 +172,24 @@ router.post("/transactions", async (req, res): Promise<void> => {
     date: effectiveDate,
     dueDate: dateOnlyInput(req.body?.dueDate, parsed.data.dueDate),
     paymentStatusOverrides: {},
-  }).returning();
+  }).onConflictDoNothing().returning();
+  if (!row && parsed.data.sourceId) {
+    const [existing] = await db.select().from(transactionsTable)
+      .where(and(
+        eq(transactionsTable.userId, userId),
+        eq(transactionsTable.profileId, profileId),
+        eq(transactionsTable.sourceId, parsed.data.sourceId),
+      ))
+      .limit(1);
+    if (existing) {
+      res.status(201).json(serializeTransaction(existing, CreateTransactionResponse));
+      return;
+    }
+  }
+  if (!row) {
+    res.status(409).json({ message: "A transação não pôde ser criada." });
+    return;
+  }
   res.status(201).json(serializeTransaction(row, CreateTransactionResponse));
 });
 

@@ -38,6 +38,7 @@ export interface Recurrence {
 
 export interface Transaction {
   id: string;
+  sourceId?: string | null;
   walletId: string;
   cardId?: string | null;
   cardEntryType?: 'purchase' | 'invoice_payment';
@@ -57,6 +58,7 @@ export interface Transaction {
 }
 
 export interface NewTransactionInput {
+  sourceId?: string | null;
   walletId?: string;
   cardId?: string | null;
   destinationWalletId?: string | null;

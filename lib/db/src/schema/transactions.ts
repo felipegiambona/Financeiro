@@ -1,9 +1,11 @@
-import { boolean, index, jsonb, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const transactionsTable = pgTable("finance_transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
+  sourceId: text("source_id"),
   userId: text("user_id").notNull(),
   profileId: uuid("profile_id"),
   walletId: uuid("wallet_id"),
@@ -29,6 +31,9 @@ export const transactionsTable = pgTable("finance_transactions", {
   index("finance_transactions_user_id_idx").on(table.userId),
   index("finance_transactions_wallet_id_idx").on(table.walletId),
   index("finance_transactions_card_id_idx").on(table.cardId),
+  uniqueIndex("finance_transactions_source_id_idx")
+    .on(table.userId, table.profileId, table.sourceId)
+    .where(sql`${table.sourceId} is not null`),
 ]);
 
 export const insertTransactionSchema = createInsertSchema(transactionsTable).omit({

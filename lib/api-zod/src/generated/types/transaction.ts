@@ -13,6 +13,7 @@ import type { TransactionType } from './transactionType';
 
 export interface Transaction {
   id: string;
+  sourceId: string | null;
   walletId: string;
   cardId: string | null;
   cardEntryType: TransactionCardEntryType;

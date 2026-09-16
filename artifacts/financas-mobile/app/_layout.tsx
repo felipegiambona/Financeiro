@@ -35,6 +35,7 @@ import { OnboardingGate } from '@/components/OnboardingGate';
 import { FinancialProfileProvider, useFinancialProfiles } from '@/context/FinancialProfileContext';
 import { InvestmentProvider } from '@/context/InvestmentContext';
 import { DividendProvider } from '@/context/DividendContext';
+import { NotificationAutomationProvider } from '@/context/NotificationAutomationContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -106,11 +107,13 @@ function ProfileScopedProviders() {
               <CardProvider>
                 <InvestmentProvider>
                   <DividendProvider>
-                    <DashboardPreferencesProvider>
-                      <OnboardingGate>
-                        <RootLayoutNav />
-                      </OnboardingGate>
-                    </DashboardPreferencesProvider>
+                    <NotificationAutomationProvider>
+                      <DashboardPreferencesProvider>
+                        <OnboardingGate>
+                          <RootLayoutNav />
+                        </OnboardingGate>
+                      </DashboardPreferencesProvider>
+                    </NotificationAutomationProvider>
                   </DividendProvider>
                 </InvestmentProvider>
               </CardProvider>

@@ -564,6 +564,7 @@ export const listTransactionsResponseAmountExclusiveMin = 0;
 
 export const ListTransactionsResponseItem = zod.object({
   "id": zod.string().uuid(),
+  "sourceId": zod.string().nullable(),
   "walletId": zod.string().uuid(),
   "cardId": zod.string().uuid().nullable(),
   "cardEntryType": zod.enum(['purchase', 'invoice_payment']),
@@ -609,6 +610,7 @@ export const CreateTransactionBody = zod.object({
   "destinationWalletId": zod.string().uuid().nullish(),
   "categoryId": zod.string().uuid().nullish(),
   "goalId": zod.string().uuid().nullish(),
+  "sourceId": zod.string().nullish(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "isInvestment": zod.boolean().default(createTransactionBodyIsInvestmentDefault),
   "amount": zod.number().gt(createTransactionBodyAmountExclusiveMin),
@@ -638,6 +640,7 @@ export const createTransactionResponseAmountExclusiveMin = 0;
 
 export const CreateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
+  "sourceId": zod.string().nullable(),
   "walletId": zod.string().uuid(),
   "cardId": zod.string().uuid().nullable(),
   "cardEntryType": zod.enum(['purchase', 'invoice_payment']),
@@ -718,6 +721,7 @@ export const updateTransactionResponseAmountExclusiveMin = 0;
 
 export const UpdateTransactionResponse = zod.object({
   "id": zod.string().uuid(),
+  "sourceId": zod.string().nullable(),
   "walletId": zod.string().uuid(),
   "cardId": zod.string().uuid().nullable(),
   "cardEntryType": zod.enum(['purchase', 'invoice_payment']),
@@ -772,6 +776,7 @@ export const updateTransactionOccurrencePaymentStatusResponseAmountExclusiveMin 
 
 export const UpdateTransactionOccurrencePaymentStatusResponse = zod.object({
   "id": zod.string().uuid(),
+  "sourceId": zod.string().nullable(),
   "walletId": zod.string().uuid(),
   "cardId": zod.string().uuid().nullable(),
   "cardEntryType": zod.enum(['purchase', 'invoice_payment']),

@@ -759,6 +759,7 @@ export type TransactionPaymentStatusOverrides = {[key: string]: 'paid' | 'unpaid
 
 export interface Transaction {
   id: string;
+  sourceId: string | null;
   walletId: string;
   cardId: string | null;
   cardEntryType: TransactionCardEntryType;
@@ -801,6 +802,7 @@ export interface TransactionInput {
   destinationWalletId?: string | null;
   categoryId?: string | null;
   goalId?: string | null;
+  sourceId?: string | null;
   type: TransactionInputType;
   isInvestment?: boolean;
   /** @exclusiveMinimum 0 */

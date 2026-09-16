@@ -1593,9 +1593,10 @@ components:
           enum: [installment, total]
     Transaction:
       type: object
-      required: [id, walletId, cardId, cardEntryType, destinationWalletId, categoryId, goalId, type, isInvestment, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
+      required: [id, sourceId, walletId, cardId, cardEntryType, destinationWalletId, categoryId, goalId, type, isInvestment, amount, description, date, recurrence, paymentStatus, paymentStatusOverrides, createdAt]
       properties:
         id: { type: string, format: uuid }
+        sourceId: { type: string, nullable: true }
         walletId: { type: string, format: uuid }
         cardId: { type: string, format: uuid, nullable: true }
         cardEntryType: { type: string, enum: [purchase, invoice_payment] }
@@ -1626,6 +1627,7 @@ components:
         destinationWalletId: { type: string, format: uuid, nullable: true }
         categoryId: { type: string, format: uuid, nullable: true }
         goalId: { type: string, format: uuid, nullable: true }
+        sourceId: { type: string, nullable: true }
         type: { type: string, enum: [income, expense, transfer] }
         isInvestment: { type: boolean, default: false }
         amount: { type: number, exclusiveMinimum: 0 }

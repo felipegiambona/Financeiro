@@ -12,6 +12,28 @@ expo-env.d.ts
 # Native
 ios/
 android/
+# The notification listener is a deliberate native Android addition. Keep its
+# manifest, package registration, and implementation in the project snapshot.
+!android/
+android/*
+!android/app/
+android/app/*
+!android/app/src/
+android/app/src/*
+!android/app/src/main/
+android/app/src/main/*
+!android/app/src/main/AndroidManifest.xml
+!android/app/src/main/java/
+android/app/src/main/java/*
+!android/app/src/main/java/com/
+android/app/src/main/java/com/*
+!android/app/src/main/java/com/financas/
+android/app/src/main/java/com/financas/*
+!android/app/src/main/java/com/financas/mobile/
+android/app/src/main/java/com/financas/mobile/*
+!android/app/src/main/java/com/financas/mobile/MainApplication.kt
+!android/app/src/main/java/com/financas/mobile/notifications/
+!android/app/src/main/java/com/financas/mobile/notifications/*.kt
 *.orig.*
 *.jks
 *.p8
