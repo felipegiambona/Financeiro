@@ -617,7 +617,7 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                 style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.card }]}
               >
                 <View style={[styles.radio, { borderColor: active ? colors.radio : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}</View>
-                <Text style={[styles.recurrenceText, { color: active ? colors.primaryForeground : colors.foreground }]}>
+                <Text numberOfLines={1} style={[styles.recurrenceText, styles.recurrenceTypeText, { color: active ? colors.primaryForeground : colors.foreground }]}>
                   {option === 'none' ? 'Única' : option === 'recurring' ? 'Recorrente' : 'Parcelado'}
                 </Text>
               </Pressable>
@@ -1185,10 +1185,11 @@ const styles = StyleSheet.create({
   recurrenceOptions: { flexDirection: 'row', gap: 8 },
   recurrenceOption: { flex: 1, minWidth: 140, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   recurrenceTypeOptions: { flexDirection: 'row', gap: 6 },
-  recurrenceTypeOption: { flex: 1, minWidth: 0, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 5 },
+  recurrenceTypeOption: { flex: 1, minWidth: 0, minHeight: 44, borderRadius: 7, borderWidth: 1, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 4 },
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   radioDot: { width: 7, height: 7, borderRadius: 4 },
   recurrenceText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+  recurrenceTypeText: { flexShrink: 1, fontSize: 11 },
   schedulePanel: { borderRadius: 9, borderWidth: 1, padding: 10, marginTop: 10, gap: 8 },
   scheduleTitle: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   scheduleRow: { flexDirection: 'row', gap: 8 },
