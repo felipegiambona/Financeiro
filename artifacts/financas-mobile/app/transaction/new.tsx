@@ -600,12 +600,13 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
           <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
 
         <Text style={[styles.label, { color: colors.foreground }]}>Recorrência</Text>
-        <View style={[styles.recurrenceTypeOptions, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+        <View style={[styles.segmented, { backgroundColor: colors.secondary }]}>
           {(['none', 'recurring', 'installment'] as const).map((option) => {
             const active = recurrence === option;
             return (
               <Pressable
                 key={option}
+                testID={`recurrence-${option}-option`}
                 onPress={() => {
                   if (option === 'recurring' && recurrence !== 'recurring') {
                     setRecurrenceLimitMode('fixed');
@@ -614,10 +615,9 @@ function TransactionForm({ transaction, onExit }: { transaction?: Transaction; o
                   setRecurrence(option);
                   if (option === 'installment' && recurrencePeriod === 'fixed') setRecurrencePeriod('monthly');
                 }}
-                style={[styles.recurrenceTypeOption, { borderColor: active ? colors.primary : 'transparent', backgroundColor: active ? colors.primary : 'transparent' }]}
+                style={[styles.segment, active && { backgroundColor: colors.primary, borderColor: colors.primary }]}
               >
-                <View style={[styles.radio, { borderColor: active ? colors.radio : colors.input }]}>{active ? <View style={[styles.radioDot, { backgroundColor: colors.radio }]} /> : null}</View>
-                <Text numberOfLines={1} style={[styles.recurrenceText, styles.recurrenceTypeText, { color: active ? colors.primaryForeground : colors.foreground }]}>
+                <Text numberOfLines={1} style={[styles.segmentText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
                   {option === 'none' ? 'Única' : option === 'recurring' ? 'Recorrente' : 'Parcelado'}
                 </Text>
               </Pressable>
@@ -1184,12 +1184,9 @@ const styles = StyleSheet.create({
   defaultWalletLabel: { marginLeft: 'auto', fontSize: 10, fontFamily: 'Inter_500Medium' },
   recurrenceOptions: { flexDirection: 'row', gap: 8 },
   recurrenceOption: { flex: 1, minWidth: 140, minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  recurrenceTypeOptions: { flexDirection: 'row', gap: 4, borderWidth: 1, borderRadius: 8, padding: 4 },
-  recurrenceTypeOption: { flex: 1, minWidth: 0, minHeight: 44, borderRadius: 7, borderWidth: 1, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 4 },
   radio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   radioDot: { width: 7, height: 7, borderRadius: 4 },
   recurrenceText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  recurrenceTypeText: { flexShrink: 1, fontSize: 11 },
   schedulePanel: { borderRadius: 9, borderWidth: 1, padding: 10, marginTop: 10, gap: 8 },
   scheduleTitle: { fontSize: 12, fontFamily: 'Inter_700Bold' },
   scheduleRow: { flexDirection: 'row', gap: 8 },
