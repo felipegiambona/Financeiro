@@ -33,9 +33,17 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const submitting = signInStatus === 'fetching' || signUpStatus === 'fetching';
 
+  const navigateToAuthenticatedApp = () => {
+    // Let Clerk publish the new session before replacing the route protected
+    // by the authenticated stack. On a fresh account, OnboardingGate still
+    // decides whether the onboarding flow should be shown.
+    setTimeout(() => router.replace('/(tabs)'), 0);
+  };
+
   const finalizeSignIn = async () => {
     const result = await signIn.finalize({ navigate: () => undefined });
     if (result.error) throw result.error;
+    navigateToAuthenticatedApp();
   };
 
   const beginSecondFactor = async () => {
@@ -87,6 +95,7 @@ export default function LoginScreen() {
         setTimeout(() => {
           void recordPrivacyConsent({ documentKey: 'privacy', accepted: true }).catch(() => undefined);
           void recordPrivacyConsent({ documentKey: 'terms', accepted: true }).catch(() => undefined);
+          navigateToAuthenticatedApp();
         }, 100);
       } else if (mode === 'verifyMfa') {
         const result = mfaStrategy === 'totp'
