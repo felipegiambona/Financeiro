@@ -122,9 +122,9 @@ export default function TransactionsScreen() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [recurrenceFilter, setRecurrenceFilter] = useState<RecurrenceFilter>('all');
-  const [walletFilter, setWalletFilter] = useState('all');
+  const [walletFilter, setWalletFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
-  const [cardFilter, setCardFilter] = useState('all');
+  const [cardFilter, setCardFilter] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
   const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
   const [dateRangeEnd, setDateRangeEnd] = useState<Date | null>(null);
@@ -189,6 +189,16 @@ export default function TransactionsScreen() {
     if (categoryFilter[0] === 'uncategorized') return 'Sem categoria';
     return categories.find((category) => category.id === categoryFilter[0])?.name ?? 'Categoria selecionada';
   }, [categories, categoryFilter]);
+  const walletFilterLabel = useMemo(() => {
+    if (walletFilter.length === 0) return 'Todas as carteiras';
+    if (walletFilter.length > 1) return `${walletFilter.length} carteiras selecionadas`;
+    return wallets.find((wallet) => wallet.id === walletFilter[0])?.title ?? 'Carteira selecionada';
+  }, [walletFilter, wallets]);
+  const cardFilterLabel = useMemo(() => {
+    if (cardFilter.length === 0) return 'Todos os cartões';
+    if (cardFilter.length > 1) return `${cardFilter.length} cartões selecionados`;
+    return cards.find((card) => card.id === cardFilter[0])?.name ?? 'Cartão selecionado';
+  }, [cardFilter, cards]);
   const filteredTransactions = useMemo(
     () => selectedTransactions.filter((transaction) => (
       (searchQuery.length === 0 || normalizeSearchText(transaction.description).includes(searchQuery))
@@ -201,15 +211,15 @@ export default function TransactionsScreen() {
         || (recurrenceFilter === 'nonRecurring' && transaction.recurrence.kind === 'none')
       )
       && (
-        walletFilter === 'all'
-        || transaction.walletId === walletFilter
-        || transaction.destinationWalletId === walletFilter
+        walletFilter.length === 0
+        || walletFilter.includes(transaction.walletId)
+        || (transaction.destinationWalletId !== null && transaction.destinationWalletId !== undefined && walletFilter.includes(transaction.destinationWalletId))
       )
       && (
         categoryFilter.length === 0
         || categoryFilter.includes(transaction.categoryId ?? 'uncategorized')
       )
-       && (cardFilter === 'all' || transaction.cardId === cardFilter)
+       && (cardFilter.length === 0 || (transaction.cardId !== null && transaction.cardId !== undefined && cardFilter.includes(transaction.cardId)))
     )),
      [cardFilter, categoryFilter, recurrenceFilter, searchQuery, selectedTransactions, statusFilter, typeFilter, walletFilter],
   );
@@ -260,8 +270,8 @@ export default function TransactionsScreen() {
         if (transaction.type === 'income') return total + transaction.amount;
         if (transaction.type === 'expense') return total - transaction.amount;
         if (typeFilter === 'transfer') return total + transaction.amount;
-        if (walletFilter !== 'all' && transaction.destinationWalletId === walletFilter) return total + transaction.amount;
-        if (walletFilter !== 'all' && transaction.walletId === walletFilter) return total - transaction.amount;
+        if (walletFilter.length > 0 && transaction.destinationWalletId !== null && transaction.destinationWalletId !== undefined && walletFilter.includes(transaction.destinationWalletId)) return total + transaction.amount;
+        if (walletFilter.length > 0 && walletFilter.includes(transaction.walletId)) return total - transaction.amount;
         return total;
       }, 0),
     }));
@@ -452,13 +462,27 @@ export default function TransactionsScreen() {
     leaveSelectionMode();
   };
 
+  const toggleWalletFilter = (walletId: string) => {
+    setWalletFilter((current) => current.includes(walletId)
+      ? current.filter((id) => id !== walletId)
+      : [...current, walletId]);
+    leaveSelectionMode();
+  };
+
+  const toggleCardFilter = (cardId: string) => {
+    setCardFilter((current) => current.includes(cardId)
+      ? current.filter((id) => id !== cardId)
+      : [...current, cardId]);
+    leaveSelectionMode();
+  };
+
   const clearFilters = () => {
     setTypeFilter('all');
     setStatusFilter('all');
     setRecurrenceFilter('all');
-    setWalletFilter('all');
+    setWalletFilter([]);
     setCategoryFilter([]);
-    setCardFilter('all');
+    setCardFilter([]);
     setSearchText('');
     setDateRangeStart(null);
     setDateRangeEnd(null);
@@ -562,7 +586,7 @@ export default function TransactionsScreen() {
           >
             <View style={styles.moreFiltersControl}>
               <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
-               {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter !== 'all' || categoryFilter.length > 0 || cardFilter !== 'all' || dateRangeStart !== null || dateRangeEnd !== null) ? (
+               {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter.length > 0 || categoryFilter.length > 0 || cardFilter.length > 0 || dateRangeStart !== null || dateRangeEnd !== null) ? (
                 <View style={[styles.activeFiltersDot, { backgroundColor: colors.radio }]} />
               ) : null}
               <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
@@ -613,7 +637,7 @@ export default function TransactionsScreen() {
                 <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Carteira</Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Selecionar carteira, ${walletFilter === 'all' ? 'todas as carteiras' : wallets.find((wallet) => wallet.id === walletFilter)?.title ?? 'carteira selecionada'}`}
+                  accessibilityLabel={`Selecionar carteira, ${walletFilterLabel.toLowerCase()}`}
                   testID="wallet-filter-picker"
                   onPress={() => setWalletPickerOpen(true)}
                   style={({ pressed }) => [
@@ -624,7 +648,7 @@ export default function TransactionsScreen() {
                 >
                   <Feather name="briefcase" size={14} color={colors.mutedForeground} />
                   <Text numberOfLines={1} style={[styles.walletFilterText, { color: colors.foreground }]}>
-                    {walletFilter === 'all' ? 'Todas as carteiras' : wallets.find((wallet) => wallet.id === walletFilter)?.title ?? 'Carteira selecionada'}
+                    {walletFilterLabel}
                   </Text>
                   <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
                 </Pressable>
@@ -653,7 +677,7 @@ export default function TransactionsScreen() {
                  <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Cartão</Text>
                  <Pressable
                    accessibilityRole="button"
-                   accessibilityLabel={`Selecionar cartão, ${cardFilter === 'all' ? 'todos os cartões' : cards.find((card) => card.id === cardFilter)?.name ?? 'cartão selecionado'}`}
+                   accessibilityLabel={`Selecionar cartão, ${cardFilterLabel.toLowerCase()}`}
                    testID="card-filter-picker"
                    onPress={() => setCardPickerOpen(true)}
                    style={({ pressed }) => [
@@ -664,7 +688,7 @@ export default function TransactionsScreen() {
                  >
                    <Feather name="credit-card" size={14} color={colors.mutedForeground} />
                    <Text numberOfLines={1} style={[styles.walletFilterText, { color: colors.foreground }]}>
-                     {cardFilter === 'all' ? 'Todos os cartões' : cards.find((card) => card.id === cardFilter)?.name ?? 'Cartão selecionado'}
+                     {cardFilterLabel}
                    </Text>
                    <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
                  </Pressable>
@@ -1018,34 +1042,45 @@ export default function TransactionsScreen() {
             style={StyleSheet.absoluteFill}
           />
           <View style={[styles.walletMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por carteira</Text>
+            <View style={styles.filterPickerHeader}>
+              <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por carteira</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Concluir seleção de carteiras"
+                onPress={() => setWalletPickerOpen(false)}
+                style={styles.filterPickerDone}
+              >
+                <Text style={[styles.filterPickerDoneText, { color: colors.radio }]}>Concluir</Text>
+              </Pressable>
+            </View>
             <Pressable
               testID="wallet-filter-option-all"
+              accessibilityRole="button"
+              accessibilityState={{ selected: walletFilter.length === 0 }}
               onPress={() => {
-                setWalletFilter('all');
-                setWalletPickerOpen(false);
+                setWalletFilter([]);
                 leaveSelectionMode();
               }}
               style={({ pressed }) => [
                 styles.walletMenuOption,
-                { backgroundColor: walletFilter === 'all' ? colors.primary : colors.card, borderColor: walletFilter === 'all' ? colors.primary : colors.border },
+                { backgroundColor: walletFilter.length === 0 ? colors.primary : colors.card, borderColor: walletFilter.length === 0 ? colors.primary : colors.border },
                 pressed && styles.pressed,
               ]}
             >
-              <Feather name="layers" size={17} color={walletFilter === 'all' ? colors.primaryForeground : colors.mutedForeground} />
-              <Text style={[styles.walletMenuOptionText, { color: walletFilter === 'all' ? colors.primaryForeground : colors.foreground }]}>Todas as carteiras</Text>
-              {walletFilter === 'all' ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+              <Feather name="layers" size={17} color={walletFilter.length === 0 ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[styles.walletMenuOptionText, { color: walletFilter.length === 0 ? colors.primaryForeground : colors.foreground }]}>Todas as carteiras</Text>
+              {walletFilter.length === 0 ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
             </Pressable>
             {wallets.map((wallet) => {
-              const active = wallet.id === walletFilter;
+              const active = walletFilter.includes(wallet.id);
               return (
                 <Pressable
                   key={wallet.id}
                   testID={`wallet-filter-option-${wallet.id}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                   onPress={() => {
-                    setWalletFilter(wallet.id);
-                    setWalletPickerOpen(false);
-                    leaveSelectionMode();
+                    toggleWalletFilter(wallet.id);
                   }}
                   style={({ pressed }) => [
                     styles.walletMenuOption,
@@ -1075,15 +1110,15 @@ export default function TransactionsScreen() {
             style={StyleSheet.absoluteFill}
           />
           <View style={[styles.walletMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.categoryPickerHeader}>
+            <View style={styles.filterPickerHeader}>
               <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por categoria</Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Concluir seleção de categorias"
                 onPress={() => setCategoryPickerOpen(false)}
-                style={styles.categoryPickerDone}
+                style={styles.filterPickerDone}
               >
-                <Text style={[styles.categoryPickerDoneText, { color: colors.primary }]}>Concluir</Text>
+                <Text style={[styles.filterPickerDoneText, { color: colors.radio }]}>Concluir</Text>
               </Pressable>
             </View>
             <Pressable
@@ -1160,34 +1195,45 @@ export default function TransactionsScreen() {
              style={StyleSheet.absoluteFill}
            />
            <View style={[styles.walletMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
-             <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por cartão</Text>
+             <View style={styles.filterPickerHeader}>
+               <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por cartão</Text>
+               <Pressable
+                 accessibilityRole="button"
+                 accessibilityLabel="Concluir seleção de cartões"
+                 onPress={() => setCardPickerOpen(false)}
+                 style={styles.filterPickerDone}
+               >
+                 <Text style={[styles.filterPickerDoneText, { color: colors.radio }]}>Concluir</Text>
+               </Pressable>
+             </View>
              <Pressable
                testID="card-filter-option-all"
+               accessibilityRole="button"
+               accessibilityState={{ selected: cardFilter.length === 0 }}
                onPress={() => {
-                 setCardFilter('all');
-                 setCardPickerOpen(false);
+                 setCardFilter([]);
                  leaveSelectionMode();
                }}
                style={({ pressed }) => [
                  styles.walletMenuOption,
-                 { backgroundColor: cardFilter === 'all' ? colors.primary : colors.card, borderColor: cardFilter === 'all' ? colors.primary : colors.border },
+                 { backgroundColor: cardFilter.length === 0 ? colors.primary : colors.card, borderColor: cardFilter.length === 0 ? colors.primary : colors.border },
                  pressed && styles.pressed,
                ]}
              >
-               <Feather name="layers" size={17} color={cardFilter === 'all' ? colors.primaryForeground : colors.mutedForeground} />
-               <Text style={[styles.walletMenuOptionText, { color: cardFilter === 'all' ? colors.primaryForeground : colors.foreground }]}>Todos os cartões</Text>
-               {cardFilter === 'all' ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+               <Feather name="layers" size={17} color={cardFilter.length === 0 ? colors.primaryForeground : colors.mutedForeground} />
+               <Text style={[styles.walletMenuOptionText, { color: cardFilter.length === 0 ? colors.primaryForeground : colors.foreground }]}>Todos os cartões</Text>
+               {cardFilter.length === 0 ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
              </Pressable>
              {cards.map((card) => {
-               const active = cardFilter === card.id;
+               const active = cardFilter.includes(card.id);
                return (
                  <Pressable
                    key={card.id}
                    testID={`card-filter-option-${card.id}`}
+                   accessibilityRole="button"
+                   accessibilityState={{ selected: active }}
                    onPress={() => {
-                     setCardFilter(card.id);
-                     setCardPickerOpen(false);
-                     leaveSelectionMode();
+                     toggleCardFilter(card.id);
                    }}
                    style={({ pressed }) => [
                      styles.walletMenuOption,
@@ -1520,9 +1566,9 @@ const styles = StyleSheet.create({
   dateFilterSeparator: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   dateFilterError: { fontSize: 9, fontFamily: 'Inter_500Medium' },
   walletMenu: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 13, gap: 7 },
-  categoryPickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  categoryPickerDone: { paddingVertical: 4, paddingHorizontal: 2 },
-  categoryPickerDoneText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  filterPickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  filterPickerDone: { paddingVertical: 4, paddingHorizontal: 2 },
+  filterPickerDoneText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   walletMenuTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', marginBottom: 2 },
   walletMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
   walletMenuOptionText: { flex: 1, minWidth: 0, fontSize: 11, fontFamily: 'Inter_600SemiBold' },

@@ -5,7 +5,7 @@ export type CardInvoiceStatusFilter = 'all' | 'paid' | 'unpaid';
 
 export interface CardInvoiceFilterOptions {
   monthKey: string;
-  cardId: string;
+  cardId: string | string[];
   status: CardInvoiceStatusFilter;
   dateRangeStart: Date | null;
   dateRangeEnd: Date | null;
@@ -52,7 +52,7 @@ export function getFilteredCardInvoices(
 
   return cards.flatMap((card) => card.invoices
     .filter((invoice) => invoice.amount > 0)
-    .filter((invoice) => cardId === 'all' || card.id === cardId)
+    .filter((invoice) => cardId === 'all' || (Array.isArray(cardId) ? cardId.length === 0 || cardId.includes(card.id) : card.id === cardId))
     .filter((invoice) => matchesStatus(invoice.status, status))
     .filter((invoice) => hasDateFilter
       ? matchesDueDate(invoice.dueDate, dateRangeStart, dateRangeEnd)

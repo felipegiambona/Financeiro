@@ -228,7 +228,7 @@ export function calculateMonthlyTotals(
 
 export function calculateTransactionListTotal(
   transactions: Transaction[],
-  walletId = 'all',
+  walletId: string | string[] = 'all',
   typeFilter: Transaction['type'] | 'all' = 'all',
 ): number {
   if (typeFilter === 'transfer') {
@@ -241,10 +241,18 @@ export function calculateTransactionListTotal(
   return transactions.reduce((total, transaction) => {
     if (transaction.type === 'income') return total + transaction.amount;
     if (transaction.type === 'expense') return total - transaction.amount;
-    if (walletId !== 'all' && transaction.destinationWalletId === walletId) {
+    if (
+      (Array.isArray(walletId) ? walletId.length > 0 : walletId !== 'all')
+      && transaction.destinationWalletId !== null
+      && transaction.destinationWalletId !== undefined
+      && (Array.isArray(walletId) ? walletId.includes(transaction.destinationWalletId) : transaction.destinationWalletId === walletId)
+    ) {
       return total + transaction.amount;
     }
-    if (walletId !== 'all' && transaction.walletId === walletId) {
+    if (
+      (Array.isArray(walletId) ? walletId.length > 0 : walletId !== 'all')
+      && (Array.isArray(walletId) ? walletId.includes(transaction.walletId) : transaction.walletId === walletId)
+    ) {
       return total - transaction.amount;
     }
     return total;
