@@ -14,6 +14,7 @@ import { useLimits } from '@/context/LimitContext';
 import { useColors } from '@/hooks/useColors';
 import { calculateLimitUsage } from '@/services/limitRules';
 import { formatAmountValue, parseAmountInput } from '@/utils/currency';
+import { CATEGORY_COLORS } from '@/types/category';
 import type { Limit, LimitPeriod } from '@/types/limit';
 import { LIMIT_PERIODS } from '@/types/limit';
 
@@ -21,19 +22,23 @@ export default function LimitsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { transactions } = useFinance();
-  const { categories } = useCategories();
+  const { categories, createCategory } = useCategories();
   const { limits, loading, error, refresh, createLimit, updateLimit, deleteLimit } = useLimits();
   const { openNew, editId, deleteId } = useLocalSearchParams<{ openNew?: string; editId?: string; deleteId?: string }>();
   const handledRouteAction = useRef(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [categoryCreationOpen, setCategoryCreationOpen] = useState(false);
   const [periodPickerOpen, setPeriodPickerOpen] = useState(false);
   const [editingLimit, setEditingLimit] = useState<Limit | null>(null);
   const [categoryId, setCategoryId] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState<string>(CATEGORY_COLORS[0]);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState<LimitPeriod>('monthly');
   const [saving, setSaving] = useState(false);
+  const [categorySaving, setCategorySaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Limit | null>(null);
 
   const openEditor = (limit?: Limit) => {
@@ -48,6 +53,7 @@ export default function LimitsScreen() {
   const closeEditor = () => {
     if (!saving) {
       setCategoryPickerOpen(false);
+      setCategoryCreationOpen(false);
       setPeriodPickerOpen(false);
       setEditorOpen(false);
     }
@@ -97,6 +103,27 @@ export default function LimitsScreen() {
       Alert.alert('Não foi possível salvar', 'Tente novamente.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) {
+      Alert.alert('Nome obrigatório', 'Informe um nome para a categoria.');
+      return;
+    }
+
+    try {
+      setCategorySaving(true);
+      const category = await createCategory({ name: trimmedName, color: newCategoryColor });
+      setCategoryId(category.id);
+      setNewCategoryName('');
+      setNewCategoryColor(CATEGORY_COLORS[0]);
+      setCategoryCreationOpen(false);
+    } catch {
+      Alert.alert('Não foi possível salvar', 'Verifique se já existe uma categoria com esse nome.');
+    } finally {
+      setCategorySaving(false);
     }
   };
 
@@ -235,8 +262,27 @@ export default function LimitsScreen() {
                 <Feather name="x" size={18} color={colors.foreground} />
               </Pressable>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Criar nova categoria"
+              testID="create-category-from-limit"
+              onPress={() => {
+                setCategoryPickerOpen(false);
+                setNewCategoryName('');
+                setNewCategoryColor(CATEGORY_COLORS[0]);
+                setCategoryCreationOpen(true);
+              }}
+              style={({ pressed }) => [
+                styles.createCategoryButton,
+                { borderColor: colors.primary, backgroundColor: colors.card },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Feather name="plus" size={16} color={colors.income} />
+              <Text style={[styles.createCategoryButtonText, { color: colors.income }]}>Criar nova categoria</Text>
+            </Pressable>
             {categories.length === 0 ? (
-              <Text style={[styles.pickerEmpty, { color: colors.mutedForeground }]}>Crie uma categoria antes de configurar um limite.</Text>
+              <Text style={[styles.pickerEmpty, { color: colors.mutedForeground }]}>Crie uma categoria para configurar um limite.</Text>
             ) : (
               categories.map((category) => (
                 <Pressable
@@ -256,6 +302,77 @@ export default function LimitsScreen() {
                 </Pressable>
               ))
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={categoryCreationOpen}
+        onRequestClose={() => {
+          if (!categorySaving) setCategoryCreationOpen(false);
+        }}
+      >
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Fechar criação de categoria"
+            onPress={() => {
+              if (!categorySaving) setCategoryCreationOpen(false);
+            }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={[styles.pickerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Nova categoria</Text>
+            <TextInput
+              accessibilityLabel="Nome da nova categoria"
+              testID="new-limit-category-name-input"
+              autoFocus
+              placeholder="Ex.: Alimentação"
+              placeholderTextColor={colors.mutedForeground}
+              value={newCategoryName}
+              onChangeText={setNewCategoryName}
+              style={[styles.categoryInput, { backgroundColor: colors.background, borderColor: colors.input, color: colors.foreground }]}
+            />
+            <Text style={[styles.categoryColorLabel, { color: colors.foreground }]}>Cor</Text>
+            <View style={styles.categoryColorOptions}>
+              {CATEGORY_COLORS.map((option) => {
+                const selected = newCategoryColor === option;
+                return (
+                  <Pressable
+                    key={option}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`Selecionar cor ${option}`}
+                    onPress={() => setNewCategoryColor(option)}
+                    style={[styles.categoryColorOption, { backgroundColor: option, borderColor: selected ? colors.foreground : 'transparent' }]}
+                  >
+                    {selected ? <Feather name="check" size={14} color="#FFFFFF" /> : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+            <View style={styles.categoryModalActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={categorySaving}
+                onPress={() => setCategoryCreationOpen(false)}
+                style={({ pressed }) => [styles.categoryCancelButton, { borderColor: colors.border }, categorySaving && styles.disabled, pressed && styles.pressed]}
+              >
+                <Text style={[styles.categoryCancelText, { color: colors.foreground }]}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                testID="save-new-limit-category"
+                disabled={categorySaving}
+                onPress={() => void handleCreateCategory()}
+                style={({ pressed }) => [styles.categorySaveButton, { backgroundColor: colors.primary }, categorySaving && styles.disabled, pressed && styles.pressed]}
+              >
+                <Text style={[styles.categorySaveText, { color: colors.primaryForeground }]}>
+                  {categorySaving ? 'Salvando...' : 'Salvar'}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
