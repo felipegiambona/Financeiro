@@ -19,7 +19,6 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@clerk/expo": "^4.6.5",
-    "@expo-google-fonts/inter": "^0.4.0",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native/metro-config": "0.86.3",
@@ -64,6 +63,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "@expo-google-fonts/manrope": "^0.4.2",
     "expo-auth-session": "~57.0.12",
     "expo-crypto": "~57.0.3",
     "expo-file-system": "57.0.7",
