@@ -179,7 +179,7 @@ export function TransactionRow({
             onPress={handleDelete}
             style={({ pressed }) => [styles.swipeAction, { backgroundColor: colors.expense }, pressed && styles.pressed]}
           >
-            <Feather name="trash-2" size={20} color={colors.primaryForeground} />
+            <Feather name="trash-2" size={20} color={colors.destructiveForeground} />
           </Pressable>
         </View>
       ) : null}

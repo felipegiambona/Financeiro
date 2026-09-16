@@ -87,7 +87,7 @@ export function ConfirmationModal({
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.confirmationOptionLabel, { color: option.destructive ? '#FFFFFF' : colors.foreground }]}>
+                  <Text style={[styles.confirmationOptionLabel, { color: option.destructive ? colors.destructiveForeground : colors.foreground }]}>
                     {busy ? 'Excluindo...' : option.label}
                   </Text>
                 </Pressable>
@@ -117,7 +117,9 @@ export function ConfirmationModal({
                 onPress={() => void execute(onConfirm)}
                 style={({ pressed }) => [styles.confirmationDelete, { backgroundColor: colors.expense }, busy && styles.disabled, pressed && styles.pressed]}
               >
-                <Text style={styles.confirmationDeleteLabel}>{busy ? 'Excluindo...' : confirmLabel}</Text>
+                <Text style={[styles.confirmationDeleteLabel, { color: colors.destructiveForeground }]}>
+                  {busy ? 'Excluindo...' : confirmLabel}
+                </Text>
               </Pressable>
             </View>
           )}
@@ -140,7 +142,7 @@ const styles = StyleSheet.create({
   confirmationCancel: { flex: 1, minHeight: 40, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   confirmationCancelLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   confirmationDelete: { flex: 1.35, minHeight: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  confirmationDeleteLabel: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+  confirmationDeleteLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'center' },
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.72 },
 });

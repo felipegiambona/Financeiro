@@ -252,7 +252,7 @@ export default function CardDetailsScreen() {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.overdueButtonText}>Pagar</Text>
+                        <Text style={[styles.overdueButtonText, { color: colors.destructiveForeground }]}>Pagar</Text>
                       </Pressable>
                     </View>
                   ))}
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   overdueTitle: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   overdueAmount: { fontSize: 11, fontFamily: 'Inter_700Bold', marginTop: 4 },
   overdueButton: { minHeight: 34, borderRadius: 7, paddingHorizontal: 13, alignItems: 'center', justifyContent: 'center' },
-  overdueButtonText: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
+  overdueButtonText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   monthSelector: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
   monthButton: { width: 30, height: 30, borderRadius: 7, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   monthText: { flex: 1, textAlign: 'center', fontSize: 12, fontFamily: 'Inter_700Bold' },

@@ -435,8 +435,8 @@ export function ProfileDetails({ showBack = false }: { showBack?: boolean }) {
               pressed && styles.pressed,
             ]}
           >
-            <Feather name="trash-2" size={16} color={colors.primaryForeground} />
-            <Text style={[styles.deleteButtonText, { color: colors.primaryForeground }]}>
+            <Feather name="trash-2" size={16} color={colors.destructiveForeground} />
+            <Text style={[styles.deleteButtonText, { color: colors.destructiveForeground }]}>
               {deletingAccount ? 'Excluindo conta...' : 'Excluir conta'}
             </Text>
           </Pressable>

@@ -815,8 +815,8 @@ export default function TransactionsScreen() {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Feather name="trash-2" size={14} color="#FFFFFF" />
-                  <Text style={styles.deleteSelectedLabel}>Excluir selecionados</Text>
+                  <Feather name="trash-2" size={14} color={colors.destructiveForeground} />
+                  <Text style={[styles.deleteSelectedLabel, { color: colors.destructiveForeground }]}>Excluir selecionados</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -1377,7 +1377,7 @@ export default function TransactionsScreen() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={[styles.confirmationOptionLabel, { color: option.destructive ? '#FFFFFF' : colors.foreground }]}>
+                    <Text style={[styles.confirmationOptionLabel, { color: option.destructive ? colors.destructiveForeground : colors.foreground }]}>
                       {deleting ? 'Excluindo...' : option.label}
                     </Text>
                   </Pressable>
@@ -1407,7 +1407,9 @@ export default function TransactionsScreen() {
                   onPress={() => void executeConfirmedDeletion()}
                   style={({ pressed }) => [styles.confirmationDelete, { backgroundColor: colors.expense }, deleting && styles.disabled, pressed && styles.pressed]}
                 >
-                  <Text style={styles.confirmationDeleteLabel}>{deleting ? 'Excluindo...' : deleteConfirmation?.confirmLabel}</Text>
+                  <Text style={[styles.confirmationDeleteLabel, { color: colors.destructiveForeground }]}>
+                    {deleting ? 'Excluindo...' : deleteConfirmation?.confirmLabel}
+                  </Text>
                 </Pressable>
               </View>
             )}
@@ -1471,7 +1473,7 @@ const styles = StyleSheet.create({
   editSelectedAction: { flex: 1, minHeight: 34, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
   editSelectedLabel: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   deleteSelectedAction: { minHeight: 34, borderRadius: 7, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center' },
-  deleteSelectedLabel: { color: '#FFFFFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
+  deleteSelectedLabel: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.72 },
   transactionGroup: { marginBottom: 7 },
@@ -1524,7 +1526,7 @@ const styles = StyleSheet.create({
   confirmationCancel: { flex: 1, minHeight: 40, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   confirmationCancelLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   confirmationDelete: { flex: 1.35, minHeight: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  confirmationDeleteLabel: { color: '#FFFFFF', fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+  confirmationDeleteLabel: { fontSize: 11, fontFamily: 'Inter_700Bold', textAlign: 'center' },
   batchEditCard: { width: '100%', maxWidth: 370, maxHeight: '88%', borderRadius: 12, borderWidth: 1, padding: 16 },
   batchEditHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
   batchEditIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
