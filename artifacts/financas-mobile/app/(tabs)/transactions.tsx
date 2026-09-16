@@ -57,7 +57,6 @@ type TypeFilter = 'all' | 'income' | 'expense' | 'transfer';
 type StatusFilter = 'all' | 'paid' | 'unpaid';
 type RecurrenceFilter = 'all' | 'recurring' | 'nonRecurring';
 type DateFilterTarget = 'start' | 'end';
-type CategoryFilter = 'all' | 'uncategorized' | string;
 type BatchPaymentStatus = 'unchanged' | 'paid' | 'unpaid';
 type BatchCategory = 'unchanged' | 'none' | string;
 type BatchDueDate = 'unchanged' | 'clear' | string;
@@ -124,7 +123,7 @@ export default function TransactionsScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [recurrenceFilter, setRecurrenceFilter] = useState<RecurrenceFilter>('all');
   const [walletFilter, setWalletFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [cardFilter, setCardFilter] = useState('all');
   const [searchText, setSearchText] = useState('');
   const [dateRangeStart, setDateRangeStart] = useState<Date | null>(null);
@@ -201,9 +200,8 @@ export default function TransactionsScreen() {
         || transaction.destinationWalletId === walletFilter
       )
       && (
-        categoryFilter === 'all'
-        || (categoryFilter === 'uncategorized' && !transaction.categoryId)
-        || transaction.categoryId === categoryFilter
+        categoryFilter.length === 0
+        || categoryFilter.includes(transaction.categoryId ?? 'uncategorized')
       )
        && (cardFilter === 'all' || transaction.cardId === cardFilter)
     )),
