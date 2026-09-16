@@ -1218,7 +1218,7 @@ export default function InvestmentsScreen() {
               <View style={styles.modeRow}>
                 {([
                   { value: 'manual', label: 'Manual', description: 'Você informa o valor' },
-                   { value: 'automatic', label: 'Automática', description: 'Fonte do tipo a cada 15 min' },
+                  { value: 'automatic', label: 'Automática', description: 'Atualiza a cada 15 min' },
                 ] as Array<{ value: InvestmentValuationMode; label: string; description: string }>).map((item) => (
                   <Pressable
                     key={item.value}
@@ -1235,7 +1235,7 @@ export default function InvestmentsScreen() {
                     ]}
                   >
                     <Text style={[styles.modeTitle, { color: form.valuationMode === item.value ? colors.primaryForeground : colors.foreground }]}>{item.label}</Text>
-                    <Text style={[styles.modeDescription, { color: form.valuationMode === item.value ? colors.primaryForeground : colors.mutedForeground }]}>{item.description}</Text>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.modeDescription, { color: form.valuationMode === item.value ? colors.primaryForeground : colors.mutedForeground }]}>{item.description}</Text>
                   </Pressable>
                 ))}
               </View>
