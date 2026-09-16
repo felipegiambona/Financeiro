@@ -695,7 +695,7 @@ export default function TransactionsScreen() {
                   ) : null}
                 </View>
               </View>
-              <View style={styles.filterGroup}>
+              <View style={styles.recurrenceFilterGroup}>
                 <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Recorrência</Text>
                 <View style={styles.recurrenceOptions}>
                   {RECURRENCE_FILTERS.map((option) => {
@@ -712,10 +712,11 @@ export default function TransactionsScreen() {
                         }}
                         style={[
                           styles.filterChip,
+                          styles.recurrenceFilterChip,
                           { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
                         ]}
                       >
-                        <Text numberOfLines={1} style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
+                        <Text numberOfLines={1} style={[styles.filterChipText, styles.recurrenceFilterChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>
                           {option.label}
                         </Text>
                       </Pressable>
@@ -1442,13 +1443,16 @@ const styles = StyleSheet.create({
   activeFiltersDot: { width: 6, height: 6, borderRadius: 3 },
   moreFiltersContent: { gap: 7, paddingTop: 1 },
   filterGroup: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
+  recurrenceFilterGroup: { gap: 5 },
   filterLabel: { width: 64, flexShrink: 0, marginLeft: 3, fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   filterRows: { flex: 1, gap: 5 },
   filterRow: { flexDirection: 'row', gap: 5 },
   filterOptions: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  recurrenceOptions: { flex: 1, flexDirection: 'row', flexWrap: 'nowrap', justifyContent: 'space-between', gap: 5 },
+  recurrenceOptions: { flexDirection: 'row', gap: 5 },
   filterChip: { minHeight: 28, borderRadius: 6, borderWidth: 1, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   filterChipText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  recurrenceFilterChip: { flex: 1, minWidth: 0, paddingHorizontal: 4 },
+  recurrenceFilterChipText: { fontSize: 9 },
   walletFilterCombo: { minHeight: 34, flex: 1, borderRadius: 6, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
   walletFilterText: { flex: 1, minWidth: 0, fontSize: 10, fontFamily: 'Inter_500Medium' },
   clearFiltersAction: { alignSelf: 'flex-end', minHeight: 28, marginRight: 5, flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 3 },
