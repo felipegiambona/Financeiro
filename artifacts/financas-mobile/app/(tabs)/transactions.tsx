@@ -12,7 +12,11 @@ import { useCategories } from '@/context/CategoryContext';
 import { useWallets } from '@/context/WalletContext';
 import { useCards } from '@/context/CardContext';
 import { useColors } from '@/hooks/useColors';
-import { calculateCurrentBalance, calculateForecast } from '@/services/financialRules';
+import {
+  calculateCurrentBalance,
+  calculateForecast,
+  calculateTransactionListTotal,
+} from '@/services/financialRules';
 import { getFilteredCardInvoices } from '@/services/cardInvoiceFilters';
 import { getTransactionOccurrencesForMonth, getTransactionOccurrencesInRange } from '@/services/recurrence';
 import { formatCurrency } from '@/utils/currency';
@@ -258,27 +262,6 @@ export default function TransactionsScreen() {
       }, 0),
     }));
   }, [filteredTransactions, typeFilter, walletFilter]);
-  const filteredSummary = useMemo(
-    () => filteredTransactions.reduce(
-      (summary, transaction) => {
-        if (transaction.type === 'income') {
-          summary.income += transaction.amount;
-        } else if (transaction.type === 'expense') {
-          summary.expense += transaction.amount;
-        } else if (transaction.type === 'transfer') {
-          summary.transferTotal += transaction.amount;
-          if (walletFilter !== 'all' && transaction.destinationWalletId === walletFilter) {
-            summary.transfer += transaction.amount;
-          } else if (walletFilter !== 'all' && transaction.walletId === walletFilter) {
-            summary.transfer -= transaction.amount;
-          }
-        }
-        return summary;
-      },
-      { income: 0, expense: 0, transfer: 0, transferTotal: 0 },
-    ),
-    [filteredTransactions, walletFilter],
-  );
   const currentBalance = calculateCurrentBalance(wallets, transactions, cards);
   const forecast = calculateForecast(transactions, selectedMonth, cards);
   const cardInvoicesForMonth = useMemo(() => {
@@ -293,9 +276,7 @@ export default function TransactionsScreen() {
   }, [cardFilter, cards, dateRangeEnd, dateRangeStart, selectedMonth, statusFilter]);
   const showCardInvoices = (typeFilter === 'all' || typeFilter === 'expense')
     && cardInvoicesForMonth.length > 0;
-  const monthTotal = typeFilter === 'transfer'
-    ? filteredSummary.transferTotal
-    : filteredSummary.income - filteredSummary.expense + filteredSummary.transfer;
+  const monthTotal = calculateTransactionListTotal(filteredTransactions, walletFilter, typeFilter);
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
   const leaveSelectionMode = () => {

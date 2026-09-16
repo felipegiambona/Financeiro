@@ -226,6 +226,31 @@ export function calculateMonthlyTotals(
   );
 }
 
+export function calculateTransactionListTotal(
+  transactions: Transaction[],
+  walletId = 'all',
+  typeFilter: Transaction['type'] | 'all' = 'all',
+): number {
+  if (typeFilter === 'transfer') {
+    return transactions.reduce(
+      (total, transaction) => transaction.type === 'transfer' ? total + transaction.amount : total,
+      0,
+    );
+  }
+
+  return transactions.reduce((total, transaction) => {
+    if (transaction.type === 'income') return total + transaction.amount;
+    if (transaction.type === 'expense') return total - transaction.amount;
+    if (walletId !== 'all' && transaction.destinationWalletId === walletId) {
+      return total + transaction.amount;
+    }
+    if (walletId !== 'all' && transaction.walletId === walletId) {
+      return total - transaction.amount;
+    }
+    return total;
+  }, 0);
+}
+
 export function calculateForecast(
   transactions: Transaction[],
   targetMonth = new Date(),

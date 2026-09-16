@@ -4,6 +4,7 @@ import {
   calculateForecast,
   calculateForecastByMonth,
   calculateMonthlyTotals,
+  calculateTransactionListTotal,
   calculateWalletTotals,
 } from '../services/financialRules.ts';
 
@@ -119,6 +120,51 @@ test('inclui a fatura paga uma vez na previsão sem duplicar o pagamento', () =>
     calculateForecastByMonth(transactions, 2026, cards, new Date('2026-09-15T12:00:00'))
       .find((item) => item.key === '2026-09').forecast,
     -300,
+  );
+});
+
+test('o total do extrato considera os lançamentos listados, sem somar o resumo da fatura', () => {
+  const transactions = [
+    {
+      type: 'income',
+      amount: 1000,
+      walletId: 'wallet-1',
+      cardId: null,
+    },
+    {
+      type: 'expense',
+      amount: 250,
+      walletId: 'wallet-1',
+      cardId: 'card-1',
+      cardEntryType: 'purchase',
+    },
+  ];
+  const cards = [card([{ invoiceMonth: '2026-09', amount: 250, status: 'closed' }])];
+
+  assert.equal(calculateTransactionListTotal(transactions), 750);
+  assert.equal(cards[0].invoices[0].amount, 250);
+});
+
+test('o total do extrato mantém apenas os lançamentos depois dos filtros', () => {
+  const transactions = [
+    {
+      type: 'expense',
+      amount: 250,
+      walletId: 'wallet-1',
+      cardId: 'card-1',
+      cardEntryType: 'purchase',
+    },
+    {
+      type: 'expense',
+      amount: 80,
+      walletId: 'wallet-2',
+      cardId: null,
+    },
+  ];
+
+  assert.equal(
+    calculateTransactionListTotal([transactions[0]], 'all', 'expense'),
+    -250,
   );
 });
 
