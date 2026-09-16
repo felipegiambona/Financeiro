@@ -183,6 +183,12 @@ export default function TransactionsScreen() {
     [dateRangeEnd, dateRangeStart, selectedMonth, transactions],
   );
   const searchQuery = useMemo(() => normalizeSearchText(searchText), [searchText]);
+  const categoryFilterLabel = useMemo(() => {
+    if (categoryFilter.length === 0) return 'Todas as categorias';
+    if (categoryFilter.length > 1) return `${categoryFilter.length} categorias selecionadas`;
+    if (categoryFilter[0] === 'uncategorized') return 'Sem categoria';
+    return categories.find((category) => category.id === categoryFilter[0])?.name ?? 'Categoria selecionada';
+  }, [categories, categoryFilter]);
   const filteredTransactions = useMemo(
     () => selectedTransactions.filter((transaction) => (
       (searchQuery.length === 0 || normalizeSearchText(transaction.description).includes(searchQuery))
@@ -439,12 +445,19 @@ export default function TransactionsScreen() {
     );
   };
 
+  const toggleCategoryFilter = (categoryId: string) => {
+    setCategoryFilter((current) => current.includes(categoryId)
+      ? current.filter((id) => id !== categoryId)
+      : [...current, categoryId]);
+    leaveSelectionMode();
+  };
+
   const clearFilters = () => {
     setTypeFilter('all');
     setStatusFilter('all');
     setRecurrenceFilter('all');
     setWalletFilter('all');
-    setCategoryFilter('all');
+    setCategoryFilter([]);
     setCardFilter('all');
     setSearchText('');
     setDateRangeStart(null);
@@ -549,7 +562,7 @@ export default function TransactionsScreen() {
           >
             <View style={styles.moreFiltersControl}>
               <Text style={[styles.moreFiltersLabel, { color: colors.foreground }]}>Mais filtros</Text>
-               {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter !== 'all' || categoryFilter !== 'all' || cardFilter !== 'all' || dateRangeStart !== null || dateRangeEnd !== null) ? (
+               {(typeFilter !== 'all' || statusFilter !== 'all' || recurrenceFilter !== 'all' || walletFilter !== 'all' || categoryFilter.length > 0 || cardFilter !== 'all' || dateRangeStart !== null || dateRangeEnd !== null) ? (
                 <View style={[styles.activeFiltersDot, { backgroundColor: colors.radio }]} />
               ) : null}
               <Feather name={moreFiltersOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
@@ -620,7 +633,7 @@ export default function TransactionsScreen() {
                 <Text numberOfLines={1} style={[styles.filterLabel, { color: colors.mutedForeground }]}>Categoria</Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Selecionar categoria, ${categoryFilter === 'all' ? 'todas as categorias' : categoryFilter === 'uncategorized' ? 'sem categoria' : categories.find((category) => category.id === categoryFilter)?.name ?? 'categoria selecionada'}`}
+                  accessibilityLabel={`Selecionar categoria, ${categoryFilterLabel.toLowerCase()}`}
                   testID="category-filter-picker"
                   onPress={() => setCategoryPickerOpen(true)}
                   style={({ pressed }) => [
@@ -631,11 +644,7 @@ export default function TransactionsScreen() {
                 >
                   <Feather name="tag" size={14} color={colors.mutedForeground} />
                   <Text numberOfLines={1} style={[styles.walletFilterText, { color: colors.foreground }]}>
-                    {categoryFilter === 'all'
-                      ? 'Todas as categorias'
-                      : categoryFilter === 'uncategorized'
-                        ? 'Sem categoria'
-                        : categories.find((category) => category.id === categoryFilter)?.name ?? 'Categoria selecionada'}
+                    {categoryFilterLabel}
                   </Text>
                   <Feather name="chevron-down" size={15} color={colors.mutedForeground} />
                 </Pressable>
@@ -1066,51 +1075,62 @@ export default function TransactionsScreen() {
             style={StyleSheet.absoluteFill}
           />
           <View style={[styles.walletMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por categoria</Text>
+            <View style={styles.categoryPickerHeader}>
+              <Text style={[styles.walletMenuTitle, { color: colors.foreground }]}>Filtrar por categoria</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Concluir seleção de categorias"
+                onPress={() => setCategoryPickerOpen(false)}
+                style={styles.categoryPickerDone}
+              >
+                <Text style={[styles.categoryPickerDoneText, { color: colors.primary }]}>Concluir</Text>
+              </Pressable>
+            </View>
             <Pressable
               testID="category-filter-option-all"
+              accessibilityRole="button"
+              accessibilityState={{ selected: categoryFilter.length === 0 }}
               onPress={() => {
-                setCategoryFilter('all');
-                setCategoryPickerOpen(false);
+                setCategoryFilter([]);
                 leaveSelectionMode();
               }}
               style={({ pressed }) => [
                 styles.walletMenuOption,
-                { backgroundColor: categoryFilter === 'all' ? colors.primary : colors.card, borderColor: categoryFilter === 'all' ? colors.primary : colors.border },
+                { backgroundColor: categoryFilter.length === 0 ? colors.primary : colors.card, borderColor: categoryFilter.length === 0 ? colors.primary : colors.border },
                 pressed && styles.pressed,
               ]}
             >
-              <Feather name="layers" size={17} color={categoryFilter === 'all' ? colors.primaryForeground : colors.mutedForeground} />
-              <Text style={[styles.walletMenuOptionText, { color: categoryFilter === 'all' ? colors.primaryForeground : colors.foreground }]}>Todas as categorias</Text>
-              {categoryFilter === 'all' ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+              <Feather name="layers" size={17} color={categoryFilter.length === 0 ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[styles.walletMenuOptionText, { color: categoryFilter.length === 0 ? colors.primaryForeground : colors.foreground }]}>Todas as categorias</Text>
+              {categoryFilter.length === 0 ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
             </Pressable>
             <Pressable
               testID="category-filter-option-uncategorized"
+              accessibilityRole="button"
+              accessibilityState={{ selected: categoryFilter.includes('uncategorized') }}
               onPress={() => {
-                setCategoryFilter('uncategorized');
-                setCategoryPickerOpen(false);
-                leaveSelectionMode();
+                toggleCategoryFilter('uncategorized');
               }}
               style={({ pressed }) => [
                 styles.walletMenuOption,
-                { backgroundColor: categoryFilter === 'uncategorized' ? colors.primary : colors.card, borderColor: categoryFilter === 'uncategorized' ? colors.primary : colors.border },
+                { backgroundColor: categoryFilter.includes('uncategorized') ? colors.primary : colors.card, borderColor: categoryFilter.includes('uncategorized') ? colors.primary : colors.border },
                 pressed && styles.pressed,
               ]}
             >
-              <Feather name="tag" size={17} color={categoryFilter === 'uncategorized' ? colors.primaryForeground : colors.mutedForeground} />
-              <Text style={[styles.walletMenuOptionText, { color: categoryFilter === 'uncategorized' ? colors.primaryForeground : colors.foreground }]}>Sem categoria</Text>
-              {categoryFilter === 'uncategorized' ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
+              <Feather name="tag" size={17} color={categoryFilter.includes('uncategorized') ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[styles.walletMenuOptionText, { color: categoryFilter.includes('uncategorized') ? colors.primaryForeground : colors.foreground }]}>Sem categoria</Text>
+              {categoryFilter.includes('uncategorized') ? <Feather name="check" size={16} color={colors.primaryForeground} /> : null}
             </Pressable>
             {categories.map((category) => {
-              const active = categoryFilter === category.id;
+              const active = categoryFilter.includes(category.id);
               return (
                 <Pressable
                   key={category.id}
                   testID={`category-filter-option-${category.id}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                   onPress={() => {
-                    setCategoryFilter(category.id);
-                    setCategoryPickerOpen(false);
-                    leaveSelectionMode();
+                    toggleCategoryFilter(category.id);
                   }}
                   style={({ pressed }) => [
                     styles.walletMenuOption,
@@ -1500,6 +1520,9 @@ const styles = StyleSheet.create({
   dateFilterSeparator: { fontSize: 10, fontFamily: 'Inter_500Medium' },
   dateFilterError: { fontSize: 9, fontFamily: 'Inter_500Medium' },
   walletMenu: { width: '100%', maxWidth: 350, borderRadius: 12, borderWidth: 1, padding: 13, gap: 7 },
+  categoryPickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  categoryPickerDone: { paddingVertical: 4, paddingHorizontal: 2 },
+  categoryPickerDoneText: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   walletMenuTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', marginBottom: 2 },
   walletMenuOption: { minHeight: 42, borderRadius: 7, borderWidth: 1, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
   walletMenuOptionText: { flex: 1, minWidth: 0, fontSize: 11, fontFamily: 'Inter_600SemiBold' },
